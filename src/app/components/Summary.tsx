@@ -1,9 +1,11 @@
-import type { Change, UploadStatus, ImpactAnalysis } from '../types';
+import { useState } from 'react';
+import type { Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 
 interface SummaryProps {
   selectedDocuments: string[];
   changes: Change[];
   uploadStatuses: Record<string, UploadStatus>;
+  step3Data: Step3Data;
   onFinish: () => void;
   onBack: () => void;
 }
@@ -16,8 +18,54 @@ const mockDocuments = [
   { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento', status: 'Aprobado' },
 ];
 
-export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, onBack }: SummaryProps) {
+const FIELD_GROUPS: { label: string; fields: string[] }[] = [
+  { label: 'Información General', fields: ['Nombre del estudio', 'Número de protocolo', 'Vigencia', 'Institución'] },
+  { label: 'Equipo', fields: ['Investigador principal', 'Contacto de emergencia'] },
+];
+
+function getGroupLabel(field: string): string {
+  for (const g of FIELD_GROUPS) {
+    if (g.fields.includes(field)) return g.label;
+  }
+  return 'Otros';
+}
+
+export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+
+  // Documentos nuevos
+  const [newDocs, setNewDocs] = useState<Array<{ id: string; fileType: string; name: string }>>([]);
+  const [showAddDoc, setShowAddDoc] = useState(false);
+  const [newDocForm, setNewDocForm] = useState({ fileType: '', name: '' });
+
+  const handleAddDoc = () => {
+    if (!newDocForm.fileType || !newDocForm.name) return;
+    setNewDocs([...newDocs, { id: Date.now().toString(), ...newDocForm }]);
+    setNewDocForm({ fileType: '', name: '' });
+    setShowAddDoc(false);
+  };
+
+  const handleRemoveDoc = (id: string) => setNewDocs(newDocs.filter((d) => d.id !== id));
+
+  // Comentarios adicionales
+  const [comments, setComments] = useState('');
+
+  // Accordion state: all groups open by default
+  const allGroupLabels = Array.from(new Set(changes.map((c) => getGroupLabel(c.field))));
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(allGroupLabels.map((l) => [l, true]))
+  );
+
+  const toggleGroup = (label: string) =>
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+
+  // Group changes by section
+  const groupedChanges = FIELD_GROUPS.map((g) => ({
+    label: g.label,
+    items: changes.filter((c) => g.fields.includes(c.field)),
+  }))
+    .concat([{ label: 'Otros', items: changes.filter((c) => getGroupLabel(c.field) === 'Otros') }])
+    .filter((g) => g.items.length > 0);
 
   // Analyze impact for each document
   const analyzeImpact = (docId: string): ImpactAnalysis => {
@@ -125,152 +173,216 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
         <p className="text-sm text-gray-600 m-0">Revise el impacto de los cambios antes de confirmar</p>
       </div>
 
-      {/* Impact Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="border border-green-300 rounded-lg p-4 bg-green-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-700 m-0">Automáticos</p>
-              <p className="text-green-900 m-0">{stats.automatic}</p>
-            </div>
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+      {/* Step 3 Responses */}
+      <div className="mb-6 space-y-3">
+        <h4 className="mb-3">Cambios declarados</h4>
+
+        {/* Título y Resumen */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <span className="font-medium text-gray-800">Título y Resumen</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              step3Data.modifiesTitleOrSummary === 'SI'
+                ? 'bg-[#C41E3A] text-white'
+                : step3Data.modifiesTitleOrSummary === 'NO'
+                ? 'bg-gray-200 text-gray-600'
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              {step3Data.modifiesTitleOrSummary ?? 'Sin respuesta'}
+            </span>
           </div>
+          {step3Data.modifiesTitleOrSummary === 'SI' && (
+            <div className="p-4 space-y-3 bg-white">
+              {step3Data.titleSummaryData.title && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Nuevo título</p>
+                  <p className="text-sm text-gray-900">{step3Data.titleSummaryData.title}</p>
+                </div>
+              )}
+              {step3Data.titleSummaryData.summary && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Nuevo resumen</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{step3Data.titleSummaryData.summary}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-amber-700 m-0">Revisión</p>
-              <p className="text-amber-900 m-0">{stats.review}</p>
-            </div>
-            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
+        {/* Unidades Operativas */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <span className="font-medium text-gray-800">Unidades Operativas</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              step3Data.modifiesOperativeUnits === 'SI'
+                ? 'bg-[#C41E3A] text-white'
+                : step3Data.modifiesOperativeUnits === 'NO'
+                ? 'bg-gray-200 text-gray-600'
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              {step3Data.modifiesOperativeUnits ?? 'Sin respuesta'}
+            </span>
           </div>
+          {step3Data.modifiesOperativeUnits === 'SI' && step3Data.operativeUnitsData.units && (
+            <div className="p-4 bg-white">
+              <p className="text-xs text-gray-500 mb-1">Detalle</p>
+              <p className="text-sm text-gray-900 whitespace-pre-wrap">{step3Data.operativeUnitsData.units}</p>
+            </div>
+          )}
         </div>
 
-        <div className="border border-blue-300 rounded-lg p-4 bg-blue-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-700 m-0">Nueva versión</p>
-              <p className="text-blue-900 m-0">{stats.version}</p>
-            </div>
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
+        {/* Equipo de Investigación */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <span className="font-medium text-gray-800">Equipo de Investigación</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              step3Data.modifiesResearchers === 'SI'
+                ? 'bg-[#C41E3A] text-white'
+                : step3Data.modifiesResearchers === 'NO'
+                ? 'bg-gray-200 text-gray-600'
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              {step3Data.modifiesResearchers ?? 'Sin respuesta'}
+            </span>
           </div>
-        </div>
-
-        <div className="border border-red-300 rounded-lg p-4 bg-red-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-red-700 m-0">Bloqueados</p>
-              <p className="text-red-900 m-0">{stats.blocked}</p>
+          {step3Data.modifiesResearchers === 'SI' && step3Data.researchers.length > 0 && (
+            <div className="bg-white overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Correo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rol actual</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rol propuesto</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tipo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Justificación</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {step3Data.researchers.map((r) => (
+                    <tr key={r.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900 font-medium">{r.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.currentRole || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.proposedRole || '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          r.changeType === 'add'
+                            ? 'bg-green-100 text-green-800'
+                            : r.changeType === 'remove'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {r.changeType === 'add' ? 'Agregar' : r.changeType === 'remove' ? 'Retirar' : 'Modificar'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.justification}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Changes Summary */}
-      <div className="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50">
-        <h4 className="mb-3">Cambios a aplicar</h4>
-        <div className="space-y-3">
-          {changes.map((change) => (
-            <div key={change.id} className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="m-0">{change.field}</h4>
-                    {change.isGlobal && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">Global</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {change.oldValue && (
-                      <>
-                        <span className="text-gray-500 line-through">{change.oldValue}</span>
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </>
-                    )}
-                    <span className="text-[#C41E3A]">{change.newValue}</span>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-600 ml-4">{change.appliesTo.length} docs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Documents Impact Table */}
       <div className="mb-6">
-        <h4 className="mb-3">Impacto por documento</h4>
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left"></th>
-                <th className="px-4 py-3 text-left">Documento</th>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Estado actual</th>
-                <th className="px-4 py-3 text-left">Acción</th>
-                <th className="px-4 py-3 text-left">Motivo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {impacts.map((impact) => {
-                const doc = documents.find((d) => d.id === impact.documentId);
-                if (!doc) return null;
-
-                return (
-                  <tr key={impact.documentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">{getActionIcon(impact.action)}</td>
-                    <td className="px-4 py-4">{doc.name}</td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-600">{doc.type}</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-600">{doc.status}</span>
-                    </td>
-                    <td className="px-4 py-4">{getActionBadge(impact.action)}</td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-600">{impact.reason}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="m-0">Cambios a aplicar en otros Documentos</h4>
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
+            {changes.length} {changes.length === 1 ? 'cambio' : 'cambios'}
+          </span>
         </div>
+
+        {changes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+            No se registraron cambios en documentos
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {groupedChanges.map(({ label, items }) => (
+              <div key={label} className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* Accordion header */}
+                <button
+                  onClick={() => toggleGroup(label)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-800">{label}</span>
+                    <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-600 rounded-full text-xs font-medium">
+                      {items.length}
+                    </span>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[label] ? 'rotate-180' : ''}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Accordion body */}
+                {openGroups[label] && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Campo</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Antes</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Después</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos afectados</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Alcance</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {items.map((change) => (
+                          <tr key={change.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-gray-900">{change.field}</td>
+                            <td className="px-4 py-3">
+                              {change.oldValue ? (
+                                <span className="text-gray-400 line-through">{change.oldValue}</span>
+                              ) : (
+                                <span className="text-gray-300 italic">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-green-700">{change.newValue}</td>
+                            <td className="px-4 py-3 text-gray-600">{change.justification || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(change.isGlobal ? documents : documents.filter((d) => change.appliesTo.includes(d.id))).map((doc) => (
+                                  <span key={doc.id} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
+                                    {doc.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {change.isGlobal ? (
+                                <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
+                                  Global
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
+                                  Específico
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Warnings */}
-      {stats.blocked > 0 && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <h4 className="text-red-900 m-0 mb-1">Advertencia: Documentos bloqueados</h4>
-              <p className="text-red-700 m-0">
-                {stats.blocked} documento(s) no pueden modificarse porque están firmados. Se omitirán al generar las
-                enmiendas.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {stats.review > 0 && (
+{stats.review > 0 && (
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,6 +398,114 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
         </div>
       )}
 
+      {/* Documentos Nuevos */}
+      <div className="mb-6">
+        <div className="mb-4">
+          <h4 className="m-0">Documentos Nuevos</h4>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Tipo de archivo</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
+                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {newDocs.length === 0 && !showAddDoc ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
+                    No se han agregado documentos nuevos
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {newDocs.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-700">{doc.fileType}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{doc.name}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleRemoveDoc(doc.id)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          title="Eliminar"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {showAddDoc && (
+                    <tr className="bg-gray-50">
+                      <td className="px-4 py-3">
+                        <select
+                          value={newDocForm.fileType}
+                          onChange={(e) => setNewDocForm({ ...newDocForm, fileType: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                        >
+                          <option value="">Seleccione tipo</option>
+                          <option value="Presupuesto">Presupuesto</option>
+                          <option value="Instrumento">Instrumento</option>
+                          <option value="Protocolo">Protocolo</option>
+                          <option value="Consentimiento">Consentimiento</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={newDocForm.name}
+                          onChange={(e) => setNewDocForm({ ...newDocForm, name: e.target.value })}
+                          placeholder="Nombre del documento"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={handleAddDoc}
+                            disabled={!newDocForm.fileType || !newDocForm.name}
+                            className="px-3 py-1.5 bg-[#C41E3A] text-white rounded-md text-xs font-medium hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            onClick={() => { setShowAddDoc(false); setNewDocForm({ fileType: '', name: '' }); }}
+                            className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-50 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Comentarios adicionales */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <h4 className="m-0">Comentarios adicionales</h4>
+          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs border border-gray-200">Opcional</span>
+        </div>
+        <textarea
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          placeholder="Ingrese cualquier comentario o información adicional relevante para esta enmienda..."
+          rows={4}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
+        />
+        <p className="text-xs text-gray-400 mt-1.5 text-right">{comments.length} caracteres</p>
+      </div>
+
       {/* Action Buttons */}
       <div className="flex justify-between gap-4 mt-6">
         <button
@@ -294,32 +514,15 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
         >
           Volver
         </button>
-        <div className="flex gap-3">
-          {stats.automatic > 0 && (
-            <button
-              onClick={onFinish}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              Aplicar cambios automáticos ({stats.automatic})
-            </button>
-          )}
-          {stats.version > 0 && (
-            <button
-              onClick={onFinish}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              Generar nuevas versiones ({stats.version})
-            </button>
-          )}
-          {stats.review > 0 && (
-            <button
-              onClick={onFinish}
-              className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-sm font-medium"
-            >
-              Enviar a revisión ({stats.review})
-            </button>
-          )}
-        </div>
+        <button
+          onClick={onFinish}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Finalizar
+        </button>
       </div>
     </div>
   );

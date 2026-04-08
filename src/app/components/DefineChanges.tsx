@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import type { Change } from '../types';
+import type { Change, Step3Data, ResearcherChange } from '../types';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
   changes: Change[];
   onChangesUpdate: (changes: Change[]) => void;
+  step3Data: Step3Data;
+  onStep3DataChange: (data: Step3Data) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -27,7 +29,7 @@ const commonFields = [
   'Otro (personalizado)',
 ];
 
-export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onNext, onBack }: DefineChangesProps) {
+export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchChange, setSearchChange] = useState('');
@@ -42,26 +44,28 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
     isGlobal: true,
   });
 
-  // Questions state
-  const [modifiesTitleOrSummary, setModifiesTitleOrSummary] = useState<'NO' | 'SI' | null>(null);
-  const [modifiesOperativeUnits, setModifiesOperativeUnits] = useState<'NO' | 'SI' | null>(null);
-  const [modifiesResearchers, setModifiesResearchers] = useState<'NO' | 'SI' | null>(null);
+  // Aliases para legibilidad
+  const modifiesTitleOrSummary = step3Data.modifiesTitleOrSummary;
+  const modifiesOperativeUnits = step3Data.modifiesOperativeUnits;
+  const modifiesResearchers = step3Data.modifiesResearchers;
+  const titleSummaryData = step3Data.titleSummaryData;
+  const operativeUnitsData = step3Data.operativeUnitsData;
+  const researchers = step3Data.researchers;
 
-  // Form data for each question
-  const [titleSummaryData, setTitleSummaryData] = useState({ title: '', summary: '' });
-  const [operativeUnitsData, setOperativeUnitsData] = useState({ units: '' });
-  const [researchersData, setResearchersData] = useState({ researchers: '' });
+  const setModifiesTitleOrSummary = (v: 'NO' | 'SI') =>
+    onStep3DataChange({ ...step3Data, modifiesTitleOrSummary: v });
+  const setModifiesOperativeUnits = (v: 'NO' | 'SI') =>
+    onStep3DataChange({ ...step3Data, modifiesOperativeUnits: v });
+  const setModifiesResearchers = (v: 'NO' | 'SI') =>
+    onStep3DataChange({ ...step3Data, modifiesResearchers: v });
+  const setTitleSummaryData = (d: { title: string; summary: string }) =>
+    onStep3DataChange({ ...step3Data, titleSummaryData: d });
+  const setOperativeUnitsData = (d: { units: string }) =>
+    onStep3DataChange({ ...step3Data, operativeUnitsData: d });
+  const setResearchers = (r: ResearcherChange[]) =>
+    onStep3DataChange({ ...step3Data, researchers: r });
 
-  // Researchers list state
-  const [researchers, setResearchers] = useState<Array<{
-    id: string;
-    name: string;
-    email: string;
-    currentRole: string;
-    proposedRole: string;
-    changeType: 'add' | 'remove' | 'modify';
-    justification: string;
-  }>>([]);
+  // Researchers form state (local, no necesita persistir)
   const [showAddResearcher, setShowAddResearcher] = useState(false);
   const [newResearcher, setNewResearcher] = useState({
     name: '',

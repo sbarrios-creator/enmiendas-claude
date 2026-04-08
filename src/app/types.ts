@@ -26,3 +26,22 @@ export interface ImpactAnalysis {
   action: 'automatic' | 'review' | 'version' | 'blocked';
   reason: string;
 }
+
+export interface ResearcherChange {
+  id: string;
+  name: string;
+  email: string;
+  currentRole: string;
+  proposedRole: string;
+  changeType: 'add' | 'remove' | 'modify';
+  justification: string;
+}
+
+export interface Step3Data {
+  modifiesTitleOrSummary: 'NO' | 'SI' | null;
+  titleSummaryData: { title: string; summary: string };
+  modifiesOperativeUnits: 'NO' | 'SI' | null;
+  operativeUnitsData: { units: string };
+  modifiesResearchers: 'NO' | 'SI' | null;
+  researchers: ResearcherChange[];
+}
