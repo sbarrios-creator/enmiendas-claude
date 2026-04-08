@@ -36,9 +36,7 @@ export function UploadDocuments({
   onBack,
 }: UploadDocumentsProps) {
   const [files, setFiles] = useState<Record<string, { controlChanges: FileUpload | null; finalVersion: FileUpload | null }>>({});
-  const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
-  const itemsPerPage = 5;
 
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
@@ -98,39 +96,31 @@ export function UploadDocuments({
     return acc;
   }, {} as Record<string, typeof documents>);
 
-  // Get instruments for pagination
+  // Get instruments
   const instrumentos = groupedDocuments['Instrumentos del proyecto'] || [];
 
   // Filter by status
   const filteredInstrumentos = instrumentos.filter((doc) => {
     const status = uploadStatuses[doc.id];
     const isComplete = status?.controlChanges && status?.finalVersion;
-
     if (statusFilter === 'completed') return isComplete;
     if (statusFilter === 'pending') return !isComplete;
     return true;
   });
 
-  // Pagination for instruments
-  const totalPages = Math.ceil(filteredInstrumentos.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedInstrumentos = filteredInstrumentos.slice(startIndex, endIndex);
-
-  // Update grouped documents with paginated data
   const displayGroupedDocuments = {
     ...groupedDocuments,
-    'Instrumentos del proyecto': paginatedInstrumentos
+    'Instrumentos del proyecto': filteredInstrumentos,
   };
 
   const canContinue = Object.keys(uploadStatuses).length === selectedDocuments.length &&
     Object.values(uploadStatuses).every((status) => status.controlChanges && status.finalVersion);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-6">
-        <h3 className="mb-1">Subir documentos modificados</h3>
-        <p className="text-gray-600 m-0">Cargue el archivo con control de cambios y la versión final de cada documento</p>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Subir documentos modificados</h3>
+        <p className="text-sm text-gray-600 m-0">Cargue el archivo con control de cambios y la versión final de cada documento</p>
       </div>
 
       {/* Information Box */}
@@ -165,10 +155,7 @@ export function UploadDocuments({
             {isInstrumentos && instrumentos.length > 0 && (
               <div className="bg-white px-4 py-3 border-x border-gray-300 flex gap-2">
                 <button
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => setStatusFilter('all')}
                   className={`px-4 py-2 rounded text-sm transition-colors ${
                     statusFilter === 'all'
                       ? 'bg-[#C41E3A] text-white'
@@ -178,10 +165,7 @@ export function UploadDocuments({
                   Todos ({instrumentos.length})
                 </button>
                 <button
-                  onClick={() => {
-                    setStatusFilter('completed');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => setStatusFilter('completed')}
                   className={`px-4 py-2 rounded text-sm transition-colors ${
                     statusFilter === 'completed'
                       ? 'bg-[#C41E3A] text-white'
@@ -194,10 +178,7 @@ export function UploadDocuments({
                   }).length})
                 </button>
                 <button
-                  onClick={() => {
-                    setStatusFilter('pending');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => setStatusFilter('pending')}
                   className={`px-4 py-2 rounded text-sm transition-colors ${
                     statusFilter === 'pending'
                       ? 'bg-[#C41E3A] text-white'
@@ -215,7 +196,7 @@ export function UploadDocuments({
             {/* Documents */}
             <div className="border-x border-b border-gray-300">
               {docs.length > 0 ? (
-                <>
+                <div className={isInstrumentos ? 'max-h-80 overflow-y-auto' : ''}><>
                   {docs.map((doc) => {
                     const docFiles = files[doc.id] || { controlChanges: null, finalVersion: null };
                     const status = uploadStatuses[doc.id] || { controlChanges: false, finalVersion: false };
@@ -379,54 +360,7 @@ export function UploadDocuments({
                     );
                   })}
 
-                  {/* Pagination for Instrumentos */}
-                  {isInstrumentos && filteredInstrumentos.length > 0 && (
-                    <div className="bg-white px-4 py-3 border-t border-gray-200">
-                      <div className="flex items-center justify-between">
-                        {/* Showing info */}
-                        <div className="text-sm text-gray-700">
-                          Mostrando {startIndex + 1}–{Math.min(endIndex, filteredInstrumentos.length)} de{' '}
-                          {filteredInstrumentos.length} registros
-                        </div>
-
-                        {/* Pagination controls */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-                          >
-                            Anterior
-                          </button>
-
-                          <div className="flex gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`w-8 h-8 rounded text-sm transition-colors ${
-                                  page === currentPage
-                                    ? 'bg-[#C41E3A] text-white font-medium'
-                                    : 'border border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                {page}
-                              </button>
-                            ))}
-                          </div>
-
-                          <button
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-                          >
-                            Siguiente
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
+                </></div>
               ) : (
                 <div className="py-8 text-center text-gray-500 bg-white">
                   No se encontraron documentos con el filtro seleccionado
@@ -441,14 +375,14 @@ export function UploadDocuments({
       <div className="flex justify-between gap-4 mt-6">
         <button
           onClick={onBack}
-          className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           Volver
         </button>
         <button
           onClick={onNext}
           disabled={!canContinue}
-          className="px-6 py-3 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           Continuar
         </button>

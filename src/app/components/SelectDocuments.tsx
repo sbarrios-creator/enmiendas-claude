@@ -27,9 +27,7 @@ const mockDocuments: Document[] = [
 ];
 
 export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }: SelectDocumentsProps) {
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const itemsPerPage = 5;
 
   const handleToggleDocument = (id: string) => {
     if (selectedDocuments.includes(id)) {
@@ -48,9 +46,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
     } else {
       const newSelection = [...selectedDocuments];
       sectionIds.forEach((id) => {
-        if (!newSelection.includes(id)) {
-          newSelection.push(id);
-        }
+        if (!newSelection.includes(id)) newSelection.push(id);
       });
       onSelectDocuments(newSelection);
     }
@@ -59,7 +55,6 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
   const handleSelectAll = () => {
     const allIds = mockDocuments.map((doc) => doc.id);
     const allSelected = allIds.every((id) => selectedDocuments.includes(id));
-
     if (allSelected) {
       onSelectDocuments([]);
     } else {
@@ -67,7 +62,6 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
     }
   };
 
-  // Group documents by type
   const sections: DocumentSection[] = [
     {
       title: 'Presupuesto del estudio',
@@ -83,41 +77,17 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
     },
   ];
 
-  // Filter documents for "Instrumentos del proyecto" based on search term
-  const filteredInstrumentos = sections
-    .find((s) => s.title === 'Instrumentos del proyecto')
-    ?.documents.filter((doc) => doc.name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
-
-  // Calculate pagination for "Instrumentos del proyecto"
-  const totalPages = Math.ceil(filteredInstrumentos.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedInstrumentos = filteredInstrumentos.slice(startIndex, endIndex);
-
-  // Update sections with paginated data
-  const displaySections: DocumentSection[] = sections.map((section) => {
-    if (section.title === 'Instrumentos del proyecto') {
-      return { ...section, documents: paginatedInstrumentos };
-    }
-    return section;
-  });
-
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="m-0">Documentos aprobados y vigentes de la investigación</h3>
+          <h3 className="text-base font-semibold text-gray-900 m-0">Documentos aprobados y vigentes de la investigación</h3>
           <button
             onClick={handleSelectAll}
             className="flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
               {mockDocuments.every((doc) => selectedDocuments.includes(doc.id))
@@ -126,7 +96,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
             </span>
           </button>
         </div>
-        <p className="text-gray-600 m-0">
+        <p className="text-sm text-gray-600 m-0">
           A continuación, se enlistan los documentos aprobados y vigentes de su investigación. Seleccione los
           documentos que desea enmendar. Tenga en cuenta que si su enmienda incluye cambios en el presupuesto o
           instrumento(s), debe seleccionar también el proyecto de investigación.
@@ -145,74 +115,56 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
 
       {/* Document Sections */}
       <div className="space-y-6">
-        {displaySections.map((section) => {
-          const sectionIds = section.documents.map((doc) => doc.id);
-          const allSelected = sectionIds.every((id) => selectedDocuments.includes(id));
-          const someSelected = sectionIds.some((id) => selectedDocuments.includes(id));
+        {sections.map((section) => {
           const isInstrumentos = section.title === 'Instrumentos del proyecto';
+
+          const displayDocuments = isInstrumentos
+            ? section.documents.filter((doc) =>
+                doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+            : section.documents;
 
           return (
             <div key={section.title} className="border border-gray-300 rounded overflow-hidden mb-6">
               {/* Section Header */}
-              <div className="bg-[#C41E3A] px-4 py-3">
+              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
                 <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
-              </div>
-
-              {/* Search bar for Instrumentos */}
-              {isInstrumentos && (
-                <div className="bg-white px-4 py-3 border-b border-gray-200 flex justify-end">
-                  <div className="relative w-80">
+                {isInstrumentos && (
+                  <div className="relative w-64">
                     <input
                       type="text"
                       placeholder="Buscar instrumento..."
                       value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
                     />
                     <svg
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Section Table */}
-              {section.documents.length > 0 ? (
-                <>
+              {displayDocuments.length > 0 ? (
+                <div className={isInstrumentos ? 'max-h-72 overflow-y-auto' : ''}>
                   <table className="w-full">
-                    <thead className="bg-gray-900">
+                    <thead className="bg-gray-900 sticky top-0 z-10">
                       <tr>
-                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide w-32">
-                          REEMPLAZAR
-                        </th>
-                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide">
-                          ARCHIVO
-                        </th>
-                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-28">
-                          VERSIÓN
-                        </th>
-                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-40">
-                          ACCIONES
-                        </th>
+                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide w-32">REEMPLAZAR</th>
+                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide">ARCHIVO</th>
+                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-28">VERSIÓN</th>
+                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-40">ACCIONES</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {section.documents.map((doc, index) => {
+                      {displayDocuments.map((doc, index) => {
                         const isSelected = selectedDocuments.includes(doc.id);
-
                         return (
                           <tr
                             key={doc.id}
@@ -227,9 +179,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
                               />
                             </td>
                             <td className="px-4 py-3 border-t border-gray-200">
-                              <span className="text-gray-700 text-sm">
-                                {doc.name}
-                              </span>
+                              <span className="text-gray-700 text-sm">{doc.name}</span>
                             </td>
                             <td className="px-4 py-3 text-center border-t border-gray-200">
                               <span className="text-gray-700 text-sm">{doc.version}</span>
@@ -240,8 +190,8 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
                                   className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
                                   title="Eliminar"
                                 >
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                                 <button
@@ -259,69 +209,10 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
                       })}
                     </tbody>
                   </table>
-
-                  {/* Pagination for Instrumentos */}
-                  {isInstrumentos && filteredInstrumentos.length > 0 && (
-                    <div className="bg-white px-4 py-3 border-t border-gray-200">
-                      <div className="flex items-center justify-between">
-                        {/* Showing info */}
-                        <div className="text-sm text-gray-700">
-                          Mostrando {startIndex + 1}–{Math.min(endIndex, filteredInstrumentos.length)} de{' '}
-                          {filteredInstrumentos.length} registros
-                        </div>
-
-                        {/* Pagination controls */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-                          >
-                            Anterior
-                          </button>
-
-                          <div className="flex gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`w-8 h-8 rounded text-sm transition-colors ${
-                                  page === currentPage
-                                    ? 'bg-[#C41E3A] text-white font-medium'
-                                    : 'border border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                {page}
-                              </button>
-                            ))}
-                          </div>
-
-                          <button
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-                          >
-                            Siguiente
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
+                </div>
               ) : (
-                <div className="bg-white">
-                  <table className="w-full">
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th className="px-4 py-3 text-left">TIPO ARCHIVO</th>
-                        <th className="px-4 py-3 text-left">NOMBRE</th>
-                        <th className="px-4 py-3 text-left">ACCIONES</th>
-                      </tr>
-                    </thead>
-                  </table>
-                  <div className="py-8 text-center text-gray-500">
-                    {isInstrumentos && searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
-                  </div>
+                <div className="bg-white py-8 text-center text-gray-500">
+                  {isInstrumentos && searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
                 </div>
               )}
             </div>
@@ -335,12 +226,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-blue-900">
                 <span className="font-medium">{selectedDocuments.length}</span>{' '}
@@ -362,7 +248,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
         <button
           onClick={onNext}
           disabled={selectedDocuments.length === 0}
-          className="px-8 py-3 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
         >
           <span>Siguiente</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

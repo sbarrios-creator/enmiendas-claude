@@ -119,10 +119,10 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-6">
-        <h3 className="mb-1">Resumen de enmiendas</h3>
-        <p className="text-gray-600 m-0">Revise el impacto de los cambios antes de confirmar</p>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Resumen de enmiendas</h3>
+        <p className="text-sm text-gray-600 m-0">Revise el impacto de los cambios antes de confirmar</p>
       </div>
 
       {/* Impact Overview */}
@@ -290,7 +290,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
       <div className="flex justify-between gap-4 mt-6">
         <button
           onClick={onBack}
-          className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           Volver
         </button>
@@ -298,7 +298,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
           {stats.automatic > 0 && (
             <button
               onClick={onFinish}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium"
             >
               Aplicar cambios automáticos ({stats.automatic})
             </button>
@@ -306,7 +306,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
           {stats.version > 0 && (
             <button
               onClick={onFinish}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
             >
               Generar nuevas versiones ({stats.version})
             </button>
@@ -314,7 +314,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, onFinish, 
           {stats.review > 0 && (
             <button
               onClick={onFinish}
-              className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+              className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-sm font-medium"
             >
               Enviar a revisión ({stats.review})
             </button>

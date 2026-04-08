@@ -29,6 +29,9 @@ const commonFields = [
 
 export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onNext, onBack }: DefineChangesProps) {
   const [showAddChange, setShowAddChange] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchChange, setSearchChange] = useState('');
+  const [searchDocument, setSearchDocument] = useState('');
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -104,6 +107,36 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
     onChangesUpdate(changes.filter((change) => change.id !== id));
   };
 
+  const handleEditChange = (change: Change) => {
+    const isCustomField = !commonFields.slice(0, -1).includes(change.field);
+    setNewChange({
+      field: isCustomField ? 'Otro (personalizado)' : change.field,
+      customField: isCustomField ? change.field : '',
+      oldValue: change.oldValue,
+      newValue: change.newValue,
+      justification: change.justification,
+      appliesTo: change.appliesTo,
+      isGlobal: change.isGlobal,
+    });
+    setEditingId(change.id);
+    setShowAddChange(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!newChange.newValue || !editingId) return;
+    const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+    const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
+    onChangesUpdate(changes.map((c) =>
+      c.id === editingId
+        ? { ...c, field, oldValue: newChange.oldValue, newValue: newChange.newValue, justification: newChange.justification, appliesTo, isGlobal: newChange.isGlobal }
+        : c
+    ));
+    setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                  setSearchDocument('');
+    setEditingId(null);
+    setShowAddChange(false);
+  };
+
   const handleToggleDocument = (docId: string) => {
     if (newChange.appliesTo.includes(docId)) {
       setNewChange({
@@ -159,10 +192,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Redacción de cambio</h2>
-        <p className="text-gray-600 text-sm">
+        <h2 className="text-base font-semibold text-gray-900 mb-2">Redacción de cambio</h2>
+        <p className="text-sm text-gray-600">
           Complete las secciones según los cambios que desee realizar en su enmienda
         </p>
       </div>
@@ -174,13 +207,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 m-0">Título y Resumen</h3>
+                <h3 className="text-sm font-semibold text-gray-900 m-0">Título y Resumen</h3>
                 <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará el título o resumen del estudio?</p>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setModifiesTitleOrSummary('NO')}
-                  className={`px-6 py-2 rounded-md font-medium transition-all ${
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                     modifiesTitleOrSummary === 'NO'
                       ? 'bg-[#C41E3A] text-white shadow-sm'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -190,7 +223,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                 </button>
                 <button
                   onClick={() => setModifiesTitleOrSummary('SI')}
-                  className={`px-6 py-2 rounded-md font-medium transition-all ${
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                     modifiesTitleOrSummary === 'SI'
                       ? 'bg-[#C41E3A] text-white shadow-sm'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -211,7 +244,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                   value={titleSummaryData.title}
                   onChange={(e) => setTitleSummaryData({ ...titleSummaryData, title: e.target.value })}
                   placeholder="Ingrese el nuevo título del estudio"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                 />
               </div>
               <div>
@@ -221,7 +254,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                   onChange={(e) => setTitleSummaryData({ ...titleSummaryData, summary: e.target.value })}
                   placeholder="Ingrese el nuevo resumen del estudio"
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                 />
               </div>
             </div>
@@ -233,13 +266,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 m-0">Unidades Operativas</h3>
+              <h3 className="text-sm font-semibold text-gray-900 m-0">Unidades Operativas</h3>
               <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará las unidades operativas del estudio?</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setModifiesOperativeUnits('NO')}
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                   modifiesOperativeUnits === 'NO'
                     ? 'bg-[#C41E3A] text-white shadow-sm'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -249,7 +282,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
               </button>
               <button
                 onClick={() => setModifiesOperativeUnits('SI')}
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                   modifiesOperativeUnits === 'SI'
                     ? 'bg-[#C41E3A] text-white shadow-sm'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -270,7 +303,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                 onChange={(e) => setOperativeUnitsData({ ...operativeUnitsData, units: e.target.value })}
                 placeholder="Describa las unidades operativas que serán modificadas o agregadas"
                 rows={4}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
               />
             </div>
           </div>
@@ -282,13 +315,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 m-0">Equipo de Investigación</h3>
+              <h3 className="text-sm font-semibold text-gray-900 m-0">Equipo de Investigación</h3>
               <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará investigadores, tesistas, asesores o coasesores?</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setModifiesResearchers('NO')}
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                   modifiesResearchers === 'NO'
                     ? 'bg-[#C41E3A] text-white shadow-sm'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -298,7 +331,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
               </button>
               <button
                 onClick={() => setModifiesResearchers('SI')}
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                   modifiesResearchers === 'SI'
                     ? 'bg-[#C41E3A] text-white shadow-sm'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -376,7 +409,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
             {!showAddResearcher && (
               <button
                   onClick={() => setShowAddResearcher(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -395,7 +428,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                     <select
                       value={newResearcher.changeType}
                       onChange={(e) => setNewResearcher({ ...newResearcher, changeType: e.target.value as 'add' | 'remove' | 'modify' })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                     >
                       <option value="add">Agregar nuevo investigador</option>
                       <option value="modify">Modificar rol de investigador</option>
@@ -411,7 +444,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                         value={newResearcher.name}
                         onChange={(e) => setNewResearcher({ ...newResearcher, name: e.target.value })}
                         placeholder="Ej: Juan Pérez García"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                       />
                     </div>
 
@@ -422,7 +455,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                         value={newResearcher.email}
                         onChange={(e) => setNewResearcher({ ...newResearcher, email: e.target.value })}
                         placeholder="ejemplo@upch.pe"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -433,7 +466,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                       <select
                         value={newResearcher.currentRole}
                         onChange={(e) => setNewResearcher({ ...newResearcher, currentRole: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                       >
                         <option value="">Seleccione rol actual</option>
                         {researcherRoles.map((role) => (
@@ -449,7 +482,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                       <select
                         value={newResearcher.proposedRole}
                         onChange={(e) => setNewResearcher({ ...newResearcher, proposedRole: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                       >
                         <option value="">Seleccione rol propuesto</option>
                         {researcherRoles.map((role) => (
@@ -466,7 +499,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                       onChange={(e) => setNewResearcher({ ...newResearcher, justification: e.target.value })}
                       placeholder="Describa la justificación para este cambio"
                       rows={3}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                     />
                   </div>
 
@@ -483,14 +516,14 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                           justification: '',
                         });
                       }}
-                      className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
+                      className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
                     >
                       Cancelar
                     </button>
                     <button
                       onClick={handleAddResearcher}
                       disabled={!newResearcher.name || !newResearcher.email || !newResearcher.justification || (newResearcher.changeType !== 'remove' && !newResearcher.proposedRole)}
-                      className="flex-1 px-4 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                      className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
                       Agregar a la lista
                     </button>
@@ -504,8 +537,23 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
         {/* Card 4: Otros Cambios en Documentos */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
-            <p className="text-sm text-gray-600 m-0 mt-1">Agregue cambios específicos para cada documento seleccionado</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
+                <p className="text-sm text-gray-600 m-0 mt-1">Agregue cambios específicos para cada documento seleccionado</p>
+              </div>
+              {!showAddChange && (
+                <button
+                  onClick={() => setShowAddChange(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar cambio
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="p-4">
@@ -515,10 +563,33 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
               </p>
             </div>
 
+            {/* Search */}
+            {changes.length > 0 && (
+              <div className="relative mb-3">
+                <input
+                  type="text"
+                  placeholder="Buscar por campo, valor nuevo o valor anterior..."
+                  value={searchChange}
+                  onChange={(e) => setSearchChange(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                />
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            )}
+
             {/* Existing Changes */}
             {changes.length > 0 && (
-              <div className="space-y-3 mb-4">
-                {changes.map((change) => (
+              <div className="space-y-3 mb-4 max-h-[460px] overflow-y-auto">
+                {changes
+                  .filter((c) =>
+                    !searchChange ||
+                    c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                  )
+                  .map((change) => (
                   <div key={change.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -535,7 +606,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-2">
+                    <div className="grid grid-cols-3 gap-4 mb-2">
                       {change.oldValue && (
                         <div>
                           <p className="text-xs text-gray-500 m-0 mb-1">Valor anterior:</p>
@@ -546,14 +617,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                         <p className="text-xs text-gray-500 m-0 mb-1">Valor nuevo:</p>
                         <p className="text-sm text-[#C41E3A] font-medium m-0">{change.newValue}</p>
                       </div>
+                      {change.justification && (
+                        <div>
+                          <p className="text-xs text-gray-500 m-0 mb-1">Justificación:</p>
+                          <p className="text-sm text-gray-700 m-0">{change.justification}</p>
+                        </div>
+                      )}
                     </div>
-
-                    {change.justification && (
-                      <div className="mb-2">
-                        <p className="text-xs text-gray-500 m-0 mb-1">Justificación:</p>
-                        <p className="text-sm text-gray-700 m-0">{change.justification}</p>
-                      </div>
-                    )}
 
                     <div className="flex items-center gap-2 text-xs text-gray-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -565,201 +635,261 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, onN
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleRemoveChange(change.id)}
-                    className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Eliminar"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => handleEditChange(change)}
+                      className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      title="Editar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleRemoveChange(change.id)}
+                      className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
+                      title="Eliminar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+                {searchChange && !changes.some((c) =>
+                  c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                  c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                  c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                ) && (
+                  <p className="text-sm text-gray-500 text-center py-4">No se encontraron resultados para la búsqueda.</p>
+                )}
           </div>
         )}
 
-        {/* Add New Change Button */}
-        {!showAddChange && (
-          <button
-            onClick={() => setShowAddChange(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors font-medium"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Agregar cambio
-          </button>
-        )}
-
-        {/* Add New Change Form */}
-        {showAddChange && (
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-5">
-            <h4 className="font-semibold text-gray-900 text-base mb-4 m-0">Nuevo cambio</h4>
-
-            <div className="space-y-4">
-              {/* Field Selection */}
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
-                <select
-                  value={newChange.field}
-                  onChange={(e) => setNewChange({ ...newChange, field: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
-                >
-                  <option value="">Seleccione un campo</option>
-                  {commonFields.map((field) => (
-                    <option key={field} value={field}>
-                      {field}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Custom Field */}
-              {newChange.field === 'Otro (personalizado)' && (
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
-                  <input
-                    type="text"
-                    value={newChange.customField}
-                    onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
-                    placeholder="Ej: Versión del protocolo"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Old Value */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Valor anterior</label>
-                  <input
-                    type="text"
-                    value={newChange.oldValue}
-                    onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
-                    placeholder="Ej: Estudio ABC-123"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                  />
-                </div>
-
-                {/* New Value */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Valor nuevo *</label>
-                  <input
-                    type="text"
-                    value={newChange.newValue}
-                    onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
-                    placeholder="Ej: Estudio XYZ-456"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Justification */}
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-gray-700">Justificación *</label>
-                <textarea
-                  value={newChange.justification}
-                  onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
-                  placeholder="Describa la justificación para este cambio"
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                />
-              </div>
-
-              {/* Scope Selection */}
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio *</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setNewChange({ ...newChange, isGlobal: true })}
-                    className={`px-4 py-3 rounded-md border-2 transition-all text-sm font-medium ${
-                      newChange.isGlobal
-                        ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    Todos los documentos
-                  </button>
-                  <button
-                    onClick={() => setNewChange({ ...newChange, isGlobal: false })}
-                    className={`px-4 py-3 rounded-md border-2 transition-all text-sm font-medium ${
-                      !newChange.isGlobal
-                        ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    Documentos específicos
-                  </button>
-                </div>
-              </div>
-
-              {/* Document Selection */}
-              {!newChange.isGlobal && (
-                <div className="border border-gray-300 rounded-lg p-4 bg-white">
-                  <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {documents.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50"
-                      >
-                        <button
-                          onClick={() => handleToggleDocument(doc.id)}
-                          className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                            newChange.appliesTo.includes(doc.id)
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
-                        </button>
-                        <span className="text-sm text-gray-700">{doc.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-3 m-0">
-                    {newChange.appliesTo.length} de {documents.length} seleccionados
-                  </p>
-                </div>
-              )}
-
-              {/* Form Actions */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowAddChange(false)}
-                  className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleAddChange}
-                  disabled={!newChange.newValue || !newChange.field || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
-                  className="flex-1 px-4 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  Agregar cambio
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         </div>
       </div>
     </div>
+
+      {/* Modal: Agregar / Editar cambio */}
+      {showAddChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowAddChange(false);
+              setEditingId(null);
+              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                  setSearchDocument('');
+            }}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h4 className="font-semibold text-gray-900 text-base m-0">
+                {editingId ? 'Editar cambio' : 'Nuevo cambio'}
+              </h4>
+              <button
+                onClick={() => {
+                  setShowAddChange(false);
+                  setEditingId(null);
+                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                  setSearchDocument('');
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto flex-1 px-6 py-5">
+              <div className="space-y-4">
+                {/* Field Selection */}
+                <div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
+                  <select
+                    value={newChange.field}
+                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value })}
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                  >
+                    <option value="">Seleccione un campo</option>
+                    {commonFields.map((field) => (
+                      <option key={field} value={field}>{field}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Custom Field */}
+                {newChange.field === 'Otro (personalizado)' && (
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
+                    <input
+                      type="text"
+                      value={newChange.customField}
+                      onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
+                      placeholder="Ej: Versión del protocolo"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor anterior</label>
+                    <input
+                      type="text"
+                      value={newChange.oldValue}
+                      onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
+                      placeholder="Ej: Estudio ABC-123"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor nuevo *</label>
+                    <input
+                      type="text"
+                      value={newChange.newValue}
+                      onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
+                      placeholder="Ej: Estudio XYZ-456"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Justification */}
+                <div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Justificación *</label>
+                  <textarea
+                    value={newChange.justification}
+                    onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
+                    placeholder="Describa la justificación para este cambio"
+                    rows={3}
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Scope Selection */}
+                <div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setNewChange({ ...newChange, isGlobal: true })}
+                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
+                        newChange.isGlobal
+                          ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      Todos los documentos
+                    </button>
+                    <button
+                      onClick={() => setNewChange({ ...newChange, isGlobal: false })}
+                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
+                        !newChange.isGlobal
+                          ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      Documentos específicos
+                    </button>
+                  </div>
+                </div>
+
+                {/* Document Selection */}
+                {!newChange.isGlobal && (
+                  <div className="border border-gray-300 rounded-lg p-4 bg-white">
+                    <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
+
+                    {/* Buscador */}
+                    <div className="relative mb-3">
+                      <input
+                        type="text"
+                        placeholder="Buscar documento..."
+                        value={searchDocument}
+                        onChange={(e) => setSearchDocument(e.target.value)}
+                        className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      />
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+
+                    {/* Lista con scroll */}
+                    <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                      {documents
+                        .filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))
+                        .map((doc) => (
+                          <div key={doc.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
+                            <button
+                              onClick={() => handleToggleDocument(doc.id)}
+                              className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+                                newChange.appliesTo.includes(doc.id)
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
+                            </button>
+                            <span className="text-sm text-gray-700">{doc.name}</span>
+                          </div>
+                        ))}
+                      {searchDocument && !documents.some((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())) && (
+                        <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-gray-600 mt-3 m-0">
+                      {newChange.appliesTo.length} de {documents.length} seleccionados
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowAddChange(false);
+                  setEditingId(null);
+                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                  setSearchDocument('');
+                }}
+                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={editingId ? handleSaveEdit : handleAddChange}
+                disabled={!newChange.newValue || !newChange.field || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
+                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                {editingId ? 'Guardar cambios' : 'Agregar cambio'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     {/* Action Buttons */}
     <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
         <button
           onClick={onBack}
-          className="px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           ← Volver
         </button>
         <button
           onClick={onNext}
           disabled={changes.length === 0}
-          className="px-8 py-3 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           Continuar al resumen →
         </button>
