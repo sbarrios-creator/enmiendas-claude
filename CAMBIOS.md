@@ -61,3 +61,21 @@
 
 #### Botón Finalizar
 - Se agregó el botón **"Finalizar"** en la esquina inferior derecha del paso, reemplazando los múltiples botones de acción anteriores (Aplicar cambios automáticos, Generar nuevas versiones, Enviar a revisión).
+
+---
+
+### `src/app/components/SelectDocuments.tsx` — Paso 1
+
+- Se agregó el botón **"Agregar Documentos"** en la esquina superior derecha del encabezado de la sección "Documentos Nuevos".
+- El botón abre un **modal** con:
+  - Lista desplegable para seleccionar el tipo de documento (Presupuesto, Instrumento, Protocolo, Consentimiento informado, Registro de eventos adversos, Otro).
+  - Zona de carga de archivo con estilo drag-and-drop (acepta PDF, DOC, DOCX — máx. 200 MB).
+  - Botón **Guardar** (deshabilitado hasta completar ambos campos) y botón **Cerrar**.
+  - El backdrop también cierra el modal al hacer clic fuera.
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (actualización)
+
+- Se comentó el selector **"Campo a modificar"** y su campo condicional **"Especifique el campo"** en el formulario de la sección "Otros Cambios en Documentos".
+- Se corrigió la validación del botón **"Agregar cambio"**: ahora se habilita cuando el valor nuevo, la justificación están llenos y al menos 1 documento está seleccionado, eliminando la dependencia del campo comentado.
