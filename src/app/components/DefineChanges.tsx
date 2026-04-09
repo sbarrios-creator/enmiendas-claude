@@ -79,7 +79,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   const handleAddChange = () => {
-    if (!newChange.newValue) return;
+    if (!newChange.newValue || !newChange.justification) return;
 
     const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
@@ -716,7 +716,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
             <div className="overflow-y-auto flex-1 px-6 py-5">
               <div className="space-y-4">
                 {/* Field Selection */}
-                <div>
+                {/* <div>
                   <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
                   <select
                     value={newChange.field}
@@ -728,10 +728,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       <option key={field} value={field}>{field}</option>
                     ))}
                   </select>
-                </div>
+                </div> */}
 
                 {/* Custom Field */}
-                {newChange.field === 'Otro (personalizado)' && (
+                {/* {newChange.field === 'Otro (personalizado)' && (
                   <div>
                     <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
                     <input
@@ -742,7 +742,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                     />
                   </div>
-                )}
+                )} */}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -872,7 +872,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
               </button>
               <button
                 onClick={editingId ? handleSaveEdit : handleAddChange}
-                disabled={!newChange.newValue || !newChange.field || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
+                disabled={!newChange.newValue || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
                 className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {editingId ? 'Guardar cambios' : 'Agregar cambio'}
