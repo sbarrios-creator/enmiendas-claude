@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
+import type { Document, Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 
 interface SummaryProps {
   selectedDocuments: string[];
+  newDocuments: Document[];
   changes: Change[];
   uploadStatuses: Record<string, UploadStatus>;
   step3Data: Step3Data;
@@ -30,7 +31,7 @@ function getGroupLabel(field: string): string {
   return 'Otros';
 }
 
-export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
+export function Summary({ selectedDocuments, newDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   // Documentos nuevos
@@ -50,22 +51,25 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
   // Comentarios adicionales
   const [comments, setComments] = useState('');
 
-  // Accordion state: all groups open by default
-  const allGroupLabels = Array.from(new Set(changes.map((c) => getGroupLabel(c.field))));
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(allGroupLabels.map((l) => [l, true]))
+  // Accordion por documento (cambios)
+  const [openDocs, setOpenDocs] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(selectedDocuments.map((id) => [id, true]))
   );
+  const toggleDoc = (docId: string) =>
+    setOpenDocs((prev) => ({ ...prev, [docId]: !prev[docId] }));
 
-  const toggleGroup = (label: string) =>
-    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  // Accordion por documento (versiones modificadas)
+  const [openModified, setOpenModified] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(selectedDocuments.map((id) => [id, true]))
+  );
+  const toggleModified = (docId: string) =>
+    setOpenModified((prev) => ({ ...prev, [docId]: !prev[docId] }));
 
-  // Group changes by section
-  const groupedChanges = FIELD_GROUPS.map((g) => ({
-    label: g.label,
-    items: changes.filter((c) => g.fields.includes(c.field)),
-  }))
-    .concat([{ label: 'Otros', items: changes.filter((c) => getGroupLabel(c.field) === 'Otros') }])
-    .filter((g) => g.items.length > 0);
+  // Cambios agrupados por documento
+  const changesByDoc = documents.map((doc) => ({
+    doc,
+    items: changes.filter((c) => c.isGlobal || c.appliesTo.includes(doc.id)),
+  })).filter((g) => g.items.length > 0);
 
   // Analyze impact for each document
   const analyzeImpact = (docId: string): ImpactAnalysis => {
@@ -301,73 +305,61 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
           </div>
         ) : (
           <div className="space-y-3">
-            {groupedChanges.map(({ label, items }) => (
-              <div key={label} className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* Accordion header */}
+            {changesByDoc.map(({ doc, items }) => (
+              <div key={doc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+
+                {/* Acordeón header — siempre visible */}
                 <button
-                  onClick={() => toggleGroup(label)}
+                  onClick={() => toggleDoc(doc.id)}
                   className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800">{label}</span>
-                    <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-600 rounded-full text-xs font-medium">
-                      {items.length}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="font-semibold text-gray-800 text-sm truncate">{doc.name}</span>
+                    <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-500 rounded-full text-xs font-medium shrink-0">
+                      {items.length} {items.length === 1 ? 'cambio' : 'cambios'}
                     </span>
                   </div>
                   <svg
-                    className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[label] ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 text-gray-500 transition-transform shrink-0 ml-2 ${openDocs[doc.id] ? 'rotate-180' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {/* Accordion body */}
-                {openGroups[label] && (
-                  <div className="overflow-x-auto">
+                {/* Acordeón body con scroll interno */}
+                {openDocs[doc.id] && (
+                  <div className="max-h-64 overflow-y-auto">
                     <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Campo</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Antes</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Después</th>
+                      <thead className="sticky top-0 z-10">
+                        <tr className="bg-white border-b border-gray-200">
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-48">Versión anterior</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-48">Versión nueva</th>
                           <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos afectados</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Alcance</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 bg-white">
                         {items.map((change) => (
                           <tr key={change.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 font-semibold text-gray-900">{change.field}</td>
                             <td className="px-4 py-3">
                               {change.oldValue ? (
-                                <span className="text-gray-400 line-through">{change.oldValue}</span>
+                                <span className="inline-block px-2 py-0.5 bg-red-50 border border-red-200 rounded text-red-700 line-through text-sm">
+                                  {change.oldValue}
+                                </span>
                               ) : (
-                                <span className="text-gray-300 italic">—</span>
+                                <span className="text-gray-300 italic text-sm">Sin valor previo</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 font-semibold text-green-700">{change.newValue}</td>
-                            <td className="px-4 py-3 text-gray-600">{change.justification || <span className="text-gray-300">—</span>}</td>
                             <td className="px-4 py-3">
-                              <div className="flex flex-wrap gap-1">
-                                {(change.isGlobal ? documents : documents.filter((d) => change.appliesTo.includes(d.id))).map((doc) => (
-                                  <span key={doc.id} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
-                                    {doc.name}
-                                  </span>
-                                ))}
-                              </div>
+                              <span className="inline-block px-2 py-0.5 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-sm">
+                                {change.newValue}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              {change.isGlobal ? (
-                                <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
-                                  Global
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
-                                  Específico
-                                </span>
-                              )}
+                            <td className="px-4 py-3 text-gray-600 text-sm">
+                              {change.justification || <span className="text-gray-300 italic">—</span>}
                             </td>
                           </tr>
                         ))}
@@ -398,6 +390,136 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </div>
       )}
 
+      {/* Jerarquía de documentos modificados */}
+      {documents.length > 0 && (
+        <div className="mb-6">
+          <h4 className="mb-4 m-0">Documentos modificados</h4>
+          <div className="space-y-3">
+            {documents.map((doc) => (
+              <div key={doc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+
+                {/* Acordeón header — siempre visible */}
+                <button
+                  onClick={() => toggleModified(doc.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="font-semibold text-gray-800 text-sm truncate">{doc.name}</span>
+                    <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-500 rounded-full text-xs font-medium shrink-0">
+                      3 versiones
+                    </span>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform shrink-0 ml-2 ${openModified[doc.id] ? 'rotate-180' : ''}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Acordeón body con scroll interno */}
+                {openModified[doc.id] && (
+                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+
+                    {/* Nivel 1: Documento vigente (referencia) */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-center w-6 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-gray-700 truncate">{doc.name}</span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded-full text-xs shrink-0">
+                          Vigente · Referencia
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Nivel 2: Documento con cambios (principal) */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 hover:bg-amber-100/60 transition-colors">
+                      <div className="flex items-center justify-center w-6 shrink-0 pl-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-gray-700 truncate">{doc.name} (con cambios)</span>
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs shrink-0">
+                          En revisión · Principal
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </button>
+                        <button className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Nivel 3: Versión final */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-green-50 hover:bg-green-100/60 transition-colors">
+                      <div className="flex items-center justify-center w-6 shrink-0 pl-6">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-gray-700 truncate">{doc.name} (versión final)</span>
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded-full text-xs shrink-0">
+                          Versión final
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </button>
+                        <button className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Documentos Nuevos */}
       <div className="mb-6">
         <div className="mb-4">
@@ -405,16 +527,17 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </div>
 
         <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="max-h-56 overflow-y-auto">
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Tipo de archivo</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {newDocs.length === 0 && !showAddDoc ? (
+              {newDocuments.length === 0 && newDocs.length === 0 && !showAddDoc ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
                     No se han agregado documentos nuevos
@@ -422,20 +545,59 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                 </tr>
               ) : (
                 <>
+                  {/* Documentos agregados en el Paso 1 */}
+                  {newDocuments.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-700">{doc.type}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{doc.name}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            title="Ver"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Descargar"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Documentos agregados localmente en el Paso 4 */}
                   {newDocs.map((doc) => (
                     <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-gray-700">{doc.fileType}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">{doc.name}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleRemoveDoc(doc.id)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="Eliminar"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            title="Ver"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Descargar"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -487,6 +649,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

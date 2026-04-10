@@ -8,9 +8,12 @@ import { DefineChanges } from './components/DefineChanges';
 import { Summary } from './components/Summary';
 import type { Document, Change, UploadStatus, Step3Data } from './types';
 
+const initialNewDocuments: Document[] = [];
+
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [newDocuments, setNewDocuments] = useState<Document[]>(initialNewDocuments);
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [changes, setChanges] = useState<Change[]>([]);
   const [step3Data, setStep3Data] = useState<Step3Data>({
@@ -39,6 +42,7 @@ export default function App() {
     // Reset wizard
     setCurrentStep(1);
     setSelectedDocuments([]);
+    setNewDocuments(initialNewDocuments);
     setUploadStatuses({});
     setChanges([]);
     setStep3Data({
@@ -84,6 +88,8 @@ export default function App() {
             <SelectDocuments
               selectedDocuments={selectedDocuments}
               onSelectDocuments={setSelectedDocuments}
+              newDocuments={newDocuments}
+              onNewDocumentsChange={setNewDocuments}
               onNext={handleNext}
             />
           )}
@@ -113,6 +119,7 @@ export default function App() {
           {currentStep === 4 && (
             <Summary
               selectedDocuments={selectedDocuments}
+              newDocuments={newDocuments}
               changes={changes}
               uploadStatuses={uploadStatuses}
               step3Data={step3Data}

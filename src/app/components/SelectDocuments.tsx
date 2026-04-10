@@ -4,8 +4,24 @@ import type { Document } from '../types';
 interface SelectDocumentsProps {
   selectedDocuments: string[];
   onSelectDocuments: (ids: string[]) => void;
+  newDocuments: Document[];
+  onNewDocumentsChange: (docs: Document[]) => void;
   onNext: () => void;
 }
+
+const documentNameOptions = [
+  'Consentimiento informado',
+  'Asentimiento informado',
+  'Protocolo de investigación',
+  'Brochure del investigador',
+  'Manual de procedimientos',
+  'Formulario de recolección de datos',
+  'Carta de aprobación institucional',
+  'Declaración de confidencialidad',
+  'Acuerdo de transferencia de material',
+  'Plan de manejo de datos',
+  'Otro',
+];
 
 interface DocumentSection {
   title: string;
@@ -26,8 +42,32 @@ const mockDocuments: Document[] = [
   { id: '11', name: 'Registro de eventos adversos', type: 'Instrumento', status: 'Aprobado', version: '2' },
 ];
 
-export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }: SelectDocumentsProps) {
+export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
+
+  // Lista completa = documentos base + nuevos agregados por el usuario
+  const documents = [...mockDocuments, ...newDocuments];
+
+  const handleModalSave = () => {
+    if (!modalForm.name) return;
+    const newDoc: Document = {
+      id: Date.now().toString(),
+      name: modalForm.name,
+      type: 'Nuevo',
+      status: 'Aprobado',
+      version: '1',
+    };
+    onNewDocumentsChange([...newDocuments, newDoc]);
+    setShowModal(false);
+    setModalForm({ name: '', file: null });
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setModalForm({ name: '', file: null });
+  };
 
   const handleToggleDocument = (id: string) => {
     if (selectedDocuments.includes(id)) {
@@ -53,7 +93,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
   };
 
   const handleSelectAll = () => {
-    const allIds = mockDocuments.map((doc) => doc.id);
+    const allIds = documents.map((doc) => doc.id);
     const allSelected = allIds.every((id) => selectedDocuments.includes(id));
     if (allSelected) {
       onSelectDocuments([]);
@@ -65,15 +105,15 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
   const sections: DocumentSection[] = [
     {
       title: 'Presupuesto del estudio',
-      documents: mockDocuments.filter((doc) => doc.type === 'Presupuesto'),
+      documents: documents.filter((doc) => doc.type === 'Presupuesto'),
     },
     {
       title: 'Instrumentos del proyecto',
-      documents: mockDocuments.filter((doc) => doc.type === 'Instrumento'),
+      documents: documents.filter((doc) => doc.type === 'Instrumento'),
     },
     {
       title: 'Documentos Nuevos',
-      documents: mockDocuments.filter((doc) => doc.type === 'Nuevo'),
+      documents: documents.filter((doc) => doc.type === 'Nuevo'),
     },
   ];
 
@@ -90,7 +130,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
-              {mockDocuments.every((doc) => selectedDocuments.includes(doc.id))
+              {documents.every((doc) => selectedDocuments.includes(doc.id))
                 ? 'Deseleccionar todos'
                 : 'Seleccionar todos'}
             </span>
@@ -117,6 +157,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
       <div className="space-y-6">
         {sections.map((section) => {
           const isInstrumentos = section.title === 'Instrumentos del proyecto';
+          const isNuevos = section.title === 'Documentos Nuevos';
 
           const displayDocuments = isInstrumentos
             ? section.documents.filter((doc) =>
@@ -129,6 +170,17 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
               {/* Section Header */}
               <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
                 <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
+                {section.title === 'Documentos Nuevos' && (
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#C41E3A] rounded hover:bg-gray-100 transition-colors text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Agregar Documentos
+                  </button>
+                )}
                 {isInstrumentos && (
                   <div className="relative w-64">
                     <input
@@ -156,7 +208,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
                   <table className="w-full">
                     <thead className="bg-gray-900 sticky top-0 z-10">
                       <tr>
-                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide w-32">REEMPLAZAR</th>
+                        {!isNuevos && <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide w-32">REEMPLAZAR</th>}
                         <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide">ARCHIVO</th>
                         <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-28">VERSIÓN</th>
                         <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-40">ACCIONES</th>
@@ -170,14 +222,16 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
                             key={doc.id}
                             className={`${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`}
                           >
-                            <td className="px-4 py-3 border-t border-gray-200">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handleToggleDocument(doc.id)}
-                                className="w-4 h-4 text-[#C41E3A] rounded cursor-pointer"
-                              />
-                            </td>
+                            {!isNuevos && (
+                              <td className="px-4 py-3 border-t border-gray-200">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleDocument(doc.id)}
+                                  className="w-4 h-4 text-[#C41E3A] rounded cursor-pointer"
+                                />
+                              </td>
+                            )}
                             <td className="px-4 py-3 border-t border-gray-200">
                               <span className="text-gray-700 text-sm">{doc.name}</span>
                             </td>
@@ -256,6 +310,88 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, onNext }
           </svg>
         </button>
       </div>
+
+      {/* Modal: Agregar Documento */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={handleModalClose} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h4 className="font-semibold text-gray-900 text-base m-0">Agregar Documento</h4>
+              <button onClick={handleModalClose} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block mb-1.5 text-sm font-semibold text-gray-700">Tipo de documento <span className="text-[#C41E3A]">*</span></label>
+                <select
+                  value={modalForm.name}
+                  onChange={(e) => setModalForm({ ...modalForm, name: e.target.value })}
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                >
+                  <option value="">Seleccione un tipo de documento</option>
+                  {documentNameOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-1.5 text-sm font-semibold text-gray-700">Archivo</label>
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#C41E3A] transition-colors cursor-pointer"
+                  onClick={() => document.getElementById('modal-file-input')?.click()}
+                >
+                  {modalForm.file ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm text-gray-700 m-0">{modalForm.file.name}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p className="text-sm text-gray-500 m-0">Arrastra un archivo aquí o <span className="text-[#C41E3A] font-medium">haz clic para seleccionar</span></p>
+                    </>
+                  )}
+                </div>
+                <input
+                  id="modal-file-input"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setModalForm({ ...modalForm, file: e.target.files?.[0] ?? null })}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={handleModalClose}
+                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={handleModalSave}
+                disabled={!modalForm.name.trim()}
+                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
