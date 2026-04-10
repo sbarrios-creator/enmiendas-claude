@@ -1,5 +1,24 @@
 # Registro de Cambios
 
+## Modal para asignar unidad operativa — Paso 3
+
+---
+
+### `src/app/types.ts`
+- Se agregaron campos `fileName: string` y `file: File` a la interface `OperativeUnit` para almacenar la carta de declaración del jefe de unidad.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2)
+- Se reemplazó el formulario inline por un **modal** compartido entre unidades internas y externas, activado según el botón "Agregar" que se presione.
+- El modal incluye:
+  - **Dropdown con buscador** para seleccionar la unidad operativa desde una lista predefinida (`mockOperativeUnits`).
+  - **Área drag & drop** (también clickeable) para cargar la "Carta de declaración del jefe de unidad operativa" (PDF, DOC, DOCX, máx. 200 MB). Muestra el archivo seleccionado con opción de quitar.
+  - El botón **"Agregar"** se habilita solo cuando ambos campos están completos.
+  - El botón **"Cancelar"** y el backdrop cierran el modal sin guardar.
+- La tabla de cada listado ahora incluye una columna **"Carta de declaración"** que muestra el nombre del archivo adjunto.
+- Se agregó lista `mockOperativeUnits` con 20 opciones predefinidas.
+
+---
+
 ## Gestión de Unidades Operativas — Paso 3
 
 ---

@@ -47,6 +47,8 @@ export interface ResearcherChange {
 export interface OperativeUnit {
   id: string;
   name: string;
+  fileName: string;
+  file: File;
 }
 
 export interface Step3Data {
