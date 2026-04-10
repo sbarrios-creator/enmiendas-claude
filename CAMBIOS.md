@@ -1,6 +1,23 @@
 # Registro de Cambios
 
-## Rediseño del flujo de enmiendas
+## Versión 2 — Rediseño del Paso 3 (rama `version2`)
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Correcciones v2
+
+- **Fix 1**: Se eliminaron las declaraciones de estado `searchChange` y `searchDocument` que estaban declaradas pero nunca utilizadas.
+- **Fix 2**: Se eliminó la llamada residual a `setSearchDocument('')` dentro de `handleCloseModal`, que hacía referencia a un estado ya removido.
+- **Fix 3**: Se agregó `setActiveDocId(null)` en `handleEditChange` para limpiar el documento activo al abrir el modal en modo edición.
+- **Fix 4**: Se muestra el alcance del cambio en el encabezado del modal cuando se está editando (ej. "Todos los documentos" o "2 documento(s)").
+- **Fix 5**: Se reforzó la validación en `handleAddChange`: ahora exige que `newValue` y `justification` estén completos, y que `appliesTo` tenga al menos un documento si el cambio no es global.
+- **Fix 6a**: Se corrigió la indentación y estructura JSX del encabezado de la **Card 2 (Unidades Operativas)** — el `<div className="flex items-center justify-between">` interno ya cuenta con su propio `</div>` de cierre correctamente anidado dentro del `<div className="bg-gray-50 ...">` padre.
+- **Fix 6b**: Se aplicó la misma corrección en el encabezado de la **Card 3 (Equipo de Investigación)**.
+- **Fix extra**: `handleSaveEdit` ahora llama a `handleCloseModal()` en lugar de hacer el reset manual de estados, eliminando la llamada huérfana a `setSearchDocument('')` que causaba error de compilación.
+
+---
+
+## Rediseño del flujo de enmiendas (rama `main`)
 
 ---
 
