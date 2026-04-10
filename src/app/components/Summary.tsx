@@ -147,7 +147,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
     };
     const style = styles[action];
     return (
-      <span className={`px-3 py-1 rounded-full text-sm ${style.bg} ${style.text} border ${style.border}`}>
+      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border}`}>
         {style.label}
       </span>
     );
@@ -196,7 +196,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Título y Resumen */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="font-medium text-gray-800">Título y Resumen</span>
+            <span className="text-sm font-semibold text-gray-900">Título y Resumen</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesTitleOrSummary === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -228,7 +228,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Unidades Operativas */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="font-medium text-gray-800">Unidades Operativas</span>
+            <span className="text-sm font-semibold text-gray-900">Unidades Operativas</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesOperativeUnits === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -250,7 +250,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Equipo de Investigación */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="font-medium text-gray-800">Equipo de Investigación</span>
+            <span className="text-sm font-semibold text-gray-900">Equipo de Investigación</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesResearchers === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -324,7 +324,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                 placeholder="Buscar por campo, antes, después o justificación..."
                 value={searchChanges}
                 onChange={(e) => setSearchChanges(e.target.value)}
-                className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
               />
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -399,7 +399,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                                     <td className="px-4 py-3">
                                       {change.oldValue ? (
                                         <button onClick={() => setExpandedText({ label: 'Valor anterior', text: change.oldValue })} className="text-left text-xs" title="Ver completo">
-                                          <span className="text-gray-400 line-through line-clamp-2">{change.oldValue}</span>
+                                          <span className="text-gray-400 line-through line-clamp-5">{change.oldValue}</span>
                                         </button>
                                       ) : (
                                         <span className="text-xs text-gray-300 italic">—</span>
@@ -409,7 +409,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                                     {/* Después */}
                                     <td className="px-4 py-3">
                                       <button onClick={() => setExpandedText({ label: 'Valor nuevo', text: change.newValue })} className="text-left text-xs" title="Ver completo">
-                                        <span className="font-semibold text-green-700 line-clamp-2">{change.newValue}</span>
+                                        <span className="font-semibold text-green-700 line-clamp-5">{change.newValue}</span>
                                       </button>
                                     </td>
 
@@ -417,7 +417,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                                     <td className="px-4 py-3 text-gray-600">
                                       {change.justification ? (
                                         <button onClick={() => setExpandedText({ label: 'Justificación', text: change.justification })} className="text-left text-xs" title="Ver completo">
-                                          <span className="line-clamp-2">{change.justification}</span>
+                                          <span className="line-clamp-5">{change.justification}</span>
                                         </button>
                                       ) : (
                                         <span className="text-xs text-gray-300">—</span>
@@ -477,7 +477,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setExpandedText(null)} />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h4 className="font-semibold text-gray-900 m-0">{expandedText.label}</h4>
               <button onClick={() => setExpandedText(null)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -485,7 +485,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                 </svg>
               </button>
             </div>
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <p className="text-sm text-gray-700 whitespace-pre-wrap m-0">{expandedText.text}</p>
             </div>
           </div>
@@ -497,7 +497,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setExpandedDocs(null)} />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h4 className="font-semibold text-gray-900 m-0">Documentos afectados ({expandedDocs.length})</h4>
               <button onClick={() => setExpandedDocs(null)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,7 +521,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
 
 
 {stats.review > 0 && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -654,7 +654,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </button>
         <button
           onClick={onFinish}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
