@@ -1,5 +1,37 @@
 # Registro de Cambios
 
+## Unidades externas e internas — Paso 3 y Paso 4
+
+---
+
+### `src/app/types.ts`
+- Se agregó el campo `registeredAt: string` a la interface `OperativeUnit` para almacenar la fecha de registro formateada.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2 — Unidades Operativas)
+
+#### Listado de unidades externas (tipo tarjeta)
+- Las unidades externas registradas se muestran como **filas tipo tarjeta** en lugar de filas de tabla simples.
+- Cada fila incluye: ícono de edificio, nombre de la unidad en negrita, badge verde *"Será agregada al proyecto"*, fecha de registro (formato dd/mm/aaaa) y botones de acción **Ver**, **Descargar** y **Deshacer**.
+- Ver: abre la carta en nueva pestaña (`URL.createObjectURL`). Descargar: descarga el archivo con `URL.revokeObjectURL` tras la descarga. Deshacer: elimina el registro del listado.
+
+#### Modal diferenciado por tipo de unidad
+- El modal de **unidades internas** conserva el dropdown con buscador (lista predefinida `mockOperativeUnits`).
+- El modal de **unidades externas** fue rediseñado con:
+  - Input de texto libre para el nombre de la unidad.
+  - Selector **Sí / No** (por defecto Sí) para indicar si se cuenta con carta de aprobación/declaración.
+  - Zona drag & drop visible solo cuando el selector es "Sí"; si es "No" muestra un aviso explicativo.
+  - Botón **Agregar** habilitado únicamente cuando: nombre completado + selector = Sí + archivo adjunto.
+
+### `src/app/components/Summary.tsx` — Paso 4
+
+#### Unidades internas con acciones
+- Las unidades internas ahora se muestran como filas con nombre y botones jerárquicos **Ver** y **Descargar** para acceder a la carta de declaración adjunta.
+
+#### Unidades externas con acciones
+- Las unidades externas también muestran botones jerárquicos **Ver** y **Descargar** en el paso 4, con el mismo estilo que las internas.
+
+---
+
 ## Modal para asignar unidad operativa — Paso 3
 
 ---
