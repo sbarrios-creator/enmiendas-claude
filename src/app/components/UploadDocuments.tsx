@@ -113,8 +113,11 @@ export function UploadDocuments({
     'Instrumentos del proyecto': filteredInstrumentos,
   };
 
-  const canContinue = Object.keys(uploadStatuses).length === selectedDocuments.length &&
-    Object.values(uploadStatuses).every((status) => status.controlChanges && status.finalVersion);
+  const canContinue = selectedDocuments.length > 0 &&
+    selectedDocuments.every((docId) => {
+      const status = uploadStatuses[docId];
+      return status?.controlChanges && status?.finalVersion;
+    });
 
   return (
     <div>

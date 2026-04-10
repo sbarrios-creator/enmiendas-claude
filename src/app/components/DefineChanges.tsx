@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Change, Step3Data, ResearcherChange } from '../types';
+import type { Change, Step3Data, ResearcherChange, OperativeUnit } from '../types';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
@@ -17,6 +17,14 @@ const mockDocuments = [
   { id: '3', name: 'Cuestionario de calidad de vida', type: 'Instrumento' },
   { id: '4', name: 'Escala de evaluación clínica', type: 'Instrumento' },
   { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento' },
+];
+
+const mockOperativeUnits = [
+  'Cardiología', 'Endocrinología', 'Gastroenterología', 'Hematología',
+  'Infectología', 'Medicina Interna', 'Nefrología', 'Neurología',
+  'Neumología', 'Oncología', 'Pediatría', 'Reumatología',
+  'Traumatología', 'Unidad de Investigación Clínica', 'Unidad de Cuidados Intensivos',
+  'Laboratorio Central', 'Farmacia', 'Radiología', 'Estadística e Informática', 'Otro',
 ];
 
 const commonFields = [
@@ -60,10 +68,63 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
     onStep3DataChange({ ...step3Data, modifiesResearchers: v });
   const setTitleSummaryData = (d: { title: string; summary: string }) =>
     onStep3DataChange({ ...step3Data, titleSummaryData: d });
-  const setOperativeUnitsData = (d: { units: string }) =>
+  const setOperativeUnitsData = (d: { internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] }) =>
     onStep3DataChange({ ...step3Data, operativeUnitsData: d });
   const setResearchers = (r: ResearcherChange[]) =>
     onStep3DataChange({ ...step3Data, researchers: r });
+
+  // Operative units modal state
+  const [unitModalType, setUnitModalType] = useState<'internal' | 'external' | null>(null);
+  // internal modal
+  const [unitSearch, setUnitSearch] = useState('');
+  const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
+  const [selectedUnitName, setSelectedUnitName] = useState('');
+  // external modal
+  const [extUnitName, setExtUnitName] = useState('');
+  const [extHasCarta, setExtHasCarta] = useState<'SI' | 'NO'>('SI');
+  // shared
+  const [unitFile, setUnitFile] = useState<File | null>(null);
+  const [isDraggingUnit, setIsDraggingUnit] = useState(false);
+
+  const closeUnitModal = () => {
+    setUnitModalType(null);
+    setUnitSearch('');
+    setUnitDropdownOpen(false);
+    setSelectedUnitName('');
+    setExtUnitName('');
+    setExtHasCarta('SI');
+    setUnitFile(null);
+    setIsDraggingUnit(false);
+  };
+
+  const handleConfirmUnit = () => {
+    const name = unitModalType === 'external' ? extUnitName.trim() : selectedUnitName;
+    if (!name || !unitFile) return;
+    const now = new Date();
+    const registeredAt = now.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const unit: OperativeUnit = { id: Date.now().toString(), name, fileName: unitFile.name, file: unitFile, registeredAt };
+    if (unitModalType === 'internal') {
+      setOperativeUnitsData({ ...step3Data.operativeUnitsData, internalUnits: [...step3Data.operativeUnitsData.internalUnits, unit] });
+    } else {
+      setOperativeUnitsData({ ...step3Data.operativeUnitsData, externalUnits: [...step3Data.operativeUnitsData.externalUnits, unit] });
+    }
+    closeUnitModal();
+  };
+
+  const handleRemoveInternalUnit = (id: string) => {
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, internalUnits: step3Data.operativeUnitsData.internalUnits.filter((u) => u.id !== id) });
+  };
+
+  const handleRemoveExternalUnit = (id: string) => {
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, externalUnits: step3Data.operativeUnitsData.externalUnits.filter((u) => u.id !== id) });
+  };
+
+  const handleUnitFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingUnit(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setUnitFile(file);
+  };
 
   // Researchers form state (local, no necesita persistir)
   const [showAddResearcher, setShowAddResearcher] = useState(false);
@@ -79,9 +140,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   const handleAddChange = () => {
-    if (!newChange.field || !newChange.newValue || !newChange.justification) return;
-
-    const field = newChange.field;
+    const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+    if (!field || !newChange.newValue || !newChange.justification) return;
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
 
     const change: Change = {
@@ -112,9 +172,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   };
 
   const handleEditChange = (change: Change) => {
+    const isCustomField = !commonFields.slice(0, -1).includes(change.field);
     setNewChange({
-      field: change.field,
-      customField: '',
+      field: isCustomField ? 'Otro (personalizado)' : change.field,
+      customField: isCustomField ? change.field : '',
       oldValue: change.oldValue,
       newValue: change.newValue,
       justification: change.justification,
@@ -126,8 +187,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   };
 
   const handleSaveEdit = () => {
-    if (!newChange.field || !newChange.newValue || !editingId) return;
-    const field = newChange.field;
+    const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+    if (!field || !newChange.newValue || !editingId) return;
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
     onChangesUpdate(changes.map((c) =>
       c.id === editingId
@@ -298,16 +359,162 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
         </div>
 
         {modifiesOperativeUnits === 'SI' && (
-          <div className="p-4">
+          <div className="p-4 space-y-5">
+            {/* Info block */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+              <p className="text-sm text-blue-900 m-0">
+                <strong>Instrucciones:</strong> Agregue las unidades operativas que serán modificadas. Puede registrar unidades internas (dentro de la institución) y unidades externas (fuera de la institución) de forma independiente. Cada unidad requiere adjuntar la carta de declaración del jefe de unidad.
+              </p>
+            </div>
+
+            {/* Unidades Internas */}
             <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700">Detalle de las nuevas unidades operativas</label>
-              <textarea
-                value={operativeUnitsData.units}
-                onChange={(e) => setOperativeUnitsData({ ...operativeUnitsData, units: e.target.value })}
-                placeholder="Describa las unidades operativas que serán modificadas o agregadas"
-                rows={4}
-                className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-              />
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Internas</h4>
+                <button
+                  onClick={() => setUnitModalType('internal')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar
+                </button>
+              </div>
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Unidad</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Carta de declaración</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {operativeUnitsData.internalUnits.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-400 italic">
+                          No se encontraron resultados
+                        </td>
+                      </tr>
+                    ) : (
+                      operativeUnitsData.internalUnits.map((unit) => (
+                        <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-900 font-medium">{unit.name}</td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              {unit.fileName}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => handleRemoveInternalUnit(unit.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Unidades Externas */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Externas</h4>
+                <button
+                  onClick={() => setUnitModalType('external')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar
+                </button>
+              </div>
+
+              {operativeUnitsData.externalUnits.length === 0 ? (
+                <div className="border border-gray-200 rounded-lg py-6 text-center text-sm text-gray-400 italic bg-white">
+                  No se encontraron resultados
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {operativeUnitsData.externalUnits.map((unit) => (
+                    <div key={unit.id} className="flex items-center gap-4 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                      {/* Icono */}
+                      <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-gray-100 rounded-full">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900">{unit.name}</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Será agregada al proyecto
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 m-0">Registrada el {unit.registeredAt}</p>
+                      </div>
+
+                      {/* Acciones */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => { const url = URL.createObjectURL(unit.file); window.open(url, '_blank'); }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors font-medium"
+                          title="Ver documento"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => {
+                            const url = URL.createObjectURL(unit.file);
+                            const a = document.createElement('a');
+                            a.href = url; a.download = unit.fileName; a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                          title="Descargar documento"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Descargar
+                        </button>
+                        <button
+                          onClick={() => handleRemoveExternalUnit(unit.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                          title="Deshacer registro"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          Deshacer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -541,16 +748,9 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
-                  <p className="text-sm text-gray-600 m-0 mt-1">Agregue cambios específicos para cada documento seleccionado</p>
-                </div>
-                {changes.length > 0 && (
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#C41E3A] text-white text-xs font-bold">
-                    {changes.length}
-                  </span>
-                )}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
+                <p className="text-sm text-gray-600 m-0 mt-1">Agregue cambios específicos para cada documento seleccionado</p>
               </div>
               {!showAddChange && (
                 <button
@@ -591,76 +791,92 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
 
             {/* Existing Changes */}
             {changes.length > 0 && (
-              <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
-                <div className="max-h-[460px] overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Cambio</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Valor Anterior</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Valor Nuevo</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Justificación</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {changes
-                        .filter((c) =>
-                          !searchChange ||
-                          c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
-                          c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
-                          c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
-                        )
-                        .map((change, index) => (
-                          <tr key={change.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-4 py-3 font-medium text-gray-900">{change.field}</td>
-                            <td className="px-4 py-3 text-gray-500 line-through">
-                              {change.oldValue || <span className="no-underline text-gray-300 not-italic">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-[#C41E3A] font-medium">{change.newValue}</td>
-                            <td className="px-4 py-3 text-gray-700 max-w-[320px]">
-                              <p className="m-0 line-clamp-3" title={change.justification}>{change.justification}</p>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex justify-center gap-2">
-                                <button
-                                  onClick={() => handleEditChange(change)}
-                                  className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                  title="Editar"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleRemoveChange(change.id)}
-                                  className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
-                                  title="Eliminar"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      {searchChange && !changes.some((c) =>
-                        c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
-                        c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
-                        c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
-                      ) && (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
-                            No se encontraron resultados para la búsqueda.
-                          </td>
-                        </tr>
+              <div className="space-y-3 mb-4 max-h-[460px] overflow-y-auto">
+                {changes
+                  .filter((c) =>
+                    !searchChange ||
+                    c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                  )
+                  .map((change) => (
+                  <div key={change.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="text-base font-semibold text-gray-900 m-0">{change.field}</h4>
+                      {/* {change.isGlobal ? (
+                        <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          Global
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                          Específico
+                        </span>
+                      )} */}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-2">
+                      {change.oldValue && (
+                        <div>
+                          <p className="text-xs text-gray-500 m-0 mb-1">Valor anterior:</p>
+                          <p className="text-sm text-gray-700 m-0 line-through">{change.oldValue}</p>
+                        </div>
                       )}
-                    </tbody>
-                  </table>
+                      <div>
+                        <p className="text-xs text-gray-500 m-0 mb-1">Valor nuevo:</p>
+                        <p className="text-sm text-[#C41E3A] font-medium m-0">{change.newValue}</p>
+                      </div>
+                      {change.justification && (
+                        <div>
+                          <p className="text-xs text-gray-500 m-0 mb-1">Justificación:</p>
+                          <p className="text-sm text-gray-700 m-0">{change.justification}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>
+                        {change.isGlobal ? 'Todos los documentos' : `${change.appliesTo.length} documentos`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => handleEditChange(change)}
+                      className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      title="Editar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleRemoveChange(change.id)}
+                      className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
+                      title="Eliminar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
+                {searchChange && !changes.some((c) =>
+                  c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                  c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                  c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                ) && (
+                  <p className="text-sm text-gray-500 text-center py-4">No se encontraron resultados para la búsqueda.</p>
+                )}
+          </div>
+        )}
 
         </div>
       </div>
@@ -705,17 +921,34 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
             {/* Body */}
             <div className="overflow-y-auto flex-1 px-6 py-5">
               <div className="space-y-4">
-                {/* Cambio a realizar */}
+                {/* Field Selection */}
                 <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Cambio a realizar *</label>
-                  <input
-                    type="text"
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
+                  <select
                     value={newChange.field}
-                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value })}
-                    placeholder="Ej: Nombre del estudio"
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                  />
+                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value, customField: '' })}
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                  >
+                    <option value="">Seleccione un campo</option>
+                    {commonFields.map((field) => (
+                      <option key={field} value={field}>{field}</option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* Custom Field */}
+                {newChange.field === 'Otro (personalizado)' && (
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
+                    <input
+                      type="text"
+                      value={newChange.customField}
+                      onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
+                      placeholder="Ej: Versión del protocolo"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -845,10 +1078,218 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
               </button>
               <button
                 onClick={editingId ? handleSaveEdit : handleAddChange}
-                disabled={!newChange.field || !newChange.newValue || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
+                disabled={
+                  !(newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field) ||
+                  !newChange.newValue ||
+                  !newChange.justification ||
+                  (!newChange.isGlobal && newChange.appliesTo.length === 0)
+                }
                 className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {editingId ? 'Guardar cambios' : 'Agregar cambio'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Agregar unidad operativa */}
+      {unitModalType !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={closeUnitModal} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h4 className="font-semibold text-gray-900 text-base m-0">
+                  Agregar unidad {unitModalType === 'internal' ? 'interna' : 'externa'}
+                </h4>
+                <p className="text-xs text-gray-500 mt-0.5 m-0">Complete los campos requeridos para registrar la unidad</p>
+              </div>
+              <button onClick={closeUnitModal} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              {unitModalType === 'internal' ? (
+                /* ── INTERNA: dropdown con buscador ── */
+                <div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">
+                    Unidad operativa <span className="text-[#C41E3A]">*</span>
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setUnitDropdownOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent transition-colors"
+                    >
+                      <span className={selectedUnitName ? 'text-gray-900' : 'text-gray-400'}>
+                        {selectedUnitName || 'Seleccione una unidad operativa'}
+                      </span>
+                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${unitDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {unitDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                        <div className="p-2 border-b border-gray-100">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Buscar unidad..."
+                              value={unitSearch}
+                              onChange={(e) => setUnitSearch(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                            />
+                            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <ul className="max-h-48 overflow-y-auto py-1">
+                          {mockOperativeUnits
+                            .filter((u) => u.toLowerCase().includes(unitSearch.toLowerCase()))
+                            .map((u) => (
+                              <li key={u}>
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedUnitName(u); setUnitDropdownOpen(false); setUnitSearch(''); }}
+                                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedUnitName === u ? 'text-[#C41E3A] font-semibold bg-red-50' : 'text-gray-700'}`}
+                                >
+                                  {u}
+                                </button>
+                              </li>
+                            ))}
+                          {mockOperativeUnits.filter((u) => u.toLowerCase().includes(unitSearch.toLowerCase())).length === 0 && (
+                            <li className="px-4 py-3 text-sm text-gray-400 italic text-center">Sin resultados</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* ── EXTERNA: texto libre + selector ── */
+                <>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">
+                      Nombre de la unidad operativa <span className="text-[#C41E3A]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={extUnitName}
+                      onChange={(e) => setExtUnitName(e.target.value)}
+                      placeholder="Ej: Laboratorio de Genómica"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">
+                      ¿Cuenta con carta de aprobación / declaración?
+                    </label>
+                    <div className="flex gap-2">
+                      {(['SI', 'NO'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => { setExtHasCarta(opt); if (opt === 'NO') setUnitFile(null); }}
+                          className={`px-5 py-2 rounded-md text-sm font-medium transition-all border ${
+                            extHasCarta === opt
+                              ? 'bg-[#C41E3A] text-white border-[#C41E3A] shadow-sm'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {opt === 'SI' ? 'Sí' : 'No'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Drag & drop — visible siempre para interna; solo cuando SI para externa */}
+              {(unitModalType === 'internal' || extHasCarta === 'SI') && (
+                <div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">
+                    {unitModalType === 'external'
+                      ? 'Carta de aprobación / declaración'
+                      : 'Carta de declaración del jefe de unidad operativa'}{' '}
+                    <span className="text-[#C41E3A]">*</span>
+                  </label>
+                  {unitFile ? (
+                    <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-300 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="flex-1 text-sm text-green-800 font-medium truncate">{unitFile.name}</span>
+                      <button onClick={() => setUnitFile(null)} className="text-green-600 hover:text-red-600 transition-colors flex-shrink-0" title="Quitar archivo">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                        isDraggingUnit ? 'border-[#C41E3A] bg-red-50' : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
+                      }`}
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingUnit(true); }}
+                      onDragLeave={() => setIsDraggingUnit(false)}
+                      onDrop={handleUnitFileDrop}
+                    >
+                      <svg className={`w-8 h-8 ${isDraggingUnit ? 'text-[#C41E3A]' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 m-0">
+                          <span className="font-semibold text-[#C41E3A]">Haz clic para subir</span> o arrastra el archivo aquí
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1 m-0">PDF, DOC, DOCX — Máx. 200 MB</p>
+                      </div>
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={(e) => { const f = e.target.files?.[0]; if (f) setUnitFile(f); }} />
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* Aviso cuando No tiene carta */}
+              {unitModalType === 'external' && extHasCarta === 'NO' && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-amber-800 m-0">
+                    Para poder registrar la unidad es necesario adjuntar la carta de aprobación o declaración. Seleccione <strong>"Sí"</strong> y cargue el documento correspondiente.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={closeUnitModal}
+                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmUnit}
+                disabled={
+                  unitModalType === 'internal'
+                    ? !selectedUnitName || !unitFile
+                    : !extUnitName.trim() || extHasCarta === 'NO' || !unitFile
+                }
+                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                Agregar
               </button>
             </div>
           </div>

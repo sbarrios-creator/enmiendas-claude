@@ -21,6 +21,13 @@ export interface Change {
   isGlobal: boolean;
 }
 
+export interface AddedDoc {
+  id: string;
+  type: string;
+  fileName: string;
+  file: File;
+}
+
 export interface ImpactAnalysis {
   documentId: string;
   action: 'automatic' | 'review' | 'version' | 'blocked';
@@ -37,11 +44,19 @@ export interface ResearcherChange {
   justification: string;
 }
 
+export interface OperativeUnit {
+  id: string;
+  name: string;
+  fileName: string;
+  file: File;
+  registeredAt: string;
+}
+
 export interface Step3Data {
   modifiesTitleOrSummary: 'NO' | 'SI' | null;
   titleSummaryData: { title: string; summary: string };
   modifiesOperativeUnits: 'NO' | 'SI' | null;
-  operativeUnitsData: { units: string };
+  operativeUnitsData: { internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] };
   modifiesResearchers: 'NO' | 'SI' | null;
   researchers: ResearcherChange[];
 }

@@ -1,5 +1,106 @@
 # Registro de Cambios
 
+## Unidades externas e internas — Paso 3 y Paso 4
+
+---
+
+### `src/app/types.ts`
+- Se agregó el campo `registeredAt: string` a la interface `OperativeUnit` para almacenar la fecha de registro formateada.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2 — Unidades Operativas)
+
+#### Listado de unidades externas (tipo tarjeta)
+- Las unidades externas registradas se muestran como **filas tipo tarjeta** en lugar de filas de tabla simples.
+- Cada fila incluye: ícono de edificio, nombre de la unidad en negrita, badge verde *"Será agregada al proyecto"*, fecha de registro (formato dd/mm/aaaa) y botones de acción **Ver**, **Descargar** y **Deshacer**.
+- Ver: abre la carta en nueva pestaña (`URL.createObjectURL`). Descargar: descarga el archivo con `URL.revokeObjectURL` tras la descarga. Deshacer: elimina el registro del listado.
+
+#### Modal diferenciado por tipo de unidad
+- El modal de **unidades internas** conserva el dropdown con buscador (lista predefinida `mockOperativeUnits`).
+- El modal de **unidades externas** fue rediseñado con:
+  - Input de texto libre para el nombre de la unidad.
+  - Selector **Sí / No** (por defecto Sí) para indicar si se cuenta con carta de aprobación/declaración.
+  - Zona drag & drop visible solo cuando el selector es "Sí"; si es "No" muestra un aviso explicativo.
+  - Botón **Agregar** habilitado únicamente cuando: nombre completado + selector = Sí + archivo adjunto.
+
+### `src/app/components/Summary.tsx` — Paso 4
+
+#### Unidades internas con acciones
+- Las unidades internas ahora se muestran como filas con nombre y botones jerárquicos **Ver** y **Descargar** para acceder a la carta de declaración adjunta.
+
+#### Unidades externas con acciones
+- Las unidades externas también muestran botones jerárquicos **Ver** y **Descargar** en el paso 4, con el mismo estilo que las internas.
+
+---
+
+## Modal para asignar unidad operativa — Paso 3
+
+---
+
+### `src/app/types.ts`
+- Se agregaron campos `fileName: string` y `file: File` a la interface `OperativeUnit` para almacenar la carta de declaración del jefe de unidad.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2)
+- Se reemplazó el formulario inline por un **modal** compartido entre unidades internas y externas, activado según el botón "Agregar" que se presione.
+- El modal incluye:
+  - **Dropdown con buscador** para seleccionar la unidad operativa desde una lista predefinida (`mockOperativeUnits`).
+  - **Área drag & drop** (también clickeable) para cargar la "Carta de declaración del jefe de unidad operativa" (PDF, DOC, DOCX, máx. 200 MB). Muestra el archivo seleccionado con opción de quitar.
+  - El botón **"Agregar"** se habilita solo cuando ambos campos están completos.
+  - El botón **"Cancelar"** y el backdrop cierran el modal sin guardar.
+- La tabla de cada listado ahora incluye una columna **"Carta de declaración"** que muestra el nombre del archivo adjunto.
+- Se agregó lista `mockOperativeUnits` con 20 opciones predefinidas.
+
+---
+
+## Gestión de Unidades Operativas — Paso 3
+
+---
+
+### `src/app/types.ts`
+- Se agregó la interface `OperativeUnit` con campos `id` y `name`.
+- Se actualizó `Step3Data.operativeUnitsData` de `{ units: string }` a `{ internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] }`.
+
+### `src/app/App.tsx`
+- Se actualizó el estado inicial de `operativeUnitsData` a `{ internalUnits: [], externalUnits: [] }`.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2)
+- Se reemplazó el textarea libre por dos listados independientes: **Unidades Internas** y **Unidades Externas**.
+- Cada listado incluye: botón "Agregar" (se oculta mientras el formulario está activo), formulario inline con input de texto + botones Guardar/Cancelar (Enter para guardar, Escape para cancelar), tabla con columna "Acciones" (botón Eliminar), y estado vacío con el mensaje "No se encontraron resultados".
+- La sección completa solo se muestra cuando el usuario selecciona **SÍ** en la pregunta correspondiente.
+- Se agregaron handlers: `handleAddInternalUnit`, `handleRemoveInternalUnit`, `handleAddExternalUnit`, `handleRemoveExternalUnit`.
+
+### `src/app/components/Summary.tsx` — Paso 4
+- La sección "Unidades Operativas" ahora muestra las dos listas (Internas / Externas) cuando `modifiesOperativeUnits === 'SI'`, con estado vacío "No se encontraron resultados" si alguna lista está vacía.
+
+---
+
+## Correcciones recientes (main)
+
+---
+
+### `src/app/components/Summary.tsx` — Paso 4
+
+#### Columnas de tabla "Cambios a aplicar en otros Documentos"
+- Se renombraron las columnas **"Antes"** → **"Versión anterior"** y **"Después"** → **"Versión nueva"**.
+- Se eliminó la columna **"Alcance"** (Global / Específico). La tabla ahora tiene 5 columnas: Campo, Versión anterior, Versión nueva, Justificación y Documentos afectados.
+
+---
+
+### `src/app/components/UploadDocuments.tsx` — Paso 2
+
+#### Habilitación del botón "Continuar"
+- Se corrigió la condición `canContinue`: antes usaba `Object.keys(uploadStatuses).length === selectedDocuments.length`, lo que podía fallar si `uploadStatuses` tenía entradas de documentos no seleccionados. Ahora itera directamente sobre `selectedDocuments` con `.every()`, habilitando el botón en cuanto **todos** los documentos seleccionados tengan sus 2 versiones subidas (control de cambios + versión final).
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Paso 3
+
+#### Campo "Campo a modificar" en sección "Otros Cambios en Documentos"
+- Se descomentó el selector **"Campo a modificar"** y el campo condicional **"Especifique el campo"** (visible cuando se selecciona "Otro (personalizado)").
+- Se actualizó la validación de `handleAddChange`, `handleSaveEdit` y el botón "Agregar cambio" para requerir que el campo esté seleccionado/completado antes de permitir guardar.
+- Al cambiar la opción del selector se limpia automáticamente `customField`.
+
+---
+
 ## Rediseño del flujo de enmiendas
 
 ---

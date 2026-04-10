@@ -6,18 +6,19 @@ import { SelectDocuments } from './components/SelectDocuments';
 import { UploadDocuments } from './components/UploadDocuments';
 import { DefineChanges } from './components/DefineChanges';
 import { Summary } from './components/Summary';
-import type { Document, Change, UploadStatus, Step3Data } from './types';
+import type { AddedDoc, Change, UploadStatus, Step3Data } from './types';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [addedDocs, setAddedDocs] = useState<AddedDoc[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [changes, setChanges] = useState<Change[]>([]);
   const [step3Data, setStep3Data] = useState<Step3Data>({
     modifiesTitleOrSummary: null,
     titleSummaryData: { title: '', summary: '' },
     modifiesOperativeUnits: null,
-    operativeUnitsData: { units: '' },
+    operativeUnitsData: { internalUnits: [], externalUnits: [] },
     modifiesResearchers: null,
     researchers: [],
   });
@@ -39,13 +40,14 @@ export default function App() {
     // Reset wizard
     setCurrentStep(1);
     setSelectedDocuments([]);
+    setAddedDocs([]);
     setUploadStatuses({});
     setChanges([]);
     setStep3Data({
       modifiesTitleOrSummary: null,
       titleSummaryData: { title: '', summary: '' },
       modifiesOperativeUnits: null,
-      operativeUnitsData: { units: '' },
+      operativeUnitsData: { internalUnits: [], externalUnits: [] },
       modifiesResearchers: null,
       researchers: [],
     });
@@ -84,6 +86,8 @@ export default function App() {
             <SelectDocuments
               selectedDocuments={selectedDocuments}
               onSelectDocuments={setSelectedDocuments}
+              addedDocs={addedDocs}
+              onAddedDocsChange={setAddedDocs}
               onNext={handleNext}
             />
           )}
@@ -113,6 +117,7 @@ export default function App() {
           {currentStep === 4 && (
             <Summary
               selectedDocuments={selectedDocuments}
+              addedDocs={addedDocs}
               changes={changes}
               uploadStatuses={uploadStatuses}
               step3Data={step3Data}

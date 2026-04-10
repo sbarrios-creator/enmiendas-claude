@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
+import type { AddedDoc, Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 
 interface SummaryProps {
   selectedDocuments: string[];
+  addedDocs: AddedDoc[];
   changes: Change[];
   uploadStatuses: Record<string, UploadStatus>;
   step3Data: Step3Data;
@@ -30,7 +31,7 @@ function getGroupLabel(field: string): string {
   return 'Otros';
 }
 
-export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
+export function Summary({ selectedDocuments, addedDocs, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   // Documentos nuevos
@@ -59,28 +60,12 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
   const toggleGroup = (label: string) =>
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
 
-  // Search & modals
-  const [searchChanges, setSearchChanges] = useState('');
-  const [expandedText, setExpandedText] = useState<{ label: string; text: string } | null>(null);
-  const [expandedDocs, setExpandedDocs] = useState<string[] | null>(null);
-
-  const matchesSearch = (c: (typeof changes)[0]) => {
-    if (!searchChanges) return true;
-    const q = searchChanges.toLowerCase();
-    return (
-      c.field.toLowerCase().includes(q) ||
-      c.oldValue.toLowerCase().includes(q) ||
-      c.newValue.toLowerCase().includes(q) ||
-      c.justification.toLowerCase().includes(q)
-    );
-  };
-
   // Group changes by section
   const groupedChanges = FIELD_GROUPS.map((g) => ({
     label: g.label,
-    items: changes.filter((c) => g.fields.includes(c.field) && matchesSearch(c)),
+    items: changes.filter((c) => g.fields.includes(c.field)),
   }))
-    .concat([{ label: 'Otros', items: changes.filter((c) => getGroupLabel(c.field) === 'Otros' && matchesSearch(c)) }])
+    .concat([{ label: 'Otros', items: changes.filter((c) => getGroupLabel(c.field) === 'Otros') }])
     .filter((g) => g.items.length > 0);
 
   // Analyze impact for each document
@@ -147,7 +132,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
     };
     const style = styles[action];
     return (
-      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border}`}>
+      <span className={`px-3 py-1 rounded-full text-sm ${style.bg} ${style.text} border ${style.border}`}>
         {style.label}
       </span>
     );
@@ -196,7 +181,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Título y Resumen */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Título y Resumen</span>
+            <span className="font-medium text-gray-800">Título y Resumen</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesTitleOrSummary === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -228,7 +213,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Unidades Operativas */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Unidades Operativas</span>
+            <span className="font-medium text-gray-800">Unidades Operativas</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesOperativeUnits === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -239,10 +224,100 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
               {step3Data.modifiesOperativeUnits ?? 'Sin respuesta'}
             </span>
           </div>
-          {step3Data.modifiesOperativeUnits === 'SI' && step3Data.operativeUnitsData.units && (
-            <div className="p-4 bg-white">
-              <p className="text-xs text-gray-500 mb-1">Detalle</p>
-              <p className="text-sm text-gray-900 whitespace-pre-wrap">{step3Data.operativeUnitsData.units}</p>
+          {step3Data.modifiesOperativeUnits === 'SI' && (
+            <div className="p-4 bg-white space-y-4">
+              {/* Internas */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Unidades Internas</p>
+                {step3Data.operativeUnitsData.internalUnits.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">No se encontraron resultados</p>
+                ) : (
+                  <div className="space-y-2">
+                    {step3Data.operativeUnitsData.internalUnits.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between gap-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C41E3A] flex-shrink-0" />
+                          <span className="text-sm text-gray-800 font-medium truncate">{u.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { const url = URL.createObjectURL(u.file); window.open(url, '_blank'); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-white transition-colors font-medium"
+                            title="Ver documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => {
+                              const url = URL.createObjectURL(u.file);
+                              const a = document.createElement('a');
+                              a.href = url; a.download = u.fileName; a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                            title="Descargar documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Externas */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Unidades Externas</p>
+                {step3Data.operativeUnitsData.externalUnits.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">No se encontraron resultados</p>
+                ) : (
+                  <div className="space-y-2">
+                    {step3Data.operativeUnitsData.externalUnits.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between gap-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-800 font-medium truncate">{u.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { const url = URL.createObjectURL(u.file); window.open(url, '_blank'); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-white transition-colors font-medium"
+                            title="Ver documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => {
+                              const url = URL.createObjectURL(u.file);
+                              const a = document.createElement('a');
+                              a.href = url; a.download = u.fileName; a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                            title="Descargar documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -250,7 +325,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         {/* Equipo de Investigación */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Equipo de Investigación</span>
+            <span className="font-medium text-gray-800">Equipo de Investigación</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               step3Data.modifiesResearchers === 'SI'
                 ? 'bg-[#C41E3A] text-white'
@@ -277,10 +352,10 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                 <tbody className="divide-y divide-gray-100">
                   {step3Data.researchers.map((r) => (
                     <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-xs text-gray-900 font-medium">{r.name}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.email}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.currentRole || '—'}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.proposedRole || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 font-medium">{r.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.currentRole || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.proposedRole || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                           r.changeType === 'add'
@@ -292,7 +367,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                           {r.changeType === 'add' ? 'Agregar' : r.changeType === 'remove' ? 'Retirar' : 'Modificar'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.justification}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.justification}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,7 +379,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
 
       {/* Changes Summary */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <h4 className="m-0">Cambios a aplicar en otros Documentos</h4>
           <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
             {changes.length} {changes.length === 1 ? 'cambio' : 'cambios'}
@@ -316,212 +391,78 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
             No se registraron cambios en documentos
           </div>
         ) : (
-          <>
-            {/* Buscador */}
-            <div className="relative mb-3">
-              <input
-                type="text"
-                placeholder="Buscar por campo, antes, después o justificación..."
-                value={searchChanges}
-                onChange={(e) => setSearchChanges(e.target.value)}
-                className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-              />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              {searchChanges && (
+          <div className="space-y-3">
+            {groupedChanges.map(({ label, items }) => (
+              <div key={label} className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* Accordion header */}
                 <button
-                  onClick={() => setSearchChanges('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => toggleGroup(label)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-800">{label}</span>
+                    <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-600 rounded-full text-xs font-medium">
+                      {items.length}
+                    </span>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[label] ? 'rotate-180' : ''}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-              )}
-            </div>
 
-            {groupedChanges.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-                No se encontraron resultados para la búsqueda.
+                {/* Accordion body */}
+                {openGroups[label] && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Campo</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Versión anterior</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Versión nueva</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos afectados</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {items.map((change) => (
+                          <tr key={change.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-gray-900">{change.field}</td>
+                            <td className="px-4 py-3">
+                              {change.oldValue ? (
+                                <span className="text-gray-400 line-through">{change.oldValue}</span>
+                              ) : (
+                                <span className="text-gray-300 italic">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-green-700">{change.newValue}</td>
+                            <td className="px-4 py-3 text-gray-600">{change.justification || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(change.isGlobal ? documents : documents.filter((d) => change.appliesTo.includes(d.id))).map((doc) => (
+                                  <span key={doc.id} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
+                                    {doc.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {groupedChanges.map(({ label, items }) => {
-                  const isOpen = searchChanges ? true : (openGroups[label] ?? true);
-                  return (
-                    <div key={label} className="border border-gray-200 rounded-lg overflow-hidden">
-                      {/* Accordion header */}
-                      <button
-                        onClick={() => !searchChanges && toggleGroup(label)}
-                        className={`w-full flex items-center justify-between px-4 py-3 bg-gray-50 transition-colors text-left ${!searchChanges ? 'hover:bg-gray-100' : 'cursor-default'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-800">{label}</span>
-                          <span className="px-2 py-0.5 bg-white border border-gray-300 text-gray-600 rounded-full text-xs font-medium">
-                            {items.length}
-                          </span>
-                        </div>
-                        {!searchChanges && (
-                          <svg
-                            className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        )}
-                      </button>
-
-                      {/* Accordion body */}
-                      {isOpen && (
-                        <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead className="sticky top-0 z-10">
-                              <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Campo</th>
-                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Antes</th>
-                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Después</th>
-                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
-                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos afectados</th>
-                                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Alcance</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 bg-white">
-                              {items.map((change) => {
-                                const affectedDocs = change.isGlobal
-                                  ? documents
-                                  : documents.filter((d) => change.appliesTo.includes(d.id));
-                                return (
-                                  <tr key={change.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 py-3 font-semibold text-gray-900">{change.field}</td>
-
-                                    {/* Antes */}
-                                    <td className="px-4 py-3">
-                                      {change.oldValue ? (
-                                        <button onClick={() => setExpandedText({ label: 'Valor anterior', text: change.oldValue })} className="text-left text-xs" title="Ver completo">
-                                          <span className="text-gray-400 line-through line-clamp-5">{change.oldValue}</span>
-                                        </button>
-                                      ) : (
-                                        <span className="text-xs text-gray-300 italic">—</span>
-                                      )}
-                                    </td>
-
-                                    {/* Después */}
-                                    <td className="px-4 py-3">
-                                      <button onClick={() => setExpandedText({ label: 'Valor nuevo', text: change.newValue })} className="text-left text-xs" title="Ver completo">
-                                        <span className="font-semibold text-green-700 line-clamp-5">{change.newValue}</span>
-                                      </button>
-                                    </td>
-
-                                    {/* Justificación */}
-                                    <td className="px-4 py-3 text-gray-600">
-                                      {change.justification ? (
-                                        <button onClick={() => setExpandedText({ label: 'Justificación', text: change.justification })} className="text-left text-xs" title="Ver completo">
-                                          <span className="line-clamp-5">{change.justification}</span>
-                                        </button>
-                                      ) : (
-                                        <span className="text-xs text-gray-300">—</span>
-                                      )}
-                                    </td>
-
-                                    {/* Documentos afectados */}
-                                    <td className="px-4 py-3">
-                                      {change.isGlobal ? (
-                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
-                                          Todos los documentos
-                                        </span>
-                                      ) : (
-                                        <button
-                                          onClick={() => setExpandedDocs(affectedDocs.map((d) => d.name))}
-                                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200 hover:bg-gray-200 transition-colors"
-                                        >
-                                          {affectedDocs.length} {affectedDocs.length === 1 ? 'documento' : 'documentos'}
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                          </svg>
-                                        </button>
-                                      )}
-                                    </td>
-
-                                    {/* Alcance */}
-                                    <td className="px-4 py-3 text-center">
-                                      {change.isGlobal ? (
-                                        <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
-                                          Global
-                                        </span>
-                                      ) : (
-                                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
-                                          Específico
-                                        </span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Modal: texto completo */}
-      {expandedText && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setExpandedText(null)} />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h4 className="font-semibold text-gray-900 m-0">{expandedText.label}</h4>
-              <button onClick={() => setExpandedText(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="px-6 py-5">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap m-0">{expandedText.text}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: documentos afectados */}
-      {expandedDocs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setExpandedDocs(null)} />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h4 className="font-semibold text-gray-900 m-0">Documentos afectados ({expandedDocs.length})</h4>
-              <button onClick={() => setExpandedDocs(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <ul className="px-5 py-4 space-y-2 max-h-72 overflow-y-auto">
-              {expandedDocs.map((name, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                  <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  {name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
 
 {stats.review > 0 && (
-        <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded">
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -543,88 +484,63 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </div>
 
         <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Tipo de archivo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {newDocs.length === 0 && !showAddDoc ? (
-                <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
-                    No se han agregado documentos nuevos
-                  </td>
+          <div className="max-h-72 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-44">Tipo de documento</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre del archivo</th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Acciones</th>
                 </tr>
-              ) : (
-                <>
-                  {newDocs.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-700">{doc.fileType}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{doc.name}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleRemoveDoc(doc.id)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="Eliminar"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {showAddDoc && (
-                    <tr className="bg-gray-50">
-                      <td className="px-4 py-3">
-                        <select
-                          value={newDocForm.fileType}
-                          onChange={(e) => setNewDocForm({ ...newDocForm, fileType: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
-                        >
-                          <option value="">Seleccione tipo</option>
-                          <option value="Presupuesto">Presupuesto</option>
-                          <option value="Instrumento">Instrumento</option>
-                          <option value="Protocolo">Protocolo</option>
-                          <option value="Consentimiento">Consentimiento</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={newDocForm.name}
-                          onChange={(e) => setNewDocForm({ ...newDocForm, name: e.target.value })}
-                          placeholder="Nombre del documento"
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                        />
-                      </td>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {addedDocs.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
+                      No se han agregado documentos nuevos
+                    </td>
+                  </tr>
+                ) : (
+                  addedDocs.map((doc, index) => (
+                    <tr key={doc.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}>
+                      <td className="px-4 py-3 text-gray-700">{doc.type}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{doc.fileName}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={handleAddDoc}
-                            disabled={!newDocForm.fileType || !newDocForm.name}
-                            className="px-3 py-1.5 bg-[#C41E3A] text-white rounded-md text-xs font-medium hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                            onClick={() => { const url = URL.createObjectURL(doc.file); window.open(url, '_blank'); }}
+                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            title="Ver"
                           >
-                            Guardar
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                           </button>
                           <button
-                            onClick={() => { setShowAddDoc(false); setNewDocForm({ fileType: '', name: '' }); }}
-                            className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              const url = URL.createObjectURL(doc.file);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = doc.fileName;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Descargar"
                           >
-                            Cancelar
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
                           </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </>
-              )}
-            </tbody>
-          </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -654,7 +570,7 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </button>
         <button
           onClick={onFinish}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
