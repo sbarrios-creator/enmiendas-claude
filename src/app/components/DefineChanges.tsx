@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Change, Step3Data, ResearcherChange } from '../types';
+import type { Change, Step3Data, ResearcherChange, OperativeUnit } from '../types';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
@@ -60,10 +60,40 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
     onStep3DataChange({ ...step3Data, modifiesResearchers: v });
   const setTitleSummaryData = (d: { title: string; summary: string }) =>
     onStep3DataChange({ ...step3Data, titleSummaryData: d });
-  const setOperativeUnitsData = (d: { units: string }) =>
+  const setOperativeUnitsData = (d: { internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] }) =>
     onStep3DataChange({ ...step3Data, operativeUnitsData: d });
   const setResearchers = (r: ResearcherChange[]) =>
     onStep3DataChange({ ...step3Data, researchers: r });
+
+  // Operative units form state (local)
+  const [showAddInternal, setShowAddInternal] = useState(false);
+  const [newInternalName, setNewInternalName] = useState('');
+  const [showAddExternal, setShowAddExternal] = useState(false);
+  const [newExternalName, setNewExternalName] = useState('');
+
+  const handleAddInternalUnit = () => {
+    if (!newInternalName.trim()) return;
+    const unit: OperativeUnit = { id: Date.now().toString(), name: newInternalName.trim() };
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, internalUnits: [...step3Data.operativeUnitsData.internalUnits, unit] });
+    setNewInternalName('');
+    setShowAddInternal(false);
+  };
+
+  const handleRemoveInternalUnit = (id: string) => {
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, internalUnits: step3Data.operativeUnitsData.internalUnits.filter((u) => u.id !== id) });
+  };
+
+  const handleAddExternalUnit = () => {
+    if (!newExternalName.trim()) return;
+    const unit: OperativeUnit = { id: Date.now().toString(), name: newExternalName.trim() };
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, externalUnits: [...step3Data.operativeUnitsData.externalUnits, unit] });
+    setNewExternalName('');
+    setShowAddExternal(false);
+  };
+
+  const handleRemoveExternalUnit = (id: string) => {
+    setOperativeUnitsData({ ...step3Data.operativeUnitsData, externalUnits: step3Data.operativeUnitsData.externalUnits.filter((u) => u.id !== id) });
+  };
 
   // Researchers form state (local, no necesita persistir)
   const [showAddResearcher, setShowAddResearcher] = useState(false);
@@ -298,16 +328,176 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
         </div>
 
         {modifiesOperativeUnits === 'SI' && (
-          <div className="p-4">
+          <div className="p-4 space-y-5">
+            {/* Info block */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+              <p className="text-sm text-blue-900 m-0">
+                <strong>Instrucciones:</strong> Agregue las unidades operativas que serán modificadas. Puede registrar unidades internas (dentro de la institución) y unidades externas (fuera de la institución) de forma independiente.
+              </p>
+            </div>
+
+            {/* Unidades Internas */}
             <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700">Detalle de las nuevas unidades operativas</label>
-              <textarea
-                value={operativeUnitsData.units}
-                onChange={(e) => setOperativeUnitsData({ ...operativeUnitsData, units: e.target.value })}
-                placeholder="Describa las unidades operativas que serán modificadas o agregadas"
-                rows={4}
-                className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-              />
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Internas</h4>
+                {!showAddInternal && (
+                  <button
+                    onClick={() => setShowAddInternal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Agregar
+                  </button>
+                )}
+              </div>
+
+              {showAddInternal && (
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newInternalName}
+                    onChange={(e) => setNewInternalName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddInternalUnit(); if (e.key === 'Escape') { setShowAddInternal(false); setNewInternalName(''); } }}
+                    placeholder="Nombre de la unidad interna"
+                    autoFocus
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleAddInternalUnit}
+                    disabled={!newInternalName.trim()}
+                    className="px-3 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => { setShowAddInternal(false); setNewInternalName(''); }}
+                    className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Unidad</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {operativeUnitsData.internalUnits.length === 0 ? (
+                      <tr>
+                        <td colSpan={2} className="px-4 py-6 text-center text-sm text-gray-400 italic">
+                          No se encontraron resultados
+                        </td>
+                      </tr>
+                    ) : (
+                      operativeUnitsData.internalUnits.map((unit) => (
+                        <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-900">{unit.name}</td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => handleRemoveInternalUnit(unit.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Unidades Externas */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Externas</h4>
+                {!showAddExternal && (
+                  <button
+                    onClick={() => setShowAddExternal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Agregar
+                  </button>
+                )}
+              </div>
+
+              {showAddExternal && (
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newExternalName}
+                    onChange={(e) => setNewExternalName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddExternalUnit(); if (e.key === 'Escape') { setShowAddExternal(false); setNewExternalName(''); } }}
+                    placeholder="Nombre de la unidad externa"
+                    autoFocus
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleAddExternalUnit}
+                    disabled={!newExternalName.trim()}
+                    className="px-3 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => { setShowAddExternal(false); setNewExternalName(''); }}
+                    className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Unidad</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {operativeUnitsData.externalUnits.length === 0 ? (
+                      <tr>
+                        <td colSpan={2} className="px-4 py-6 text-center text-sm text-gray-400 italic">
+                          No se encontraron resultados
+                        </td>
+                      </tr>
+                    ) : (
+                      operativeUnitsData.externalUnits.map((unit) => (
+                        <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-900">{unit.name}</td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => handleRemoveExternalUnit(unit.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

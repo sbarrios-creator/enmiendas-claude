@@ -1,5 +1,27 @@
 # Registro de Cambios
 
+## Gestión de Unidades Operativas — Paso 3
+
+---
+
+### `src/app/types.ts`
+- Se agregó la interface `OperativeUnit` con campos `id` y `name`.
+- Se actualizó `Step3Data.operativeUnitsData` de `{ units: string }` a `{ internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] }`.
+
+### `src/app/App.tsx`
+- Se actualizó el estado inicial de `operativeUnitsData` a `{ internalUnits: [], externalUnits: [] }`.
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 2)
+- Se reemplazó el textarea libre por dos listados independientes: **Unidades Internas** y **Unidades Externas**.
+- Cada listado incluye: botón "Agregar" (se oculta mientras el formulario está activo), formulario inline con input de texto + botones Guardar/Cancelar (Enter para guardar, Escape para cancelar), tabla con columna "Acciones" (botón Eliminar), y estado vacío con el mensaje "No se encontraron resultados".
+- La sección completa solo se muestra cuando el usuario selecciona **SÍ** en la pregunta correspondiente.
+- Se agregaron handlers: `handleAddInternalUnit`, `handleRemoveInternalUnit`, `handleAddExternalUnit`, `handleRemoveExternalUnit`.
+
+### `src/app/components/Summary.tsx` — Paso 4
+- La sección "Unidades Operativas" ahora muestra las dos listas (Internas / Externas) cuando `modifiesOperativeUnits === 'SI'`, con estado vacío "No se encontraron resultados" si alguna lista está vacía.
+
+---
+
 ## Correcciones recientes (main)
 
 ---

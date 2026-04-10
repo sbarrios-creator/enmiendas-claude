@@ -224,10 +224,40 @@ export function Summary({ selectedDocuments, addedDocs, changes, uploadStatuses,
               {step3Data.modifiesOperativeUnits ?? 'Sin respuesta'}
             </span>
           </div>
-          {step3Data.modifiesOperativeUnits === 'SI' && step3Data.operativeUnitsData.units && (
-            <div className="p-4 bg-white">
-              <p className="text-xs text-gray-500 mb-1">Detalle</p>
-              <p className="text-sm text-gray-900 whitespace-pre-wrap">{step3Data.operativeUnitsData.units}</p>
+          {step3Data.modifiesOperativeUnits === 'SI' && (
+            <div className="p-4 bg-white space-y-4">
+              {/* Internas */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Unidades Internas</p>
+                {step3Data.operativeUnitsData.internalUnits.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">No se encontraron resultados</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {step3Data.operativeUnitsData.internalUnits.map((u) => (
+                      <li key={u.id} className="flex items-center gap-2 text-sm text-gray-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#C41E3A] flex-shrink-0" />
+                        {u.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {/* Externas */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Unidades Externas</p>
+                {step3Data.operativeUnitsData.externalUnits.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">No se encontraron resultados</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {step3Data.operativeUnitsData.externalUnits.map((u) => (
+                      <li key={u.id} className="flex items-center gap-2 text-sm text-gray-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
+                        {u.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
         </div>

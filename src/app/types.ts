@@ -44,11 +44,16 @@ export interface ResearcherChange {
   justification: string;
 }
 
+export interface OperativeUnit {
+  id: string;
+  name: string;
+}
+
 export interface Step3Data {
   modifiesTitleOrSummary: 'NO' | 'SI' | null;
   titleSummaryData: { title: string; summary: string };
   modifiesOperativeUnits: 'NO' | 'SI' | null;
-  operativeUnitsData: { units: string };
+  operativeUnitsData: { internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] };
   modifiesResearchers: 'NO' | 'SI' | null;
   researchers: ResearcherChange[];
 }
