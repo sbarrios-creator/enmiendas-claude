@@ -49,6 +49,7 @@ export interface OperativeUnit {
   name: string;
   fileName: string;
   file: File;
+  registeredAt: string;
 }
 
 export interface Step3Data {
