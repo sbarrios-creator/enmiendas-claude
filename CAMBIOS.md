@@ -1,5 +1,52 @@
 # Registro de Cambios
 
+## Versión 2 — Mejoras en Paso 1 y Paso 4 (rama `version2`)
+
+---
+
+### `src/app/App.tsx` — v2
+
+- Se agregó el estado `newDocuments` (tipo `Document[]`) para persistir los documentos nuevos agregados en el Paso 1 a nivel de la aplicación.
+- Se pasa `newDocuments` y `onNewDocumentsChange` al componente `SelectDocuments`.
+- Se pasa `newDocuments` al componente `Summary` para reflejarlos en el Paso 4.
+- Se resetea `newDocuments` al estado inicial cuando el usuario finaliza o reinicia el wizard.
+
+---
+
+### `src/app/components/SelectDocuments.tsx` — v2
+
+- Se convirtió el estado local `documents` en prop controlada desde `App.tsx` (`newDocuments` / `onNewDocumentsChange`), permitiendo que los documentos nuevos persistan al navegar entre pasos.
+- Se reemplazó el input de texto "Nombre del documento" en el modal por un **desplegable** con opciones predefinidas: Consentimiento informado, Asentimiento informado, Protocolo de investigación, Brochure del investigador, Manual de procedimientos, Formulario de recolección de datos, Carta de aprobación institucional, Declaración de confidencialidad, Acuerdo de transferencia de material, Plan de manejo de datos, Otro.
+- Se eliminó el campo "Tipo de documento" del modal (los nuevos documentos siempre son de tipo `Nuevo`).
+- Se eliminó la columna **"REEMPLAZAR"** (checkbox) en la sección "Documentos Nuevos", manteniéndola solo para las demás secciones.
+- Se agregó un **botón "Agregar Documentos"** en la esquina superior derecha del header de la sección "Documentos Nuevos", que abre un modal con zona de carga de archivo y confirmación visual al seleccionar.
+
+---
+
+### `src/app/components/Summary.tsx` — v2
+
+#### Sección "Cambios a aplicar en otros Documentos"
+- Se reemplazó la agrupación por campo (Información General, Equipo, Otros) por **acordeones agrupados por documento**.
+- Cada acordeón muestra el nombre del documento y el conteo de cambios en el header (siempre visible).
+- El cuerpo del acordeón tiene **scroll interno** (`max-h-64`) con header de tabla sticky para evitar listas largas sin estructura.
+- La tabla se simplificó a 3 columnas: **Versión anterior** (texto tachado en rojo), **Versión nueva** (texto en verde), **Justificación**.
+- Los cambios globales aparecen en todos los documentos que los apliquen.
+
+#### Sección "Documentos modificados" (nueva)
+- Se agregó una nueva sección con **acordeones por documento**, siguiendo la misma lógica de scroll interno y header visible.
+- Cada acordeón expone la **jerarquía de versiones** del documento:
+  - ● gris — **Documento vigente (Referencia)**: botones Ver y Descargar.
+  - ● ámbar — **Documento con cambios (Principal)**: botones Ver, Descargar y Cambiar nombre.
+  - ● verde — **Versión final**: botones Ver, Descargar y Cambiar nombre.
+
+#### Sección "Documentos Nuevos"
+- Se conectó la sección al estado global: los documentos agregados en el **Paso 1** se reflejan automáticamente aquí.
+- Se eliminó el badge "Paso 1" y el contador de origen para simplificar la vista.
+- Se agregó **scroll vertical** (`max-h-56`) con header sticky para manejar listas largas.
+- Las acciones de cada fila se reemplazaron por dos botones: **Ver** (ícono de ojo) y **Descargar** (ícono de descarga).
+
+---
+
 ## Versión 2 — Rediseño del Paso 3 (rama `version2`)
 
 ---
