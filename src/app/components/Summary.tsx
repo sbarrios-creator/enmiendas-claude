@@ -128,14 +128,14 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
 
   const getActionBadge = (action: ImpactAnalysis['action']) => {
     const styles = {
-      automatic: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', label: 'Automático' },
-      review: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', label: 'Requiere revisión' },
-      version: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300', label: 'Nueva versión' },
-      blocked: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', label: 'Bloqueado' },
+      automatic: { bg: 'bg-green-100', text: 'text-green-800', label: 'Automático' },
+      review: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Requiere revisión' },
+      version: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Nueva versión' },
+      blocked: { bg: 'bg-red-100', text: 'text-red-800', label: 'Bloqueado' },
     };
     const style = styles[action];
     return (
-      <span className={`px-3 py-1 rounded-full text-sm ${style.bg} ${style.text} border ${style.border}`}>
+      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
         {style.label}
       </span>
     );
@@ -178,8 +178,11 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
       </div>
 
       {/* Step 3 Responses */}
-      <div className="mb-6 space-y-3">
-        <h4 className="mb-3">Cambios declarados</h4>
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-4 py-3">
+          <h3 className="text-white text-base font-normal m-0">Cambios declarados</h3>
+        </div>
+        <div className="p-4 space-y-3">
 
         {/* Título y Resumen */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -288,16 +291,18 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Changes Summary */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="m-0">Cambios a aplicar en otros Documentos</h4>
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
+          <h3 className="text-white text-base font-normal m-0">Cambios a aplicar en otros Documentos</h3>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20 text-white">
             {changes.length} {changes.length === 1 ? 'cambio' : 'cambios'}
           </span>
         </div>
+        <div className="p-4">
 
         {changes.length === 0 ? (
           <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200 text-sm">
@@ -371,18 +376,18 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
             ))}
           </div>
         )}
+        </div>
       </div>
 
-
-{stats.review > 0 && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+      {stats.review > 0 && (
+        <div className="mb-6 border-l-4 border-amber-400 bg-amber-50 p-4 rounded">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="text-amber-900 m-0 mb-1">Atención: Revisión manual requerida</h4>
-              <p className="text-amber-700 m-0">
+              <p className="text-sm font-semibold text-amber-900 m-0 mb-1">Atención: Revisión manual requerida</p>
+              <p className="text-sm text-gray-700 m-0">
                 {stats.review} documento(s) requieren revisión manual antes de aplicar los cambios.
               </p>
             </div>
@@ -392,9 +397,11 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
 
       {/* Jerarquía de documentos modificados */}
       {documents.length > 0 && (
-        <div className="mb-6">
-          <h4 className="mb-4 m-0">Documentos modificados</h4>
-          <div className="space-y-3">
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#C41E3A] px-4 py-3">
+            <h3 className="text-white text-base font-normal m-0">Documentos modificados</h3>
+          </div>
+          <div className="p-4 space-y-3">
             {documents.map((doc) => (
               <div key={doc.id} className="border border-gray-200 rounded-lg overflow-hidden">
 
@@ -436,14 +443,14 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
                         </button>
@@ -462,19 +469,19 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
@@ -493,19 +500,19 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors" title="Ver">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Descargar">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors" title="Cambiar nombre">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
@@ -521,12 +528,21 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
       )}
 
       {/* Documentos Nuevos */}
-      <div className="mb-6">
-        <div className="mb-4">
-          <h4 className="m-0">Documentos Nuevos</h4>
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
+          <h3 className="text-white text-base font-normal m-0">Documentos Nuevos</h3>
+          <button
+            onClick={() => setShowAddDoc(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded hover:bg-white/30 transition-colors text-xs font-medium"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar documento
+          </button>
         </div>
 
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border-t border-gray-200 overflow-hidden">
           <div className="max-h-56 overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
@@ -553,19 +569,19 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                             title="Ver"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
                           <button
-                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                             title="Descargar"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                           </button>
@@ -581,19 +597,19 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                             title="Ver"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
                           <button
-                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                             title="Descargar"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                           </button>
@@ -654,32 +670,34 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
       </div>
 
       {/* Comentarios adicionales */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <h4 className="m-0">Comentarios adicionales</h4>
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs border border-gray-200">Opcional</span>
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-4 py-3 flex items-center gap-2">
+          <h3 className="text-white text-base font-normal m-0">Comentarios adicionales</h3>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20 text-white">Opcional</span>
         </div>
-        <textarea
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          placeholder="Ingrese cualquier comentario o información adicional relevante para esta enmienda..."
-          rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
-        />
-        <p className="text-xs text-gray-400 mt-1.5 text-right">{comments.length} caracteres</p>
+        <div className="p-4">
+          <textarea
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="Ingrese cualquier comentario o información adicional relevante para esta enmienda..."
+            rows={4}
+            className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+          />
+          <p className="text-xs text-gray-400 mt-1.5 text-right m-0">{comments.length} caracteres</p>
+        </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-between gap-4 mt-6">
+      <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
         <button
           onClick={onBack}
           className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
         >
-          Volver
+          ← Volver
         </button>
         <button
           onClick={onFinish}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C41E3A] text-white rounded-md hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
