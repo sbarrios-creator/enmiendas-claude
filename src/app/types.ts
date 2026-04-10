@@ -21,6 +21,13 @@ export interface Change {
   isGlobal: boolean;
 }
 
+export interface AddedDoc {
+  id: string;
+  type: string;
+  fileName: string;
+  file: File;
+}
+
 export interface ImpactAnalysis {
   documentId: string;
   action: 'automatic' | 'review' | 'version' | 'blocked';

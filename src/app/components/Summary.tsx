@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
+import type { AddedDoc, Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 
 interface SummaryProps {
   selectedDocuments: string[];
+  addedDocs: AddedDoc[];
   changes: Change[];
   uploadStatuses: Record<string, UploadStatus>;
   step3Data: Step3Data;
@@ -30,7 +31,7 @@ function getGroupLabel(field: string): string {
   return 'Otros';
 }
 
-export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
+export function Summary({ selectedDocuments, addedDocs, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
   const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   // Documentos nuevos
@@ -329,11 +330,10 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Campo</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Antes</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Después</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Versión anterior</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Versión nueva</th>
                           <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
                           <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos afectados</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Alcance</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 bg-white">
@@ -357,17 +357,6 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
                                   </span>
                                 ))}
                               </div>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {change.isGlobal ? (
-                                <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
-                                  Global
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
-                                  Específico
-                                </span>
-                              )}
                             </td>
                           </tr>
                         ))}
@@ -405,88 +394,63 @@ export function Summary({ selectedDocuments, changes, uploadStatuses, step3Data,
         </div>
 
         <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Tipo de archivo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {newDocs.length === 0 && !showAddDoc ? (
-                <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
-                    No se han agregado documentos nuevos
-                  </td>
+          <div className="max-h-72 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-44">Tipo de documento</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre del archivo</th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Acciones</th>
                 </tr>
-              ) : (
-                <>
-                  {newDocs.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-700">{doc.fileType}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{doc.name}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleRemoveDoc(doc.id)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="Eliminar"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {showAddDoc && (
-                    <tr className="bg-gray-50">
-                      <td className="px-4 py-3">
-                        <select
-                          value={newDocForm.fileType}
-                          onChange={(e) => setNewDocForm({ ...newDocForm, fileType: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
-                        >
-                          <option value="">Seleccione tipo</option>
-                          <option value="Presupuesto">Presupuesto</option>
-                          <option value="Instrumento">Instrumento</option>
-                          <option value="Protocolo">Protocolo</option>
-                          <option value="Consentimiento">Consentimiento</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={newDocForm.name}
-                          onChange={(e) => setNewDocForm({ ...newDocForm, name: e.target.value })}
-                          placeholder="Nombre del documento"
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                        />
-                      </td>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {addedDocs.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 italic">
+                      No se han agregado documentos nuevos
+                    </td>
+                  </tr>
+                ) : (
+                  addedDocs.map((doc, index) => (
+                    <tr key={doc.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}>
+                      <td className="px-4 py-3 text-gray-700">{doc.type}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{doc.fileName}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={handleAddDoc}
-                            disabled={!newDocForm.fileType || !newDocForm.name}
-                            className="px-3 py-1.5 bg-[#C41E3A] text-white rounded-md text-xs font-medium hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                            onClick={() => { const url = URL.createObjectURL(doc.file); window.open(url, '_blank'); }}
+                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            title="Ver"
                           >
-                            Guardar
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                           </button>
                           <button
-                            onClick={() => { setShowAddDoc(false); setNewDocForm({ fileType: '', name: '' }); }}
-                            className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              const url = URL.createObjectURL(doc.file);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = doc.fileName;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Descargar"
                           >
-                            Cancelar
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
                           </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </>
-              )}
-            </tbody>
-          </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

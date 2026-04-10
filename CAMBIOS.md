@@ -1,5 +1,33 @@
 # Registro de Cambios
 
+## Correcciones recientes (main)
+
+---
+
+### `src/app/components/Summary.tsx` — Paso 4
+
+#### Columnas de tabla "Cambios a aplicar en otros Documentos"
+- Se renombraron las columnas **"Antes"** → **"Versión anterior"** y **"Después"** → **"Versión nueva"**.
+- Se eliminó la columna **"Alcance"** (Global / Específico). La tabla ahora tiene 5 columnas: Campo, Versión anterior, Versión nueva, Justificación y Documentos afectados.
+
+---
+
+### `src/app/components/UploadDocuments.tsx` — Paso 2
+
+#### Habilitación del botón "Continuar"
+- Se corrigió la condición `canContinue`: antes usaba `Object.keys(uploadStatuses).length === selectedDocuments.length`, lo que podía fallar si `uploadStatuses` tenía entradas de documentos no seleccionados. Ahora itera directamente sobre `selectedDocuments` con `.every()`, habilitando el botón en cuanto **todos** los documentos seleccionados tengan sus 2 versiones subidas (control de cambios + versión final).
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Paso 3
+
+#### Campo "Campo a modificar" en sección "Otros Cambios en Documentos"
+- Se descomentó el selector **"Campo a modificar"** y el campo condicional **"Especifique el campo"** (visible cuando se selecciona "Otro (personalizado)").
+- Se actualizó la validación de `handleAddChange`, `handleSaveEdit` y el botón "Agregar cambio" para requerir que el campo esté seleccionado/completado antes de permitir guardar.
+- Al cambiar la opción del selector se limpia automáticamente `customField`.
+
+---
+
 ## Rediseño del flujo de enmiendas
 
 ---
