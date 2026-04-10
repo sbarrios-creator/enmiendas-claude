@@ -32,6 +32,8 @@ const commonFields = [
 export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [docPickerSearch, setDocPickerSearch] = useState('');
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -77,6 +79,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
     setShowAddChange(false);
     setEditingId(null);
     setActiveDocId(null);
+    setDocPickerSearch('');
     setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
   };
 
@@ -101,7 +104,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
 
 
   const handleAddChange = () => {
-    if (!newChange.newValue || !newChange.justification) return;
+    if (!newChange.field || !newChange.newValue || !newChange.justification) return;
     if (!newChange.isGlobal && newChange.appliesTo.length === 0) return;
 
     const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
@@ -568,120 +571,108 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                 <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
                 <p className="text-sm text-gray-600 m-0 mt-0.5">Agregue al menos un cambio por documento seleccionado</p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs text-gray-500 m-0">Documentos justificados</p>
-                  <p className={`text-sm font-bold m-0 ${allDocsHaveChanges ? 'text-green-600' : 'text-amber-600'}`}>
-                    {docsWithChanges} de {documents.length}
-                  </p>
-                </div>
-                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${allDocsHaveChanges ? 'bg-green-500' : 'bg-amber-400'}`}
-                    style={{ width: documents.length ? `${(docsWithChanges / documents.length) * 100}%` : '0%' }}
-                  />
-                </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 m-0">Cambios registrados</p>
+                <p className={`text-sm font-bold m-0 ${changes.length > 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {changes.length}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100">
+          <div className="p-4 space-y-4">
+            {/* Buscador + Botón agregar */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar cambio..."
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                  setEditingId(null);
+                  setActiveDocId(null);
+                  setShowAddChange(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                Agregar cambio
+              </button>
+            </div>
 
-            {/* Sección: cambios globales */}
-            {globalChanges.length > 0 && (
-              <div className="p-4 bg-blue-50">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">Global</span>
-                  <span className="text-sm font-semibold text-blue-900">Aplica a todos los documentos</span>
-                </div>
-                <div className="space-y-2">
-                  {globalChanges.map((change) => (
-                    <div key={change.id} className="bg-white border border-blue-200 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 m-0 mb-1">{change.field || '—'}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {change.oldValue && <span className="text-xs text-gray-400 line-through">{change.oldValue}</span>}
-                          {change.oldValue && <span className="text-gray-300 text-xs">→</span>}
-                          <span className="text-xs font-semibold text-green-700">{change.newValue}</span>
-                        </div>
-                        {change.justification && <p className="text-xs text-gray-500 m-0 mt-1">{change.justification}</p>}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => handleEditChange(change)} className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Editar">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </button>
-                        <button onClick={() => handleRemoveChange(change.id)} className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Eliminar">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+            {/* Tabla unificada */}
+            {changes.length > 0 && (
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto overflow-y-auto max-h-64">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Cambio</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Valor Anterior</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Valor Nuevo</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Justificación</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Documentos</th>
+                        <th className="px-3 py-2 text-center font-semibold text-gray-600 w-20">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {(searchQuery
+                        ? changes.filter((c) => {
+                            const q = searchQuery.toLowerCase();
+                            return c.field.toLowerCase().includes(q) || c.oldValue.toLowerCase().includes(q) || c.newValue.toLowerCase().includes(q) || c.justification.toLowerCase().includes(q);
+                          })
+                        : changes
+                      ).map((change, idx) => (
+                        <tr key={change.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-3 py-2 max-w-[140px]">
+                            <p className="truncate text-gray-800 font-medium m-0" title={change.field}>{change.field || '—'}</p>
+                          </td>
+                          <td className="px-3 py-2 max-w-[120px]">
+                            <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
+                          </td>
+                          <td className="px-3 py-2 max-w-[120px]">
+                            <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue}</p>
+                          </td>
+                          <td className="px-3 py-2 max-w-[160px]">
+                            <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
+                          </td>
+                          <td className="px-3 py-2">
+                            {change.isGlobal ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Todos</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600" title={change.appliesTo.map(id => documents.find(d => d.id === id)?.name).join(', ')}>
+                                {change.appliesTo.length} doc{change.appliesTo.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-1 justify-center">
+                              <button onClick={() => handleEditChange(change)} className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Editar">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                              </button>
+                              <button onClick={() => handleRemoveChange(change.id)} className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Eliminar">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
 
-            {/* Sección por documento */}
-            {documents.map((doc) => {
-              const docChanges = getChangesForDoc(doc.id);
-              const hasChanges = docHasChanges(doc.id);
-              return (
-                <div key={doc.id} className="p-4">
-                  {/* Cabecera del documento */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {hasChanges ? (
-                        <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      ) : (
-                        <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      )}
-                      <span className="text-sm font-semibold text-gray-900 truncate">{doc.name}</span>
-                      <span className="text-xs text-gray-400 shrink-0">{doc.type}</span>
-                      {globalChanges.length > 0 && (
-                        <span className="text-xs text-blue-600 shrink-0">(+{globalChanges.length} global{globalChanges.length > 1 ? 'es' : ''})</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleOpenAddForDoc(doc.id)}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Agregar
-                    </button>
-                  </div>
-
-                  {/* Cambios específicos del documento */}
-                  {docChanges.length > 0 ? (
-                    <div className="space-y-2 ml-6">
-                      {docChanges.map((change) => (
-                        <div key={change.id} className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 m-0 mb-1">{change.field || '—'}</p>
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              {change.oldValue && <span className="text-xs text-gray-400 line-through">{change.oldValue}</span>}
-                              {change.oldValue && <span className="text-gray-300 text-xs">→</span>}
-                              <span className="text-xs font-semibold text-green-700">{change.newValue}</span>
-                            </div>
-                            {change.justification && <p className="text-xs text-gray-500 m-0">{change.justification}</p>}
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            <button onClick={() => handleEditChange(change)} className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Editar">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            </button>
-                            <button onClick={() => handleRemoveChange(change.id)} className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Eliminar">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    !hasChanges && (
-                      <p className="ml-6 text-xs text-amber-600 italic">Sin cambios registrados para este documento</p>
-                    )
-                  )}
-                </div>
-              );
-            })}
+            {changes.length === 0 && (
+              <p className="text-sm text-gray-400 italic">Aún no hay cambios registrados. Usa el botón para agregar.</p>
+            )}
           </div>
         </div>
       </div>
@@ -719,10 +710,30 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
             {/* Body */}
             <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
 
-              {/* Antes / Después */}
+              {/* Cambio a Realizar */}
+              <div>
+                <label className="block mb-1.5 text-sm font-semibold text-gray-700">Cambio a Realizar <span className="text-[#C41E3A]">*</span></label>
+                <p className="text-xs text-gray-400 mb-2 m-0">Nombre o descripción del cambio que se realizará</p>
+                <input
+                  type="text"
+                  value={newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (commonFields.slice(0, -1).includes(val)) {
+                      setNewChange({ ...newChange, field: val, customField: '' });
+                    } else {
+                      setNewChange({ ...newChange, field: 'Otro (personalizado)', customField: val });
+                    }
+                  }}
+                  placeholder="Ej: Cambio de investigador principal"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                />
+              </div>
+
+              {/* Valor Anterior / Valor Nuevo */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Antes</label>
+                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Valor Anterior</label>
                   <p className="text-xs text-gray-400 mb-2 m-0">Texto o valor actual en el documento</p>
                   <input
                     type="text"
@@ -733,7 +744,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   />
                 </div>
                 <div>
-                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Después <span className="text-[#C41E3A]">*</span></label>
+                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Valor Nuevo <span className="text-[#C41E3A]">*</span></label>
                   <p className="text-xs text-gray-400 mb-2 m-0">Texto o valor que reemplazará al anterior</p>
                   <input
                     type="text"
@@ -762,41 +773,98 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
               <div>
                 <label className="block mb-1.5 text-sm font-semibold text-gray-700">Alcance del cambio <span className="text-[#C41E3A]">*</span></label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: [] })}
-                    className={`px-4 py-2 rounded border transition-all text-sm font-medium ${newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}
-                  >
-                    Todos los documentos
-                  </button>
-                  <button
-                    onClick={() => setNewChange({ ...newChange, isGlobal: false })}
-                    className={`px-4 py-2 rounded border transition-all text-sm font-medium ${!newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}
-                  >
-                    Documentos específicos
-                  </button>
+                  {/* Lista disponible */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 m-0 mb-1.5">Disponibles</p>
+                      <div className="relative">
+                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={docPickerSearch}
+                          onChange={(e) => setDocPickerSearch(e.target.value)}
+                          className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="overflow-y-auto max-h-36 divide-y divide-gray-100">
+                      {documents
+                        .filter((doc) => !newChange.appliesTo.includes(doc.id) && doc.name.toLowerCase().includes(docPickerSearch.toLowerCase()))
+                        .map((doc) => (
+                          <button
+                            key={doc.id}
+                            type="button"
+                            onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
+                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate">{doc.name}</span>
+                            <svg className="w-3 h-3 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        ))}
+                      {documents.filter((doc) => !newChange.appliesTo.includes(doc.id) && doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())).length === 0 && (
+                        <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>
+                      )}
+                    </div>
+                    <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
+                      <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} disponibles</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: documents.map(d => d.id) })}
+                        className="text-xs text-[#C41E3A] hover:underline font-medium"
+                      >
+                        Agregar todos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista seleccionados */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 m-0">Seleccionados</p>
+                    </div>
+                    <div className="overflow-y-auto max-h-48 divide-y divide-gray-100">
+                      {newChange.appliesTo.length === 0 && (
+                        <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Ninguno seleccionado</p>
+                      )}
+                      {newChange.appliesTo.map((id) => {
+                        const doc = documents.find((d) => d.id === id);
+                        if (!doc) return null;
+                        return (
+                          <div key={id} className="flex items-center justify-between gap-2 px-3 py-2">
+                            <span className="text-xs text-gray-700 truncate">{doc.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((a) => a !== id) })}
+                              className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                            >
+                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
+                      <span className="text-xs text-gray-500">{newChange.appliesTo.length} seleccionados</span>
+                      {newChange.appliesTo.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [] })}
+                          className="text-xs text-red-600 hover:underline font-medium"
+                        >
+                          Quitar todos
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Selección de documentos específicos */}
-              {!newChange.isGlobal && (
-                <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 m-0">Documentos afectados</p>
-                  <div className="space-y-1">
-                    {documents.map((doc) => (
-                      <label key={doc.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={newChange.appliesTo.includes(doc.id)}
-                          onChange={() => handleToggleDocument(doc.id)}
-                          className="w-4 h-4 text-[#C41E3A] rounded"
-                        />
-                        <span className="text-sm text-gray-700">{doc.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 m-0">{newChange.appliesTo.length} de {documents.length} seleccionados</p>
-                </div>
-              )}
             </div>
 
             {/* Footer */}
@@ -806,7 +874,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
               </button>
               <button
                 onClick={editingId ? handleSaveEdit : handleAddChange}
-                disabled={!newChange.newValue || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
+                disabled={!newChange.field || (newChange.field === 'Otro (personalizado)' && !newChange.customField) || !newChange.newValue || !newChange.justification || (!newChange.isGlobal && newChange.appliesTo.length === 0)}
                 className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {editingId ? 'Guardar cambios' : 'Agregar cambio'}
