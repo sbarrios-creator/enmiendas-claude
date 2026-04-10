@@ -248,14 +248,44 @@ export function Summary({ selectedDocuments, addedDocs, changes, uploadStatuses,
                 {step3Data.operativeUnitsData.externalUnits.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No se encontraron resultados</p>
                 ) : (
-                  <ul className="space-y-1">
+                  <div className="space-y-2">
                     {step3Data.operativeUnitsData.externalUnits.map((u) => (
-                      <li key={u.id} className="flex items-center gap-2 text-sm text-gray-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
-                        {u.name}
-                      </li>
+                      <div key={u.id} className="flex items-center justify-between gap-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-800 font-medium truncate">{u.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { const url = URL.createObjectURL(u.file); window.open(url, '_blank'); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-white transition-colors font-medium"
+                            title="Ver documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => {
+                              const url = URL.createObjectURL(u.file);
+                              const a = document.createElement('a');
+                              a.href = url; a.download = u.fileName; a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                            title="Descargar documento"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar
+                          </button>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
             </div>
