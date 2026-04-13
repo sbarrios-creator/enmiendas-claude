@@ -1,5 +1,39 @@
 # Registro de Cambios
 
+## Card 4 — Instrumentos del proyecto y modal Nuevo cambio — Paso 3
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Paso 3 (Card 4 — Otros Cambios en Documentos)
+
+#### Rediseño de la sección Instrumentos del proyecto
+- El toggle **Archivo / Reemplazar** es ahora independiente por instrumento (estado `Record<docId, modo>`), eliminando el toggle global de la cabecera de sección.
+- Cada tarjeta de instrumento tiene dos filas: nombre + badge de cambios arriba; toggles + botón de acción abajo.
+- **Reemplazar activo** → `bg-blue-600` (azul, acción principal). **Archivo activo** → `bg-gray-700` (secundario).
+- Modo **Reemplazar**: botón "+ Agregar" (rojo) para abrir el modal de creación con el instrumento preseleccionado.
+- Modo **Archivo**: botones outline "Ver" (azul) y "Descargar" (verde).
+- Badge de cambios `N cambios` junto al nombre del instrumento, visible solo si hay cambios registrados.
+- Buscador de instrumentos por nombre sin toggle global de modo.
+
+#### Rediseño del modal "Nuevo cambio" (formulario único)
+- Reemplaza el wizard de 3 pasos por un formulario único scrollable con todos los campos visibles a la vez.
+- **Columnas lado a lado**: "Valor anterior (opcional)" | "Nuevo valor *".
+  - "Valor anterior": borde punteado `border-dashed` para indicar que es referencia, no dato del sistema; badge pill `opcional` separado de la etiqueta; placeholder descriptivo.
+  - "Nuevo valor": borde verde cuando tiene contenido.
+- **Vista previa ANTES → DESPUÉS** automática: aparece al escribir en cualquiera de los dos campos; fondo rojo suave / verde suave con íconos.
+- **Justificación**: eliminado el texto "Requerido" flotante; solo muestra contador de caracteres cuando hay texto escrito.
+- **Alcance**: botones radio Todos los documentos / Documentos específicos.
+- **Selector de documentos específicos**:
+  - Contador `X / Y` como badge azul junto al título "Seleccione los documentos".
+  - Botón "Seleccionar todos / Deseleccionar todos" junto al buscador.
+  - Checkboxes estilo toggle azul por documento.
+
+### `src/app/components/UploadDocuments.tsx` — Paso 2 (ajustes visuales)
+- Headers de columna ("Tipo archivo", "Archivo control de cambios", "Archivo versión final") movidos dentro de cada sección de categoría con fondo oscuro (`bg-gray-900`, texto blanco).
+- Colores del indicador de archivo subido migrados de hex a clases Tailwind estándar (`green-100 / green-500 / green-600 / green-800`).
+
+---
+
 ## Unidades externas e internas — Paso 3 y Paso 4
 
 ---
