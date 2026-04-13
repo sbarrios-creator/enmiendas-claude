@@ -1,5 +1,24 @@
 # Registro de Cambios
 
+## Tarjetas de cambio pendiente — nombres reales de documentos — Paso 3
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Sección "Cambios pendientes" (Card 4)
+
+#### Rediseño del encabezado de cada tarjeta de cambio
+- Se reemplazó el nombre del campo solo (ej: "Institución") por un formato de dos niveles: etiqueta gris "Campo modificado" + nombre del campo en negrita debajo.
+
+#### Alcance con nombres reales de documentos
+- Se eliminó el badge genérico `N doc(s)`. Ahora se resuelven los IDs a nombres reales usando `mockDocuments`:
+  - **1 documento**: muestra el nombre completo del instrumento (ej: "Cuestionario de calidad de vida").
+  - **2 documentos**: muestra ambos nombres separados por ` · ` con badge contador.
+  - **3+ documentos**: muestra los 2 primeros y un botón `+N más` para expandir la lista completa; al expandir aparece `ver menos` para colapsar.
+  - **Global**: muestra "Todos los documentos" en azul con badge del total.
+- Se agregó el estado `expandedChanges: Set<string>` y el helper `toggleExpandChange` para controlar la expansión de forma independiente por tarjeta.
+
+---
+
 ## Pulido final del modal "Nuevo cambio" — Paso 3
 
 ---
