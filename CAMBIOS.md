@@ -1,5 +1,63 @@
 # Registro de Cambios
 
+## Versión 2 — Refactorización UI: estilos, tabla de cambios y picker de documentos (rama `version2`)
+
+---
+
+### `STYLES.md` (nuevo archivo)
+
+- Se creó la guía de estilos del proyecto con tokens de color, variantes de botón, estilos de card/sección, tipografía, inputs, tablas, badges, iconos de estado, toggles SI/NO y modales.
+- Sirve como referencia para mantener consistencia visual entre pasos y ramas.
+- Incluye una nota explícita indicando que el Paso 4 (`Summary.tsx`) aún pendiente de adoptar estos estilos estandarizados.
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Refactorización de la sección "Otros Cambios" y modal
+
+#### Sección "Otros Cambios en Documentos"
+- Se reemplazó la vista anterior agrupada por documento (globales separados de específicos, un botón "Agregar" por fila de documento) por una **tabla unificada** que lista todos los cambios independientemente de su alcance.
+- La tabla tiene scroll vertical interno (`max-h-64`) y encabezado sticky; columnas: **Cambio**, **Valor Anterior**, **Valor Nuevo**, **Justificación**, **Documentos**, **Acciones**.
+- Se añadió un **buscador** sobre la tabla que filtra en tiempo real por campo, valor anterior, valor nuevo y justificación.
+- El indicador de progreso (barra + contador "X de N documentos justificados") se simplificó a un contador de cambios totales registrados.
+- El botón "Agregar" individual por documento se eliminó; ahora existe un único botón **"Agregar cambio"** en la parte superior de la sección que abre el modal en modo global.
+
+#### Modal "Agregar / Editar cambio"
+- Se añadió el nuevo campo **"Cambio a Realizar"** (texto libre) que llena `field` / `customField`. Antes el campo era un `<select>` con opciones predefinidas.
+- Los labels "Antes" y "Después" se renombraron a **"Valor Anterior"** y **"Valor Nuevo"** para mayor claridad.
+- El selector de alcance (dos botones "Todos / Documentos específicos" + checkboxes) se reemplazó por un **picker de dos columnas**: lista de disponibles con buscador propio y botón "Agregar todos" a la izquierda; lista de seleccionados con botón "Quitar todos" a la derecha.
+- La validación del botón de confirmar se actualizó: ahora exige que `field` (o `customField` en modo personalizado) esté completo, además de `newValue` y `justification`.
+- El ancho del modal se aumentó de `max-w-xl` a `max-w-2xl` para acomodar el picker de dos columnas.
+- Se añadieron los estados `searchQuery` (buscador de tabla) y `docPickerSearch` (buscador del picker), ambos reseteados al cerrar el modal.
+
+---
+
+### `src/app/components/SelectDocuments.tsx` — Ajuste de tamaño de botones de acción
+
+- En la sección "Documentos Nuevos", los botones **Eliminar** y **Descargar** se redujeron de `w-8 h-8` a `w-6 h-6` con iconos de `w-4 h-4` a `w-3 h-3`.
+- El botón "Eliminar" cambió de fondo rojo sólido (`bg-[#C41E3A] text-white`) a fondo rojo claro (`bg-red-100 text-red-600 hover:bg-red-200`), alineándose con el patrón de acciones destructivas de la guía de estilos.
+
+---
+
+### `src/app/components/Summary.tsx` — Estandarización visual del Paso 4
+
+#### Headers de sección
+- Las secciones **"Cambios declarados"**, **"Cambios a aplicar en otros Documentos"**, **"Documentos modificados"** y **"Documentos Nuevos"** adoptaron el patrón de card con header rojo (`bg-[#C41E3A] px-4 py-3`) y cuerpo `bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden`.
+
+#### Badges de acción
+- Los badges de estado (`getActionBadge`) se simplificaron: se eliminó el borde explícito y se adoptó el patrón `inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium`.
+- El contador de cambios en el header se convirtió en un badge `bg-white/20 text-white` alineado al extremo derecho del header.
+
+#### Caja de advertencia
+- La advertencia "Revisión manual requerida" adoptó el estilo de caja amber con borde izquierdo (`border-l-4 border-amber-400 bg-amber-50 p-4 rounded`).
+
+#### Botones de acción en documentos
+- Todos los botones de acción en "Documentos modificados" y "Documentos Nuevos" se redujeron de `w-8 h-8` a `w-6 h-6` con iconos de `w-4 h-4` a `w-3 h-3`.
+
+#### Botón "Agregar documento" en Documentos Nuevos
+- Se añadió el botón **"Agregar documento"** directamente en el header rojo de la sección "Documentos Nuevos", con estilo `bg-white/20 text-white hover:bg-white/30`.
+
+---
+
 ## Versión 2 — Mejoras en Paso 1 y Paso 4 (rama `version2`)
 
 ---
