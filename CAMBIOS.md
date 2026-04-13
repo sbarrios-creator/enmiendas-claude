@@ -1,5 +1,38 @@
 # Registro de Cambios
 
+## Pulido final del modal "Nuevo cambio" — Paso 3
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Modal Nuevo cambio
+
+#### Validación en tiempo real al intentar enviar
+- Se agregó el estado `submitAttempted` al componente. Los mensajes de error se activan únicamente al hacer clic en "Agregar cambio", no mientras el usuario escribe.
+- Cada campo obligatorio vacío muestra un mensaje "Campo requerido" en rojo (texto + ícono) debajo del input y pinta el borde del campo en rojo.
+- El borde vuelve a su estado normal en cuanto el campo se completa.
+- El botón "Agregar cambio" ya no se deshabilita; la validación corre al hacer clic y muestra todos los errores a la vez.
+
+#### Dropdown "Campo a modificar" con ícono de flecha personalizado
+- Se aplicó `appearance-none` al `<select>` para ocultar la flecha nativa del sistema operativo.
+- Se superpone un ícono chevron SVG con `pointer-events-none` alineado a la derecha, consistente en todos los navegadores.
+- El placeholder muestra "Seleccione un campo..." con color gris diferenciado del texto seleccionado.
+
+#### Alcance del cambio con recuadro agrupador
+- Los dos radio buttons ("Todos los docs." / "Específicos") están envueltos en un contenedor `bg-gray-50 border border-gray-200 rounded-lg p-3` que los agrupa visualmente con más padding interior.
+
+#### Selector de documentos específicos
+- Contador `X / Y` en la misma línea que el título "Seleccione los documentos" como badge; cambia a rojo cuando hay error de validación.
+- Botón "Seleccionar todos / Deseleccionar todos" alterna automáticamente según el estado actual de selección.
+- Mensaje de error "Seleccione al menos uno" visible en el encabezado si se intenta enviar sin seleccionar documentos.
+
+#### Botón "Vista previa del cambio"
+- Agregado en el footer, encima de los botones Cancelar / Agregar.
+- Al activarlo muestra un panel azul con el resumen: `Se cambiará "[Valor anterior]" → "[Nuevo valor]" en N documento(s)`.
+- Incluye campo modificado y justificación cuando están completados.
+- Se oculta al cerrar el modal (estado `showChangePreview` se resetea en `closeModal`).
+
+---
+
 ## Card 4 — Instrumentos del proyecto y modal Nuevo cambio — Paso 3
 
 ---
