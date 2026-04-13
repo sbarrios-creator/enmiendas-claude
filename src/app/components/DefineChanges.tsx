@@ -45,6 +45,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
   const [searchInstruments, setSearchInstruments] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [showChangePreview, setShowChangePreview] = useState(false);
   const [activeMode, setActiveMode] = useState<Record<string, 'archivo' | 'reemplazar'>>({});
   const getModeForDoc = (docId: string): 'archivo' | 'reemplazar' => activeMode[docId] ?? 'reemplazar';
   const setModeForDoc = (docId: string, mode: 'archivo' | 'reemplazar') =>
@@ -1083,11 +1085,31 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
         const closeModal = () => {
           setShowAddChange(false);
           setEditingId(null);
+          setSubmitAttempted(false);
+          setShowChangePreview(false);
           setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
           setSearchDocument('');
         };
         const activeField = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
         const isValid = !!activeField && !!newChange.newValue && !!newChange.justification && (newChange.isGlobal || newChange.appliesTo.length > 0);
+
+        // Errores de validación — solo visibles tras intento de envío
+        const err = {
+          field: submitAttempted && !activeField,
+          newValue: submitAttempted && !newChange.newValue,
+          justification: submitAttempted && !newChange.justification,
+          appliesTo: submitAttempted && !newChange.isGlobal && newChange.appliesTo.length === 0,
+        };
+
+        const handleSubmit = () => {
+          setSubmitAttempted(true);
+          if (!isValid) return;
+          if (editingId) handleSaveEdit(); else handleAddChange();
+        };
+
+        // Texto del resumen de vista previa
+        const previewDocCount = newChange.isGlobal ? documents.length : newChange.appliesTo.length;
+        const previewOld = newChange.oldValue || 'Sin valor previo';
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1102,7 +1124,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   <h4 className="font-semibold text-gray-900 text-base m-0">
                     {editingId ? 'Editar cambio' : 'Nuevo cambio'}
                   </h4>
-                  <p className="text-xs text-gray-400 m-0 mt-0.5">Complete todos los campos requeridos</p>
+                  <p className="text-xs text-gray-400 m-0 mt-0.5">Los campos con <span className="text-[#C41E3A]">*</span> son obligatorios</p>
                 </div>
                 <button onClick={closeModal} className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1119,17 +1141,33 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   <label className="block mb-1.5 text-sm font-semibold text-gray-700">
                     Campo a modificar <span className="text-[#C41E3A]">*</span>
                   </label>
-                  <select
-                    autoFocus
-                    value={newChange.field}
-                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value, customField: '' })}
-                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  >
-                    <option value="">Seleccione un campo</option>
-                    {commonFields.map((field) => (
-                      <option key={field} value={field}>{field}</option>
-                    ))}
-                  </select>
+                  {/* Select con ícono de flecha personalizado */}
+                  <div className="relative">
+                    <select
+                      autoFocus
+                      value={newChange.field}
+                      onChange={(e) => { setNewChange({ ...newChange, field: e.target.value, customField: '' }); setSubmitAttempted(false); }}
+                      className={`w-full appearance-none px-4 py-2.5 pr-10 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors ${
+                        err.field
+                          ? 'border-red-400 focus:ring-red-400'
+                          : 'border-gray-300 focus:ring-blue-500'
+                      } ${!newChange.field ? 'text-gray-400' : 'text-gray-800'}`}
+                    >
+                      <option value="">Seleccione un campo...</option>
+                      {commonFields.map((field) => (
+                        <option key={field} value={field}>{field}</option>
+                      ))}
+                    </select>
+                    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  {err.field && (
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                      Campo requerido
+                    </p>
+                  )}
                 </div>
 
                 {newChange.field === 'Otro (personalizado)' && (
@@ -1142,8 +1180,16 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       value={newChange.customField}
                       onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
                       placeholder="Ej: Versión del protocolo"
-                      className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+                        err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                     />
+                    {err.field && (
+                      <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0">
+                        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                        Campo requerido
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -1174,11 +1220,19 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
                       placeholder="Ingrese el valor propuesto"
                       className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all ${
-                        newChange.newValue
+                        err.newValue
+                          ? 'border-red-400 bg-red-50 focus:border-red-500'
+                          : newChange.newValue
                           ? 'border-green-400 bg-green-50 focus:border-green-500'
                           : 'border-gray-300 bg-white focus:border-blue-500'
                       }`}
                     />
+                    {err.newValue && (
+                      <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0">
+                        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                        Campo requerido
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1230,8 +1284,16 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                     onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
                     placeholder="Describa la razón técnica o científica de este cambio"
                     rows={3}
-                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${
+                      err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                   />
+                  {err.justification && (
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                      Campo requerido
+                    </p>
+                  )}
                 </div>
 
                 {/* ── Alcance del cambio ── */}
@@ -1239,20 +1301,20 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   <label className="block mb-2 text-sm font-semibold text-gray-700">
                     Alcance del cambio <span className="text-[#C41E3A]">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                     <button
                       onClick={() => setNewChange({ ...newChange, isGlobal: true })}
                       className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
                         newChange.isGlobal
                           ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>
                           {newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}
                         </div>
-                        <span>Todos los documentos</span>
+                        <span>Todos los docs.</span>
                       </div>
                       <p className="text-xs text-gray-400 m-0 ml-6">Aplica a los {documents.length} docs.</p>
                     </button>
@@ -1261,14 +1323,14 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
                         !newChange.isGlobal
                           ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>
                           {!newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}
                         </div>
-                        <span>Documentos específicos</span>
+                        <span>Específicos</span>
                       </div>
                       <p className="text-xs text-gray-400 m-0 ml-6">Selecciona cuáles</p>
                     </button>
@@ -1281,11 +1343,19 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                     {/* Encabezado: título + contador */}
                     <div className="flex items-center gap-2 mb-3">
                       <p className="text-sm font-semibold text-gray-700 m-0">Seleccione los documentos</p>
-                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${
+                        err.appliesTo ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700'
+                      }`}>
                         {newChange.appliesTo.length} / {documents.length}
                       </span>
+                      {err.appliesTo && (
+                        <span className="text-xs text-red-500 flex items-center gap-1">
+                          <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                          Seleccione al menos uno
+                        </span>
+                      )}
                     </div>
-                    {/* Buscador + Seleccionar todos */}
+                    {/* Buscador + toggle Seleccionar/Deseleccionar todos */}
                     <div className="flex gap-2 mb-3">
                       <div className="relative flex-1">
                         <input
@@ -1303,10 +1373,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                         onClick={() => {
                           const allIds = documents.map((d) => d.id);
                           const allSelected = allIds.every((id) => newChange.appliesTo.includes(id));
-                          setNewChange({
-                            ...newChange,
-                            appliesTo: allSelected ? [] : allIds,
-                          });
+                          setNewChange({ ...newChange, appliesTo: allSelected ? [] : allIds });
                         }}
                         className="px-3 py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap bg-white flex-shrink-0"
                       >
@@ -1348,23 +1415,67 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                     </div>
                   </div>
                 )}
+
+                {/* ── Vista previa del cambio (togglable) ── */}
+                {showChangePreview && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide m-0">Resumen del cambio</p>
+                    <p className="text-sm text-gray-800 m-0">
+                      Se cambiará{' '}
+                      <span className="font-semibold text-red-500 line-through">"{previewOld}"</span>
+                      {' → '}
+                      <span className="font-semibold text-green-700">"{newChange.newValue || '—'}"</span>
+                      {' en '}
+                      <span className="font-semibold text-blue-700">{previewDocCount} documento{previewDocCount !== 1 ? 's' : ''}</span>
+                    </p>
+                    {activeField && (
+                      <p className="text-xs text-gray-500 m-0">
+                        <span className="font-medium">Campo:</span> {activeField}
+                      </p>
+                    )}
+                    {newChange.justification && (
+                      <p className="text-xs text-gray-500 m-0">
+                        <span className="font-medium">Justificación:</span> {newChange.justification}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
-              <div className="flex gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0">
-                <button
-                  onClick={closeModal}
-                  className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={editingId ? handleSaveEdit : handleAddChange}
-                  disabled={!isValid}
-                  className="flex-1 px-5 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
-                >
-                  {editingId ? 'Guardar cambios' : 'Agregar cambio'}
-                </button>
+              <div className="border-t border-gray-200 flex-shrink-0">
+                {/* Fila 1: botón Vista previa */}
+                <div className="px-6 pt-3 pb-0">
+                  <button
+                    onClick={() => setShowChangePreview((v) => !v)}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      showChangePreview
+                        ? 'bg-blue-50 border-blue-300 text-blue-700'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    {showChangePreview ? 'Ocultar vista previa' : 'Vista previa del cambio'}
+                  </button>
+                </div>
+                {/* Fila 2: Cancelar + Agregar */}
+                <div className="flex gap-3 px-6 py-3">
+                  <button
+                    onClick={closeModal}
+                    className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    className="flex-1 px-5 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-semibold"
+                  >
+                    {editingId ? 'Guardar cambios' : 'Agregar cambio'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
