@@ -1151,16 +1151,16 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                 <div className="grid grid-cols-2 gap-3">
                   {/* Antes (opcional) */}
                   <div>
-                    <label className="block mb-1.5 text-sm font-semibold text-gray-700">
-                      Valor anterior
-                      <span className="ml-1 text-xs font-normal text-gray-400">opcional</span>
-                    </label>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <label className="text-sm font-semibold text-gray-700">Valor anterior</label>
+                      <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 text-xs rounded font-normal">opcional</span>
+                    </div>
                     <input
                       type="text"
                       value={newChange.oldValue}
                       onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
-                      placeholder="Valor actual..."
-                      className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
+                      placeholder="Ingrese el valor que se reemplazará"
+                      className="w-full px-3 py-2.5 text-sm border border-dashed border-gray-300 rounded-lg bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-white transition-colors"
                     />
                   </div>
                   {/* Después (requerido) */}
@@ -1172,7 +1172,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                       type="text"
                       value={newChange.newValue}
                       onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
-                      placeholder="Valor propuesto..."
+                      placeholder="Ingrese el valor propuesto"
                       className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all ${
                         newChange.newValue
                           ? 'border-green-400 bg-green-50 focus:border-green-500'
@@ -1221,9 +1221,9 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                     <label className="text-sm font-semibold text-gray-700">
                       Justificación <span className="text-[#C41E3A]">*</span>
                     </label>
-                    <span className={`text-xs transition-colors ${newChange.justification ? 'text-gray-400' : 'text-amber-500'}`}>
-                      {newChange.justification ? `${newChange.justification.length} car.` : 'Requerido'}
-                    </span>
+                    {newChange.justification && (
+                      <span className="text-xs text-gray-400">{newChange.justification.length} car.</span>
+                    )}
                   </div>
                   <textarea
                     value={newChange.justification}
@@ -1278,19 +1278,44 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                 {/* ── Selector de documentos específicos ── */}
                 {!newChange.isGlobal && (
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
-                    <div className="relative mb-3">
-                      <input
-                        type="text"
-                        placeholder="Buscar documento..."
-                        value={searchDocument}
-                        onChange={(e) => setSearchDocument(e.target.value)}
-                        className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                      />
-                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
+                    {/* Encabezado: título + contador */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-sm font-semibold text-gray-700 m-0">Seleccione los documentos</p>
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                        {newChange.appliesTo.length} / {documents.length}
+                      </span>
                     </div>
+                    {/* Buscador + Seleccionar todos */}
+                    <div className="flex gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Buscar documento..."
+                          value={searchDocument}
+                          onChange={(e) => setSearchDocument(e.target.value)}
+                          className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        />
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const allIds = documents.map((d) => d.id);
+                          const allSelected = allIds.every((id) => newChange.appliesTo.includes(id));
+                          setNewChange({
+                            ...newChange,
+                            appliesTo: allSelected ? [] : allIds,
+                          });
+                        }}
+                        className="px-3 py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap bg-white flex-shrink-0"
+                      >
+                        {documents.every((d) => newChange.appliesTo.includes(d.id))
+                          ? 'Deseleccionar todos'
+                          : 'Seleccionar todos'}
+                      </button>
+                    </div>
+                    {/* Lista de documentos */}
                     <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
                       {documents
                         .filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))
@@ -1321,9 +1346,6 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                         <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-3 m-0">
-                      {newChange.appliesTo.length} de {documents.length} seleccionados
-                    </p>
                   </div>
                 )}
               </div>
