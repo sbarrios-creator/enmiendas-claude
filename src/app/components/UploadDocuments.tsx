@@ -133,16 +133,6 @@ export function UploadDocuments({
         </p>
       </div>
 
-      {/* Header Row */}
-      <div className="grid grid-cols-[1.5fr_3fr_3fr] gap-4 mb-4 px-4">
-        <div className="text-sm font-semibold text-gray-700 uppercase">Tipo archivo</div>
-        <div className="text-sm font-semibold text-gray-700 uppercase">Archivo control de cambios</div>
-        <div className="text-sm font-semibold text-gray-700 uppercase">
-          Archivo versión final
-          <div className="text-xs font-normal normal-case text-gray-500">(Con control de cambios aceptado)</div>
-        </div>
-      </div>
-
       {/* Grouped Documents */}
       {Object.entries(displayGroupedDocuments).map(([category, docs]) => {
         const isInstrumentos = category === 'Instrumentos del proyecto';
@@ -196,6 +186,16 @@ export function UploadDocuments({
               </div>
             )}
 
+            {/* Column Headers — dentro de cada sección */}
+            <div className="grid grid-cols-[1.5fr_3fr_3fr] gap-4 px-4 py-2.5 bg-gray-900 border-x border-gray-300">
+              <div className="text-xs font-medium text-white uppercase tracking-wide">Tipo archivo</div>
+              <div className="text-xs font-medium text-white uppercase tracking-wide">Archivo control de cambios</div>
+              <div className="text-xs font-medium text-white uppercase tracking-wide">
+                Archivo versión final
+                <span className="block text-gray-400 normal-case font-normal mt-0.5">(Con control de cambios aceptado)</span>
+              </div>
+            </div>
+
             {/* Documents */}
             <div className="border-x border-b border-gray-300">
               {docs.length > 0 ? (
@@ -244,11 +244,11 @@ export function UploadDocuments({
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 bg-[#D4EDDA] border border-[#28A745] rounded px-3 py-2">
-                                <svg className="w-4 h-4 text-[#28A745] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="flex items-center gap-2 bg-green-100 border border-green-500 rounded px-3 py-2">
+                                <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span className="text-sm text-[#155724] flex-1 truncate font-medium">{docFiles.controlChanges.name}</span>
+                                <span className="text-sm text-green-800 flex-1 truncate font-medium">{docFiles.controlChanges.name}</span>
                                 <button
                                   onClick={() => handleFileRemove(doc.id, 'controlChanges')}
                                   className="text-gray-500 hover:text-red-600 flex-shrink-0"
@@ -310,11 +310,11 @@ export function UploadDocuments({
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 bg-[#D4EDDA] border border-[#28A745] rounded px-3 py-2">
-                                <svg className="w-4 h-4 text-[#28A745] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="flex items-center gap-2 bg-green-100 border border-green-500 rounded px-3 py-2">
+                                <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span className="text-sm text-[#155724] flex-1 truncate font-medium">{docFiles.finalVersion.name}</span>
+                                <span className="text-sm text-green-800 flex-1 truncate font-medium">{docFiles.finalVersion.name}</span>
                                 <button
                                   onClick={() => handleFileRemove(doc.id, 'finalVersion')}
                                   className="text-gray-500 hover:text-red-600 flex-shrink-0"

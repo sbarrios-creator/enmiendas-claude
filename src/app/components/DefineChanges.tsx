@@ -42,6 +42,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchChange, setSearchChange] = useState('');
   const [searchDocument, setSearchDocument] = useState('');
+  const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
+  const [searchInstruments, setSearchInstruments] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [activeMode, setActiveMode] = useState<'reemplazar' | 'archivo'>('reemplazar');
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -164,6 +168,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
       appliesTo: [],
       isGlobal: true,
     });
+    setModalStep(1);
     setShowAddChange(false);
   };
 
@@ -183,6 +188,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
       isGlobal: change.isGlobal,
     });
     setEditingId(change.id);
+    setModalStep(1);
     setShowAddChange(true);
   };
 
@@ -196,7 +202,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
         : c
     ));
     setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
-                  setSearchDocument('');
+    setSearchDocument('');
+    setModalStep(1);
     setEditingId(null);
     setShowAddChange(false);
   };
@@ -566,13 +573,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
               <div>
                 <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
                   <table className="w-full">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-gray-900">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Nombre</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rol actual</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rol propuesto</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tipo</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Acciones</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol actual</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol propuesto</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Tipo</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider w-24">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -746,352 +753,746 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
 
         {/* Card 4: Otros Cambios en Documentos */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Card header */}
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
-                <p className="text-sm text-gray-600 m-0 mt-1">Agregue cambios específicos para cada documento seleccionado</p>
-              </div>
-              {!showAddChange && (
-                <button
-                  onClick={() => setShowAddChange(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Agregar cambio
-                </button>
-              )}
-            </div>
+            <h3 className="text-sm font-semibold text-gray-900 m-0">Otros Cambios en Documentos</h3>
+            <p className="text-sm text-gray-600 m-0 mt-1">Seleccione un instrumento y defina el campo que desea modificar</p>
           </div>
 
-          <div className="p-4">
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r mb-4">
+          <div className="p-4 space-y-5">
+            {/* Info */}
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r">
               <p className="text-sm text-gray-800 m-0">
                 Para cada cambio, describa el valor anterior y el nuevo valor propuesto con su justificación correspondiente.
               </p>
             </div>
 
-            {/* Search */}
-            {changes.length > 0 && (
-              <div className="relative mb-3">
+            {/* Instrumentos del proyecto */}
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
+
+              {/* Título + tabs de modo */}
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Instrumentos del proyecto</h4>
+
+                {/* Toggle ARCHIVO / REEMPLAZAR */}
+                <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
+                  <button
+                    onClick={() => setActiveMode('archivo')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
+                      activeMode === 'archivo'
+                        ? 'bg-[#C41E3A] text-white'
+                        : 'bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Archivo
+                  </button>
+                  <div className="w-px h-5 bg-gray-200" />
+                  <button
+                    onClick={() => setActiveMode('reemplazar')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
+                      activeMode === 'reemplazar'
+                        ? 'bg-[#C41E3A] text-white'
+                        : 'bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reemplazar
+                  </button>
+                </div>
+              </div>
+
+              {/* Descripción del modo activo */}
+              <p className="text-xs text-gray-500 m-0">
+                {activeMode === 'reemplazar'
+                  ? 'Selecciona un instrumento para agregar un cambio de campo.'
+                  : 'Visualiza o descarga el archivo actual de cada instrumento.'}
+              </p>
+
+              {/* Buscador */}
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Buscar por campo, valor nuevo o valor anterior..."
-                  value={searchChange}
-                  onChange={(e) => setSearchChange(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  placeholder="Buscar instrumento..."
+                  value={searchInstruments}
+                  onChange={(e) => setSearchInstruments(e.target.value)}
+                  className="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                 />
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-            )}
 
-            {/* Existing Changes */}
-            {changes.length > 0 && (
-              <div className="space-y-3 mb-4 max-h-[460px] overflow-y-auto">
-                {changes
-                  .filter((c) =>
-                    !searchChange ||
-                    c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
-                    c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
-                    c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
-                  )
-                  .map((change) => (
-                  <div key={change.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-base font-semibold text-gray-900 m-0">{change.field}</h4>
-                      {/* {change.isGlobal ? (
-                        <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                          Global
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                          Específico
-                        </span>
-                      )} */}
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-2">
-                      {change.oldValue && (
-                        <div>
-                          <p className="text-xs text-gray-500 m-0 mb-1">Valor anterior:</p>
-                          <p className="text-sm text-gray-700 m-0 line-through">{change.oldValue}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-xs text-gray-500 m-0 mb-1">Valor nuevo:</p>
-                        <p className="text-sm text-[#C41E3A] font-medium m-0">{change.newValue}</p>
-                      </div>
-                      {change.justification && (
-                        <div>
-                          <p className="text-xs text-gray-500 m-0 mb-1">Justificación:</p>
-                          <p className="text-sm text-gray-700 m-0">{change.justification}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>
-                        {change.isGlobal ? 'Todos los documentos' : `${change.appliesTo.length} documentos`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleEditChange(change)}
-                      className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                      title="Editar"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleRemoveChange(change.id)}
-                      className="w-8 h-8 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
-                      title="Eliminar"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+              {/* Lista de instrumentos */}
+              {documents.length === 0 ? (
+                <div className="py-8 text-center">
+                  <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-500 font-medium m-0">Selecciona un instrumento arriba para comenzar</p>
+                  <p className="text-xs text-gray-400 mt-1 m-0">Ve al paso 1 y selecciona los documentos que deseas enmendar</p>
                 </div>
-              </div>
-            ))}
-                {searchChange && !changes.some((c) =>
-                  c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
-                  c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
-                  c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
-                ) && (
-                  <p className="text-sm text-gray-500 text-center py-4">No se encontraron resultados para la búsqueda.</p>
-                )}
-          </div>
-        )}
+              ) : (() => {
+                const filtered = documents.filter((doc) =>
+                  doc.name.toLowerCase().includes(searchInstruments.toLowerCase())
+                );
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-sm text-gray-400 text-center py-4 italic m-0">
+                      No se encontraron resultados para la búsqueda
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {filtered.map((doc) => {
+                      const changeCount = changes.filter((c) => c.isGlobal || c.appliesTo.includes(doc.id)).length;
+                      return (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-200 hover:shadow-sm transition-all"
+                        >
+                          {/* Ícono de documento */}
+                          <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg flex-shrink-0">
+                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
 
-        </div>
-      </div>
-    </div>
+                          {/* Nombre */}
+                          <span className="flex-1 text-sm text-gray-700 font-medium">{doc.name}</span>
 
-      {/* Modal: Agregar / Editar cambio */}
-      {showAddChange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowAddChange(false);
-              setEditingId(null);
-              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
-                  setSearchDocument('');
-            }}
-          />
+                          {/* Badge de cambios — siempre visible si los hay */}
+                          {changeCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold flex-shrink-0">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                              </svg>
+                              {changeCount} {changeCount === 1 ? 'cambio' : 'cambios'}
+                            </span>
+                          )}
 
-          {/* Dialog */}
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h4 className="font-semibold text-gray-900 text-base m-0">
-                {editingId ? 'Editar cambio' : 'Nuevo cambio'}
-              </h4>
-              <button
-                onClick={() => {
-                  setShowAddChange(false);
-                  setEditingId(null);
-                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
-                  setSearchDocument('');
-                }}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                          {/* Acción según modo activo */}
+                          {activeMode === 'reemplazar' ? (
+                            <button
+                              onClick={() => {
+                                setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [doc.id], isGlobal: false });
+                                setModalStep(1);
+                                setShowPreview(false);
+                                setShowAddChange(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-xs font-semibold flex-shrink-0 shadow-sm"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Cambio
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Ver archivo"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                              <button
+                                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Descargar archivo"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* Body */}
-            <div className="overflow-y-auto flex-1 px-6 py-5">
-              <div className="space-y-4">
-                {/* Field Selection */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
-                  <select
-                    value={newChange.field}
-                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value, customField: '' })}
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
-                  >
-                    <option value="">Seleccione un campo</option>
-                    {commonFields.map((field) => (
-                      <option key={field} value={field}>{field}</option>
-                    ))}
-                  </select>
+            {/* Lista de cambios pendientes */}
+            <div>
+              {/* Header con título, contador, búsqueda y botón "+ Nuevo cambio" */}
+              <div className="flex items-center justify-between mb-3 gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h4 className="text-sm font-semibold text-gray-800 m-0 whitespace-nowrap">Cambios pendientes</h4>
+                  {changes.length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">{changes.length}</span>
+                  )}
                 </div>
-
-                {/* Custom Field */}
-                {newChange.field === 'Otro (personalizado)' && (
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
-                    <input
-                      type="text"
-                      value={newChange.customField}
-                      onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
-                      placeholder="Ej: Versión del protocolo"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor anterior</label>
-                    <input
-                      type="text"
-                      value={newChange.oldValue}
-                      onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
-                      placeholder="Ej: Estudio ABC-123"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor nuevo *</label>
-                    <input
-                      type="text"
-                      value={newChange.newValue}
-                      onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
-                      placeholder="Ej: Estudio XYZ-456"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Justification */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Justificación *</label>
-                  <textarea
-                    value={newChange.justification}
-                    onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
-                    placeholder="Describa la justificación para este cambio"
-                    rows={3}
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                  />
-                </div>
-
-                {/* Scope Selection */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio *</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setNewChange({ ...newChange, isGlobal: true })}
-                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
-                        newChange.isGlobal
-                          ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      Todos los documentos
-                    </button>
-                    <button
-                      onClick={() => setNewChange({ ...newChange, isGlobal: false })}
-                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
-                        !newChange.isGlobal
-                          ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      Documentos específicos
-                    </button>
-                  </div>
-                </div>
-
-                {/* Document Selection */}
-                {!newChange.isGlobal && (
-                  <div className="border border-gray-300 rounded-lg p-4 bg-white">
-                    <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
-
-                    {/* Buscador */}
-                    <div className="relative mb-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {changes.length > 0 && (
+                    <div className="relative">
                       <input
                         type="text"
-                        placeholder="Buscar documento..."
-                        value={searchDocument}
-                        onChange={(e) => setSearchDocument(e.target.value)}
-                        className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        placeholder="Filtrar cambios..."
+                        value={searchChange}
+                        onChange={(e) => setSearchChange(e.target.value)}
+                        className="w-40 px-3 py-1.5 pl-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                       />
-                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
-
-                    {/* Lista con scroll */}
-                    <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-                      {documents
-                        .filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))
-                        .map((doc) => (
-                          <div key={doc.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
-                            <button
-                              onClick={() => handleToggleDocument(doc.id)}
-                              className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                                newChange.appliesTo.includes(doc.id)
-                                  ? 'bg-green-600 text-white hover:bg-green-700'
-                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              }`}
-                            >
-                              {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
-                            </button>
-                            <span className="text-sm text-gray-700">{doc.name}</span>
-                          </div>
-                        ))}
-                      {searchDocument && !documents.some((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())) && (
-                        <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-gray-600 mt-3 m-0">
-                      {newChange.appliesTo.length} de {documents.length} seleccionados
-                    </p>
-                  </div>
-                )}
+                  )}
+                  <button
+                    onClick={() => {
+                      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+                      setModalStep(1);
+                      setShowPreview(false);
+                      setShowAddChange(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo cambio
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Footer */}
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowAddChange(false);
-                  setEditingId(null);
-                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
-                  setSearchDocument('');
-                }}
-                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={editingId ? handleSaveEdit : handleAddChange}
-                disabled={
-                  !(newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field) ||
-                  !newChange.newValue ||
-                  !newChange.justification ||
-                  (!newChange.isGlobal && newChange.appliesTo.length === 0)
-                }
-                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-              >
-                {editingId ? 'Guardar cambios' : 'Agregar cambio'}
-              </button>
+              {changes.length === 0 ? (
+                <div className="border-2 border-dashed border-gray-200 rounded-lg py-8 text-center bg-gray-50">
+                  <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <p className="text-sm text-gray-500 font-medium m-0">Aún no hay cambios registrados</p>
+                  <p className="text-xs text-gray-400 mt-1 m-0">Usa "Reemplazar" en un instrumento o haz clic en <strong>+ Nuevo cambio</strong></p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[420px] overflow-y-auto pr-0.5">
+                  {changes
+                    .filter((c) =>
+                      !searchChange ||
+                      c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                      c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                      c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                    )
+                    .map((change) => (
+                    <div
+                      key={change.id}
+                      className="border border-gray-200 rounded-lg bg-white overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all"
+                    >
+                      {/* Card header: campo + scope + iconos editar/eliminar */}
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 truncate">{change.field}</span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                            change.isGlobal ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {change.isGlobal ? 'Todos los docs.' : `${change.appliesTo.length} doc(s)`}
+                          </span>
+                        </div>
+                        {/* Íconos editar y eliminar alineados a la derecha */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleEditChange(change)}
+                            className="w-7 h-7 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Editar cambio"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleRemoveChange(change.id)}
+                            className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-50 rounded transition-colors"
+                            title="Eliminar cambio"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Before / After con fondos diferenciados */}
+                      <div className="px-4 py-3">
+                        <div className="flex items-stretch gap-2">
+                          {/* ANTES — rojo muy suave */}
+                          <div className="flex-1 min-w-0 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
+                            <p className="text-xs text-red-400 font-semibold uppercase tracking-wide mb-1 m-0 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              Antes
+                            </p>
+                            <p className={`text-sm m-0 break-words ${change.oldValue ? 'text-red-400 line-through' : 'text-red-200 italic'}`}>
+                              {change.oldValue || 'Sin valor previo'}
+                            </p>
+                          </div>
+                          {/* Flecha */}
+                          <div className="flex items-center flex-shrink-0 self-center">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                          </div>
+                          {/* DESPUÉS — verde muy suave */}
+                          <div className="flex-1 min-w-0 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-xs text-green-600 font-semibold uppercase tracking-wide mb-1 m-0 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Después
+                            </p>
+                            <p className="text-sm text-green-700 font-medium m-0 break-words">{change.newValue}</p>
+                          </div>
+                        </div>
+                        {change.justification && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <p className="text-xs text-gray-400 m-0">
+                              <span className="font-medium text-gray-500">Justificación:</span>{' '}
+                              {change.justification}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {searchChange && !changes.some((c) =>
+                    c.field.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.newValue.toLowerCase().includes(searchChange.toLowerCase()) ||
+                    c.oldValue.toLowerCase().includes(searchChange.toLowerCase())
+                  ) && (
+                    <p className="text-sm text-gray-400 text-center py-4 italic">No se encontraron cambios para la búsqueda.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Modal: Agregar / Editar cambio — flujo 3 fases */}
+      {showAddChange && (() => {
+        const closeModal = () => {
+          setShowAddChange(false);
+          setEditingId(null);
+          setModalStep(1);
+          setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+          setSearchDocument('');
+        };
+        const activeField = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+        const step1Valid = !!activeField;
+        const step2Valid = !!newChange.newValue;
+        const step3Valid = !!newChange.justification && (newChange.isGlobal || newChange.appliesTo.length > 0);
+
+        const steps = [
+          { n: 1 as const, label: 'Campo' },
+          { n: 2 as const, label: 'Nuevo valor' },
+          { n: 3 as const, label: 'Justificación' },
+        ];
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
+
+            {/* Dialog */}
+            <div
+              className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { e.stopPropagation(); if (modalStep > 1) setModalStep((s) => (s - 1) as 1 | 2 | 3); else closeModal(); }
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  if (modalStep === 1 && step1Valid) { e.preventDefault(); setModalStep(2); }
+                  else if (modalStep === 2 && step2Valid) { e.preventDefault(); setModalStep(3); }
+                  else if (modalStep === 3 && step3Valid) { e.preventDefault(); if (editingId) handleSaveEdit(); else handleAddChange(); }
+                }
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h4 className="font-semibold text-gray-900 text-base m-0">
+                  {editingId ? 'Editar cambio' : 'Nuevo cambio'}
+                </h4>
+                <button onClick={closeModal} className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Step indicator */}
+              <div className="px-6 pt-4 pb-3 bg-gray-50 border-b border-gray-100">
+                <div className="flex items-start">
+                  {steps.map(({ n, label }, idx) => (
+                    <div key={n} className="flex items-start flex-1">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
+                          modalStep > n ? 'bg-green-500 text-white' :
+                          modalStep === n ? 'bg-gray-900 text-white shadow-sm' :
+                          'bg-gray-200 text-gray-400'
+                        }`}>
+                          {modalStep > n
+                            ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            : n}
+                        </div>
+                        <span className={`text-xs mt-1 font-medium transition-colors ${modalStep === n ? 'text-gray-800' : modalStep > n ? 'text-green-600' : 'text-gray-400'}`}>{label}</span>
+                      </div>
+                      {idx < 2 && (
+                        <div className={`flex-1 h-0.5 mt-3.5 mx-2 transition-colors duration-300 ${modalStep > n ? 'bg-green-400' : 'bg-gray-200'}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto flex-1 px-6 py-5">
+
+                {/* ── FASE 1: Campo y valor actual ── */}
+                {modalStep === 1 && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">
+                        Campo a modificar <span className="text-[#C41E3A]">*</span>
+                      </label>
+                      <select
+                        autoFocus
+                        value={newChange.field}
+                        onChange={(e) => setNewChange({ ...newChange, field: e.target.value, customField: '' })}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                      >
+                        <option value="">Seleccione un campo</option>
+                        {commonFields.map((field) => (
+                          <option key={field} value={field}>{field}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {newChange.field === 'Otro (personalizado)' && (
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-gray-700">
+                          Especifique el campo <span className="text-[#C41E3A]">*</span>
+                        </label>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={newChange.customField}
+                          onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
+                          placeholder="Ej: Versión del protocolo"
+                          className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        />
+                      </div>
+                    )}
+
+                    {step1Valid && (
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                          Valor actual{' '}
+                          <span className="text-xs font-normal text-gray-400">(antes del cambio — opcional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={newChange.oldValue}
+                          onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
+                          placeholder="Dejar en blanco si no existe valor previo"
+                          className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
+                        />
+                        <p className="text-xs text-gray-400 mt-1.5 m-0">Se usará como referencia del cambio en el resumen</p>
+                      </div>
+                    )}
+
+                    {newChange.oldValue && (
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0" />
+                        <p className="text-sm text-gray-500 m-0 line-through flex-1 truncate">{newChange.oldValue}</p>
+                        <span className="text-xs text-gray-400 flex-shrink-0">valor actual</span>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-400 m-0 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Presiona <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Enter</kbd> para continuar
+                    </p>
+                  </div>
+                )}
+
+                {/* ── FASE 2: Nuevo valor + previsualización ── */}
+                {modalStep === 2 && (
+                  <div className="space-y-4">
+                    {/* Chip de campo — estilo cabecera tabla */}
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-900 text-white rounded-lg">
+                      <svg className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      <span className="text-sm font-semibold">{activeField}</span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Nuevo valor <span className="text-[#C41E3A]">*</span>
+                        </label>
+                        {newChange.newValue && (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Listo
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newChange.newValue}
+                        onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
+                        placeholder="Ingrese el nuevo valor propuesto"
+                        className={`w-full px-4 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all duration-150 ${
+                          newChange.newValue
+                            ? 'border-green-400 bg-green-50 focus:border-green-500'
+                            : 'border-gray-300 bg-white focus:border-blue-500'
+                        }`}
+                      />
+                      {!newChange.newValue && (
+                        <p className="text-xs text-amber-600 mt-1.5 m-0 flex items-center gap-1">
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Este campo es obligatorio para continuar
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Botón "Vista previa del cambio" */}
+                    <button
+                      onClick={() => setShowPreview((prev) => !prev)}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                        showPreview
+                          ? 'bg-green-600 text-white border-green-600 hover:bg-green-700'
+                          : 'bg-white text-green-700 border-green-400 hover:bg-green-50'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      {showPreview ? 'Ocultar vista previa' : 'Vista previa del cambio'}
+                    </button>
+
+                    {/* Previsualización antes/después — togglable */}
+                    {showPreview && (
+                      <div className="flex items-stretch gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1 m-0">Antes</p>
+                          <p className={`text-sm m-0 break-words ${newChange.oldValue ? 'text-gray-500 line-through' : 'text-gray-300 italic'}`}>
+                            {newChange.oldValue || 'Sin valor previo'}
+                          </p>
+                        </div>
+                        <div className="flex items-center px-1.5 flex-shrink-0 self-center">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-green-600 font-medium uppercase tracking-wide mb-1 m-0">Después</p>
+                          <p className={`text-sm font-medium m-0 break-words transition-colors ${newChange.newValue ? 'text-green-700' : 'text-gray-300 italic'}`}>
+                            {newChange.newValue || 'Escribe el nuevo valor...'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-400 m-0 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Presiona <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Enter</kbd> para continuar
+                    </p>
+                  </div>
+                )}
+
+                {/* ── FASE 3: Justificación y alcance ── */}
+                {modalStep === 3 && (
+                  <div className="space-y-4">
+                    {/* Resumen antes/después */}
+                    <div className="flex items-stretch gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-400 m-0">Antes</p>
+                        <p className={`text-sm m-0 truncate ${newChange.oldValue ? 'text-gray-500 line-through' : 'text-gray-300 italic'}`}>
+                          {newChange.oldValue || 'Sin valor previo'}
+                        </p>
+                      </div>
+                      <div className="flex items-center px-1 flex-shrink-0 self-center">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-green-600 m-0">Después</p>
+                        <p className="text-sm font-medium text-green-700 m-0 truncate">{newChange.newValue}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Justificación <span className="text-[#C41E3A]">*</span>
+                        </label>
+                        <span className={`text-xs transition-colors ${newChange.justification ? 'text-gray-400' : 'text-amber-500'}`}>
+                          {newChange.justification ? `${newChange.justification.length} caracteres` : 'Requerido'}
+                        </span>
+                      </div>
+                      <textarea
+                        autoFocus
+                        value={newChange.justification}
+                        onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
+                        placeholder="Describa la razón técnica o científica de este cambio"
+                        rows={4}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none"
+                        onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey && step3Valid) { e.preventDefault(); if (editingId) handleSaveEdit(); else handleAddChange(); } }}
+                      />
+                      <p className="text-xs text-gray-400 mt-1 m-0 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Usa <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Ctrl+Enter</kbd> para guardar rápidamente
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">
+                        Alcance del cambio <span className="text-[#C41E3A]">*</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setNewChange({ ...newChange, isGlobal: true })}
+                          className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
+                            newChange.isGlobal
+                              ? 'border-blue-600 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>
+                              {newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}
+                            </div>
+                            <span>Todos los documentos</span>
+                          </div>
+                          <p className="text-xs text-gray-400 m-0 ml-6">Aplica a los {documents.length} docs.</p>
+                        </button>
+                        <button
+                          onClick={() => setNewChange({ ...newChange, isGlobal: false })}
+                          className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
+                            !newChange.isGlobal
+                              ? 'border-blue-600 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>
+                              {!newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}
+                            </div>
+                            <span>Documentos específicos</span>
+                          </div>
+                          <p className="text-xs text-gray-400 m-0 ml-6">Selecciona cuáles</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {!newChange.isGlobal && (
+                      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
+                        <div className="relative mb-3">
+                          <input
+                            type="text"
+                            placeholder="Buscar documento..."
+                            value={searchDocument}
+                            onChange={(e) => setSearchDocument(e.target.value)}
+                            className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                          />
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                          {documents
+                            .filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))
+                            .map((doc) => (
+                              <div key={doc.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
+                                <button
+                                  onClick={() => handleToggleDocument(doc.id)}
+                                  className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+                                    newChange.appliesTo.includes(doc.id)
+                                      ? 'bg-green-600 text-white hover:bg-green-700'
+                                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                  }`}
+                                >
+                                  {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
+                                </button>
+                                <span className="text-sm text-gray-700">{doc.name}</span>
+                              </div>
+                            ))}
+                          {searchDocument && !documents.some((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())) && (
+                            <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-3 m-0">
+                          {newChange.appliesTo.length} de {documents.length} seleccionados
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+                {modalStep === 1 ? (
+                  <button
+                    onClick={closeModal}
+                    className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Cancelar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setModalStep((s) => (s - 1) as 1 | 2 | 3)}
+                    className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    ← Anterior
+                  </button>
+                )}
+                {modalStep < 3 ? (
+                  <button
+                    onClick={() => setModalStep((s) => (s + 1) as 1 | 2 | 3)}
+                    disabled={(modalStep === 1 && !step1Valid) || (modalStep === 2 && !step2Valid)}
+                    className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    Siguiente →
+                  </button>
+                ) : (
+                  <button
+                    onClick={editingId ? handleSaveEdit : handleAddChange}
+                    disabled={!step3Valid}
+                    className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    {editingId ? 'Guardar cambios' : 'Agregar cambio'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal: Agregar unidad operativa */}
       {unitModalType !== null && (
