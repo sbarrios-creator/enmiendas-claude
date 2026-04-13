@@ -45,7 +45,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
   const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
   const [searchInstruments, setSearchInstruments] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const [activeMode, setActiveMode] = useState<'reemplazar' | 'archivo'>('reemplazar');
+  const [activeMode, setActiveMode] = useState<Record<string, 'archivo' | 'reemplazar'>>({});
+  const getModeForDoc = (docId: string): 'archivo' | 'reemplazar' => activeMode[docId] ?? 'reemplazar';
+  const setModeForDoc = (docId: string, mode: 'archivo' | 'reemplazar') =>
+    setActiveMode((prev) => ({ ...prev, [docId]: mode }));
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -770,48 +773,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
             {/* Instrumentos del proyecto */}
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
 
-              {/* Título + tabs de modo */}
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="text-sm font-semibold text-gray-800 m-0">Instrumentos del proyecto</h4>
-
-                {/* Toggle ARCHIVO / REEMPLAZAR */}
-                <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
-                  <button
-                    onClick={() => setActiveMode('archivo')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
-                      activeMode === 'archivo'
-                        ? 'bg-[#C41E3A] text-white'
-                        : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Archivo
-                  </button>
-                  <div className="w-px h-5 bg-gray-200" />
-                  <button
-                    onClick={() => setActiveMode('reemplazar')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
-                      activeMode === 'reemplazar'
-                        ? 'bg-[#C41E3A] text-white'
-                        : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Reemplazar
-                  </button>
-                </div>
-              </div>
-
-              {/* Descripción del modo activo */}
-              <p className="text-xs text-gray-500 m-0">
-                {activeMode === 'reemplazar'
-                  ? 'Selecciona un instrumento para agregar un cambio de campo.'
-                  : 'Visualiza o descarga el archivo actual de cada instrumento.'}
-              </p>
+              {/* Título de sección */}
+              <h4 className="text-sm font-semibold text-gray-800 m-0">Instrumentos del proyecto</h4>
 
               {/* Buscador */}
               <div className="relative">
@@ -833,7 +796,7 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p className="text-sm text-gray-500 font-medium m-0">Selecciona un instrumento arriba para comenzar</p>
+                  <p className="text-sm text-gray-500 font-medium m-0">No hay instrumentos seleccionados</p>
                   <p className="text-xs text-gray-400 mt-1 m-0">Ve al paso 1 y selecciona los documentos que deseas enmendar</p>
                 </div>
               ) : (() => {
@@ -851,68 +814,105 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                   <div className="space-y-2">
                     {filtered.map((doc) => {
                       const changeCount = changes.filter((c) => c.isGlobal || c.appliesTo.includes(doc.id)).length;
+                      const docMode = getModeForDoc(doc.id);
                       return (
                         <div
                           key={doc.id}
-                          className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-200 hover:shadow-sm transition-all"
+                          className="bg-white border border-gray-200 rounded-lg shadow-sm hover:border-gray-300 hover:shadow-md transition-all overflow-hidden"
                         >
-                          {/* Ícono de documento */}
-                          <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg flex-shrink-0">
-                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                          {/* Fila 1: ícono + nombre + badge */}
+                          <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+                            <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg flex-shrink-0">
+                              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <span className="flex-1 text-sm text-gray-800 font-semibold leading-snug">{doc.name}</span>
+                            {changeCount > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold flex-shrink-0">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                                </svg>
+                                {changeCount} {changeCount === 1 ? 'cambio' : 'cambios'}
+                              </span>
+                            )}
                           </div>
 
-                          {/* Nombre */}
-                          <span className="flex-1 text-sm text-gray-700 font-medium">{doc.name}</span>
-
-                          {/* Badge de cambios — siempre visible si los hay */}
-                          {changeCount > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold flex-shrink-0">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                              </svg>
-                              {changeCount} {changeCount === 1 ? 'cambio' : 'cambios'}
-                            </span>
-                          )}
-
-                          {/* Acción según modo activo */}
-                          {activeMode === 'reemplazar' ? (
-                            <button
-                              onClick={() => {
-                                setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [doc.id], isGlobal: false });
-                                setModalStep(1);
-                                setShowPreview(false);
-                                setShowAddChange(true);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-xs font-semibold flex-shrink-0 shadow-sm"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                              </svg>
-                              Cambio
-                            </button>
-                          ) : (
-                            <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Fila 2: toggle por instrumento + botón de acción */}
+                          <div className="flex items-center gap-3 px-4 pb-3">
+                            {/* Toggle Archivo / Reemplazar */}
+                            <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0">
                               <button
-                                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Ver archivo"
+                                onClick={() => setModeForDoc(doc.id, 'archivo')}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
+                                  docMode === 'archivo'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-transparent text-gray-500 hover:bg-gray-100'
+                                }`}
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
+                                Archivo
                               </button>
+                              <div className="w-px h-5 bg-gray-200" />
                               <button
-                                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Descargar archivo"
+                                onClick={() => setModeForDoc(doc.id, 'reemplazar')}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all ${
+                                  docMode === 'reemplazar'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-transparent text-gray-500 hover:bg-gray-100'
+                                }`}
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
+                                Reemplazar
                               </button>
                             </div>
-                          )}
+
+                            <div className="flex-1" />
+
+                            {/* Acción según modo activo del instrumento */}
+                            {docMode === 'reemplazar' ? (
+                              <button
+                                onClick={() => {
+                                  setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [doc.id], isGlobal: false });
+                                  setModalStep(1);
+                                  setShowPreview(false);
+                                  setShowAddChange(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-xs font-semibold flex-shrink-0 shadow-sm"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                + Agregar
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                                  title="Ver archivo"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  Ver
+                                </button>
+                                <button
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
+                                  title="Descargar archivo"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  Descargar
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
