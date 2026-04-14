@@ -183,3 +183,93 @@
 
 #### Botón Finalizar
 - Se agregó el botón **"Finalizar"** en la esquina inferior derecha del paso, reemplazando los múltiples botones de acción anteriores (Aplicar cambios automáticos, Generar nuevas versiones, Enviar a revisión).
+
+---
+
+## Versión 2 — Mejoras de flujo, agrupación por categorías y confirmaciones (rama `version2`)
+
+---
+
+### `src/app/types.ts`
+
+- Se agregaron los campos `registrationDate?: string` y `declarationFileName?: string` al interface `InternalOperativeUnit`, para registrar la fecha de incorporación y el archivo de carta de declaración del jefe de unidad.
+
+---
+
+### `src/app/components/ConfirmDialog.tsx` (nuevo componente)
+
+- Se creó el componente reutilizable `ConfirmDialog` para mostrar ventanas de confirmación antes de ejecutar acciones críticas.
+- Acepta `title`, `message`, `confirmLabel`, `cancelLabel` y `variant` (`danger`, `warning`, `primary`).
+- Se usa en los 4 pasos del wizard para acciones de eliminar y guardar/continuar.
+
+---
+
+### `src/app/components/DefineChanges.tsx` — Paso 3
+
+#### Modal de Unidades Operativas Internas
+- Se reemplazó el formulario inline de unidades internas por un **modal** consistente con el de unidades externas.
+- El modal incluye:
+  - Campo de búsqueda desplegable con placeholder `"Buscar unidad operativa por su nombre ▼"` que filtra las opciones en tiempo real. Permite usar texto libre si no hay coincidencia.
+  - Campo adicional para nombre personalizado cuando se selecciona la opción "Otros".
+  - Área **drag-and-drop** para adjuntar la carta de declaración del jefe de unidad (PDF/DOCX, máx. 200 MB).
+  - Botones **"Agregar"** (habilitado solo cuando se seleccionó unidad y se adjuntó archivo) y **"Cancelar"**.
+- La tabla de unidades internas incorporó la columna **"Fecha de registro"**.
+- Se eliminó el botón **"Agregar al proyecto"** de la tabla de Unidades Externas.
+
+#### Confirmaciones de acciones
+- Se agregó `ConfirmDialog` para todas las acciones destructivas y de navegación:
+  - Deshacer unidad interna → confirmación `danger`.
+  - Deshacer unidad externa → confirmación `danger`.
+  - Eliminar investigador → confirmación `danger` (con nombre del investigador).
+  - Eliminar cambio → confirmación `danger` (con nombre del campo).
+  - Continuar al resumen → confirmación `primary`.
+
+#### Selector de alcance al agregar cambio — agrupación por categorías
+- La lista "Disponibles" agrupa los documentos bajo las 5 etiquetas predefinidas: **Presupuesto del estudio**, **Proyecto de investigación**, **Consentimiento informado**, **Asentimientos** e **Instrumentos del proyecto**.
+- Cada cabecera de categoría incluye un botón **"Agregar todos"** que añade todos los documentos del grupo de un clic.
+- La lista "Seleccionados" también se agrupa por categoría con botón **"Quitar todos"** por grupo para deselección masiva.
+- Los documentos nuevos agregados en el Paso 1 se clasifican automáticamente bajo **"Instrumentos del proyecto"**.
+- El botón global **"Agregar todos"** del footer de "Disponibles" desaparece cuando no quedan documentos sin seleccionar, y reaparece al quitar cualquier seleccionado.
+
+---
+
+### `src/app/components/SelectDocuments.tsx` — Paso 1
+
+- Se separó la sección **"Consentimiento informado y Asentimientos"** en dos secciones independientes:
+  - **"Consentimiento informado"** → solo el documento de consentimiento (id `2`).
+  - **"Asentimientos"** → documentos de asentimiento 12-17 años (id `3`) y menores de 12 (id `4`).
+- Se agregó `ConfirmDialog` para:
+  - Eliminar documento nuevo → confirmación `danger`.
+  - Limpiar selección → confirmación `warning`.
+  - Continuar al Paso 2 → confirmación `primary` con conteo de documentos seleccionados.
+
+---
+
+### `src/app/components/UploadDocuments.tsx` — Paso 2
+
+- Los documentos seleccionados se agrupan por las **5 categorías predefinidas**. Cada categoría muestra un encabezado rojo con su nombre; dentro, cada documento tiene su propio subencabezado gris con indicador "Completo".
+- Los documentos nuevos agregados en el Paso 1 se ubican bajo **"Instrumentos del proyecto"**.
+- Se agregó `ConfirmDialog` para:
+  - Eliminar archivo de control de cambios → confirmación `danger` (con nombre del archivo).
+  - Eliminar archivo de versión final → confirmación `danger`.
+  - Continuar al Paso 3 → confirmación `primary`.
+
+---
+
+### `src/app/components/Summary.tsx` — Paso 4
+
+- La sección **"Cambios a aplicar en otros Documentos"** agrupa los documentos bajo las 5 categorías predefinidas. Cada categoría aparece como cabecera gris con borde izquierdo, y dentro se listan los acordeones por documento.
+- Los documentos nuevos se clasifican bajo **"Instrumentos del proyecto"**.
+- Se corrigió la visualización de unidades operativas en el resumen: reemplaza la referencia inválida por la lista real de nombres de unidades internas y externas separados por coma.
+- Se agregó `ConfirmDialog` para:
+  - Eliminar documento nuevo → confirmación `danger` + botón eliminar incorporado (antes no existía).
+  - Guardar nuevo documento → confirmación `primary` (con nombre del documento).
+  - Finalizar → confirmación `primary` con advertencia de acción irreversible.
+
+---
+
+### `src/app/data/documents.ts`
+
+- Se actualizaron las categorías de los documentos de consentimiento y asentimiento para reflejar la separación de secciones:
+  - id `2` (`Consentimiento informado`): categoría `'Consentimiento informado'`.
+  - id `3` (`Asentimiento(12-17)`) e id `4` (`Asentimiento(<12)`): categoría `'Asentimientos'`.
