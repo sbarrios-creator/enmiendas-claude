@@ -4,10 +4,10 @@ export type DocumentWithCategory = Document & { category: string };
 
 export const baseDocuments: DocumentWithCategory[] = [
   { id: 'presupuesto', name: 'Presupuesto general del estudio', type: 'Presupuesto', status: 'Aprobado', version: '1', category: 'Presupuesto del estudio' },
-  { id: '1',   name: 'Proyecto investigación',               type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Proyecto de investigación' },
-  { id: '2',   name: 'Consentimiento informado',             type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Consentimiento informado' },
-  { id: '3',   name: 'Asentimiento(12-17)',                  type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Asentimientos' },
-  { id: '4',   name: 'Asentimiento(<12)',                    type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Asentimientos' },
+  { id: '1',   name: 'Proyecto investigación',               type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '2',   name: 'Consentimiento informado',             type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '3',   name: 'Asentimiento(12-17)',                  type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '4',   name: 'Asentimiento(<12)',                    type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
   { id: '5',   name: 'Consentimiento animales',              type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
   { id: '6',   name: 'Constancia conducta responsable',      type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
   { id: '7',   name: 'Constancia ética',                     type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },

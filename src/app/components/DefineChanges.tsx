@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import type { Change, Step3Data, ResearcherChange } from '../types';
+import type { Change, Document, Step3Data, ResearcherChange } from '../types';
+import { baseDocuments } from '../data/documents';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
+  newDocuments: Document[];
   changes: Change[];
   onChangesUpdate: (changes: Change[]) => void;
   step3Data: Step3Data;
@@ -10,14 +12,6 @@ interface DefineChangesProps {
   onNext: () => void;
   onBack: () => void;
 }
-
-const mockDocuments = [
-  { id: '1', name: 'Presupuesto general del estudio', type: 'Presupuesto' },
-  { id: '2', name: 'Cuestionario de salud general (SF-36)', type: 'Instrumento' },
-  { id: '3', name: 'Cuestionario de calidad de vida', type: 'Instrumento' },
-  { id: '4', name: 'Escala de evaluación clínica', type: 'Instrumento' },
-  { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento' },
-];
 
 const commonFields = [
   'Nombre del estudio',
@@ -29,7 +23,7 @@ const commonFields = [
   'Otro (personalizado)',
 ];
 
-export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
+export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,7 +77,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
     setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
   };
 
-  const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+  const allDocuments = [...baseDocuments, ...newDocuments];
+  const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
   // Cambios agrupados
   const globalChanges = changes.filter((c) => c.isGlobal);
   const getChangesForDoc = (docId: string) => changes.filter((c) => !c.isGlobal && c.appliesTo.includes(docId));
@@ -643,14 +638,23 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                           <td className="px-3 py-2 max-w-[160px]">
                             <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
                           </td>
-                          <td className="px-3 py-2">
-                            {change.isGlobal ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Todos</span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600" title={change.appliesTo.map(id => documents.find(d => d.id === id)?.name).join(', ')}>
-                                {change.appliesTo.length} doc{change.appliesTo.length !== 1 ? 's' : ''}
-                              </span>
-                            )}
+                          <td className="px-3 py-2 max-w-[200px]">
+                            {(() => {
+                              const names = change.appliesTo
+                                .map(id => documents.find(d => d.id === id)?.name)
+                                .filter(Boolean) as string[];
+                              if (names.length === 0) return <span className="text-gray-400 text-xs">—</span>;
+                              return (
+                                <ul className="space-y-1 m-0 p-0 list-none">
+                                  {names.map((name, i) => (
+                                    <li key={i} className="flex items-start gap-1.5">
+                                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#C41E3A] shrink-0" />
+                                      <span className="text-xs text-gray-700 leading-snug">{name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              );
+                            })()}
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex gap-1 justify-center">
@@ -800,10 +804,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                             onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
                             className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors flex items-center justify-between gap-2"
                           >
-                            <span className="truncate">{doc.name}</span>
-                            <svg className="w-3 h-3 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            <span className="truncate flex-1">{doc.name}</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {doc.type}
+                            </span>
                           </button>
                         ))}
                       {documents.filter((doc) => !newChange.appliesTo.includes(doc.id) && doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())).length === 0 && (
@@ -836,7 +840,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                         if (!doc) return null;
                         return (
                           <div key={id} className="flex items-center justify-between gap-2 px-3 py-2">
-                            <span className="text-xs text-gray-700 truncate">{doc.name}</span>
+                            <span className="text-xs text-gray-700 truncate flex-1">{doc.name}</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {doc.type}
+                            </span>
                             <button
                               type="button"
                               onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((a) => a !== id) })}
