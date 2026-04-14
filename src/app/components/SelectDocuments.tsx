@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Document } from '../types';
+import { baseDocuments } from '../data/documents';
 
 interface SelectDocumentsProps {
   selectedDocuments: string[];
@@ -28,19 +29,6 @@ interface DocumentSection {
   documents: Document[];
 }
 
-const mockDocuments: Document[] = [
-  { id: '1', name: 'Presupuesto general del estudio', type: 'Presupuesto', status: 'Aprobado', version: '1' },
-  { id: '2', name: 'Cuestionario de salud general (SF-36)', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '3', name: 'Cuestionario de calidad de vida', type: 'Instrumento', status: 'Aprobado', version: '3' },
-  { id: '4', name: 'Escala de evaluación clínica', type: 'Instrumento', status: 'Aprobado', version: '2' },
-  { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '6', name: 'Ficha de recolección de datos', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '7', name: 'Cuestionario de seguimiento', type: 'Instrumento', status: 'Aprobado', version: '2' },
-  { id: '8', name: 'Escala de dolor (EVA)', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '9', name: 'Inventario de depresión de Beck', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '10', name: 'Test de adherencia al tratamiento', type: 'Instrumento', status: 'Aprobado', version: '1' },
-  { id: '11', name: 'Registro de eventos adversos', type: 'Instrumento', status: 'Aprobado', version: '2' },
-];
 
 export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,7 +36,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
   const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
 
   // Lista completa = documentos base + nuevos agregados por el usuario
-  const documents = [...mockDocuments, ...newDocuments];
+  const documents = [...baseDocuments, ...newDocuments];
 
   const handleModalSave = () => {
     if (!modalForm.name) return;
@@ -102,14 +90,27 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
     }
   };
 
+  const PROYECTO_IDS = ['1'];
+  const CONSENTIMIENTO_IDS = ['2', '3', '4'];
+
   const sections: DocumentSection[] = [
     {
       title: 'Presupuesto del estudio',
       documents: documents.filter((doc) => doc.type === 'Presupuesto'),
     },
     {
+      title: 'Proyecto de investigación',
+      documents: documents.filter((doc) => PROYECTO_IDS.includes(doc.id)),
+    },
+    {
+      title: 'Consentimiento informado y Asentimientos',
+      documents: documents.filter((doc) => CONSENTIMIENTO_IDS.includes(doc.id)),
+    },
+    {
       title: 'Instrumentos del proyecto',
-      documents: documents.filter((doc) => doc.type === 'Instrumento'),
+      documents: documents.filter(
+        (doc) => doc.type === 'Instrumento' && !PROYECTO_IDS.includes(doc.id) && !CONSENTIMIENTO_IDS.includes(doc.id)
+      ),
     },
     {
       title: 'Documentos Nuevos',
@@ -164,6 +165,8 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                 doc.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
             : section.documents;
+
+          if (displayDocuments.length === 0 && !isNuevos && !isInstrumentos) return null;
 
           return (
             <div key={section.title} className="border border-gray-300 rounded overflow-hidden mb-6">

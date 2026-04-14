@@ -97,6 +97,7 @@ export default function App() {
           {currentStep === 2 && (
             <UploadDocuments
               selectedDocuments={selectedDocuments}
+              newDocuments={newDocuments}
               uploadStatuses={uploadStatuses}
               onUploadStatusChange={setUploadStatuses}
               onNext={handleNext}
@@ -107,6 +108,7 @@ export default function App() {
           {currentStep === 3 && (
             <DefineChanges
               selectedDocuments={selectedDocuments}
+              newDocuments={newDocuments}
               changes={changes}
               onChangesUpdate={setChanges}
               step3Data={step3Data}

@@ -1,27 +1,15 @@
 import { useState } from 'react';
-import type { UploadStatus } from '../types';
+import type { Document, UploadStatus } from '../types';
+import { baseDocuments } from '../data/documents';
 
 interface UploadDocumentsProps {
   selectedDocuments: string[];
+  newDocuments: Document[];
   uploadStatuses: Record<string, UploadStatus>;
   onUploadStatusChange: (statuses: Record<string, UploadStatus>) => void;
   onNext: () => void;
   onBack: () => void;
 }
-
-const mockDocuments = [
-  { id: '1', name: 'Presupuesto general del estudio', type: 'Presupuesto', category: 'Presupuesto del estudio' },
-  { id: '2', name: 'Cuestionario de salud general (SF-36)', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '3', name: 'Cuestionario de calidad de vida', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '4', name: 'Escala de evaluación clínica', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '6', name: 'Ficha de recolección de datos', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '7', name: 'Cuestionario de seguimiento', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '8', name: 'Escala de dolor (EVA)', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '9', name: 'Inventario de depresión de Beck', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '10', name: 'Test de adherencia al tratamiento', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-  { id: '11', name: 'Registro de eventos adversos', type: 'Instrumento', category: 'Instrumentos del proyecto' },
-];
 
 interface FileUpload {
   name: string;
@@ -30,6 +18,7 @@ interface FileUpload {
 
 export function UploadDocuments({
   selectedDocuments,
+  newDocuments,
   uploadStatuses,
   onUploadStatusChange,
   onNext,
@@ -38,7 +27,11 @@ export function UploadDocuments({
   const [files, setFiles] = useState<Record<string, { controlChanges: FileUpload | null; finalVersion: FileUpload | null }>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
-  const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+  const allDocuments = [
+    ...baseDocuments,
+    ...newDocuments.map((d) => ({ ...d, category: 'Documentos Nuevos' })),
+  ];
+  const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   const handleFileSelect = (docId: string, type: 'controlChanges' | 'finalVersion', fileName: string) => {
     setFiles(prev => ({
