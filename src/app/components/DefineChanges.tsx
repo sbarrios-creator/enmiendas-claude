@@ -136,7 +136,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   const handleAddChange = () => {
-    const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+    const field = newChange.field;
     if (!field || !newChange.newValue || !newChange.justification) return;
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
 
@@ -168,10 +168,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   };
 
   const handleEditChange = (change: Change) => {
-    const isCustomField = !commonFields.slice(0, -1).includes(change.field);
     setNewChange({
-      field: isCustomField ? 'Otro (personalizado)' : change.field,
-      customField: isCustomField ? change.field : '',
+      field: change.field,
+      customField: '',
       oldValue: change.oldValue,
       newValue: change.newValue,
       justification: change.justification,
@@ -183,7 +182,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   };
 
   const handleSaveEdit = () => {
-    const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
+    const field = newChange.field;
     if (!field || !newChange.newValue || !editingId) return;
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
     onChangesUpdate(changes.map((c) =>
@@ -765,7 +764,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           <div className="p-4">
             <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r mb-4">
               <p className="text-sm text-gray-800 m-0">
-                Para cada cambio, describa el valor anterior y el nuevo valor propuesto con su justificación correspondiente.
+                Para cada cambio, describa el Versión Anterior y el nuevo valor propuesto con su justificación correspondiente.
               </p>
             </div>
 
@@ -774,7 +773,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
               <div className="relative mb-3">
                 <input
                   type="text"
-                  placeholder="Buscar por campo, valor nuevo o valor anterior..."
+                  placeholder="Buscar por campo, Versión Nueva o Versión Anterior..."
                   value={searchChange}
                   onChange={(e) => setSearchChange(e.target.value)}
                   className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
@@ -815,12 +814,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="grid grid-cols-3 gap-4 mb-2">
                       {change.oldValue && (
                         <div>
-                          <p className="text-xs text-gray-500 m-0 mb-1">Valor anterior:</p>
+                          <p className="text-xs text-gray-500 m-0 mb-1">Versión Anterior:</p>
                           <p className="text-sm text-gray-700 m-0 line-through">{change.oldValue}</p>
                         </div>
                       )}
                       <div>
-                        <p className="text-xs text-gray-500 m-0 mb-1">Valor nuevo:</p>
+                        <p className="text-xs text-gray-500 m-0 mb-1">Versión Nueva:</p>
                         <p className="text-sm text-[#C41E3A] font-medium m-0">{change.newValue}</p>
                       </div>
                       {change.justification && (
@@ -926,35 +925,18 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 {/* Field Selection */}
                 <div>
                   <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
-                  <select
+                  <input
+                    type="text"
                     value={newChange.field}
-                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value, customField: '' })}
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
-                  >
-                    <option value="">Seleccione un campo</option>
-                    {commonFields.map((field) => (
-                      <option key={field} value={field}>{field}</option>
-                    ))}
-                  </select>
+                    onChange={(e) => setNewChange({ ...newChange, field: e.target.value })}
+                    placeholder="Campo a modificar *"
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  />
                 </div>
-
-                {/* Custom Field */}
-                {newChange.field === 'Otro (personalizado)' && (
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Especifique el campo *</label>
-                    <input
-                      type="text"
-                      value={newChange.customField}
-                      onChange={(e) => setNewChange({ ...newChange, customField: e.target.value })}
-                      placeholder="Ej: Versión del protocolo"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                    />
-                  </div>
-                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor anterior</label>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Versión Anterior</label>
                     <input
                       type="text"
                       value={newChange.oldValue}
@@ -964,7 +946,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Valor nuevo *</label>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Versión Nueva *</label>
                     <input
                       type="text"
                       value={newChange.newValue}
