@@ -106,7 +106,8 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
   };
 
   const PROYECTO_IDS = ['1'];
-  const CONSENTIMIENTO_IDS = ['2', '3', '4'];
+  const CONSENTIMIENTO_IDS = ['2'];
+  const ASENTIMIENTO_IDS = ['3', '4'];
 
   const sections: DocumentSection[] = [
     {
@@ -118,13 +119,21 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       documents: documents.filter((doc) => PROYECTO_IDS.includes(doc.id)),
     },
     {
-      title: 'Consentimiento informado y Asentimientos',
+      title: 'Consentimiento informado',
       documents: documents.filter((doc) => CONSENTIMIENTO_IDS.includes(doc.id)),
+    },
+    {
+      title: 'Asentimientos',
+      documents: documents.filter((doc) => ASENTIMIENTO_IDS.includes(doc.id)),
     },
     {
       title: 'Instrumentos del proyecto',
       documents: documents.filter(
-        (doc) => doc.type === 'Instrumento' && !PROYECTO_IDS.includes(doc.id) && !CONSENTIMIENTO_IDS.includes(doc.id)
+        (doc) =>
+          doc.type === 'Instrumento' &&
+          !PROYECTO_IDS.includes(doc.id) &&
+          !CONSENTIMIENTO_IDS.includes(doc.id) &&
+          !ASENTIMIENTO_IDS.includes(doc.id)
       ),
     },
     {
