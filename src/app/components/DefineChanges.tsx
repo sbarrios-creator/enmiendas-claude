@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Change, Document, Step3Data, ResearcherChange, InternalOperativeUnit, ExternalOperativeUnit } from '../types';
 import { baseDocuments } from '../data/documents';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
@@ -58,6 +59,20 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     onStep3DataChange({ ...step3Data, operativeUnitsData: d });
   const setResearchers = (r: ResearcherChange[]) =>
     onStep3DataChange({ ...step3Data, researchers: r });
+
+  // Confirm dialog state
+  const [confirm, setConfirm] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (opts: Omit<typeof confirm, 'isOpen'>) =>
+    setConfirm({ isOpen: true, ...opts });
+  const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
 
   // Estado para modal de cambios por documento
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
@@ -647,7 +662,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             <div className="flex items-center justify-center gap-3">
                               <button onClick={() => alert('Ver: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Ver</button>
                               <button onClick={() => alert('Descargando: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Descargar</button>
-                              <button onClick={() => handleRemoveInternalUnit(unit.id)} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
+                              <button onClick={() => openConfirm({ title: 'Eliminar unidad interna', message: `¿Desea eliminar la unidad "${unit.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveInternalUnit(unit.id); closeConfirm(); } })} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
                             </div>
                           </td>
                         </tr>
@@ -846,7 +861,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               <button onClick={() => alert('Ver: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Ver</button>
                               <button onClick={() => alert('Descargando: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Descargar</button>
                               <button onClick={() => openAssignExternalModal(unit.name)} className="text-xs text-blue-600 hover:text-blue-800 underline font-medium">Agregar al proyecto</button>
-                              <button onClick={() => handleRemoveExternalUnit(unit.id)} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
+                              <button onClick={() => openConfirm({ title: 'Eliminar unidad externa', message: `¿Desea eliminar la unidad "${unit.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveExternalUnit(unit.id); closeConfirm(); } })} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
                             </div>
                           </td>
                         </tr>
@@ -946,7 +961,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
-                              onClick={() => handleRemoveResearcher(researcher.id)}
+                              onClick={() => openConfirm({ title: 'Eliminar investigador', message: `¿Desea eliminar a "${researcher.name}" del equipo de investigación?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveResearcher(researcher.id); closeConfirm(); } })}
                               className="text-red-600 hover:text-red-800 text-sm font-medium"
                             >
                               Eliminar
@@ -1193,7 +1208,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               <button onClick={() => handleEditChange(change)} className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Editar">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                               </button>
-                              <button onClick={() => handleRemoveChange(change.id)} className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Eliminar">
+                              <button onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio en el campo "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })} className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Eliminar">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                               </button>
                             </div>
@@ -1432,13 +1447,31 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           ← Volver
         </button>
         <button
-          onClick={onNext}
+          onClick={() =>
+            openConfirm({
+              title: 'Continuar al resumen',
+              message: 'Ha definido los cambios de la enmienda. ¿Desea continuar al resumen final?',
+              confirmLabel: 'Continuar',
+              variant: 'primary',
+              onConfirm: () => { closeConfirm(); onNext(); },
+            })
+          }
           disabled={!allDocsHaveChanges}
           className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           Continuar al resumen →
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirm.isOpen}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        variant={confirm.variant}
+        onConfirm={confirm.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
