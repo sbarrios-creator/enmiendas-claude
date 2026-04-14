@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import type { Change, Step3Data, ResearcherChange, OperativeUnit } from '../types';
+import type { Change, Document, Step3Data, ResearcherChange, OperativeUnit } from '../types';
+import { baseDocuments } from '../data/documents';
 
 interface DefineChangesProps {
   selectedDocuments: string[];
+  newDocuments: Document[];
   changes: Change[];
   onChangesUpdate: (changes: Change[]) => void;
   step3Data: Step3Data;
@@ -11,13 +13,6 @@ interface DefineChangesProps {
   onBack: () => void;
 }
 
-const mockDocuments = [
-  { id: '1', name: 'Presupuesto general del estudio', type: 'Presupuesto' },
-  { id: '2', name: 'Cuestionario de salud general (SF-36)', type: 'Instrumento' },
-  { id: '3', name: 'Cuestionario de calidad de vida', type: 'Instrumento' },
-  { id: '4', name: 'Escala de evaluación clínica', type: 'Instrumento' },
-  { id: '5', name: 'Formulario de consentimiento informado', type: 'Instrumento' },
-];
 
 const mockOperativeUnits = [
   'Cardiología', 'Endocrinología', 'Gastroenterología', 'Hematología',
@@ -37,7 +32,7 @@ const commonFields = [
   'Otro (personalizado)',
 ];
 
-export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
+export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchChange, setSearchChange] = useState('');
@@ -137,7 +132,8 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
     justification: '',
   });
 
-  const documents = mockDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+  const allDocuments = [...baseDocuments, ...newDocuments];
+  const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   const handleAddChange = () => {
     const field = newChange.field === 'Otro (personalizado)' ? newChange.customField : newChange.field;
@@ -840,7 +836,13 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <span>
-                        {change.isGlobal ? 'Todos los documentos' : `${change.appliesTo.length} documentos`}
+                        {change.isGlobal
+                        ? 'Todos los documentos'
+                        : change.appliesTo
+                            .map((id) => documents.find((d) => d.id === id)?.name)
+                            .filter(Boolean)
+                            .join(' · ')
+                      }
                       </span>
                     </div>
                   </div>
@@ -1047,7 +1049,10 @@ export function DefineChanges({ selectedDocuments, changes, onChangesUpdate, ste
                             >
                               {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
                             </button>
-                            <span className="text-sm text-gray-700">{doc.name}</span>
+                            <span className="text-sm text-gray-700 flex-1">{doc.name}</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {doc.type}
+                            </span>
                           </div>
                         ))}
                       {searchDocument && !documents.some((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())) && (

@@ -6,7 +6,7 @@ import { SelectDocuments } from './components/SelectDocuments';
 import { UploadDocuments } from './components/UploadDocuments';
 import { DefineChanges } from './components/DefineChanges';
 import { Summary } from './components/Summary';
-import type { AddedDoc, Change, UploadStatus, Step3Data } from './types';
+import type { AddedDoc, Document, Change, UploadStatus, Step3Data } from './types';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -95,6 +95,7 @@ export default function App() {
           {currentStep === 2 && (
             <UploadDocuments
               selectedDocuments={selectedDocuments}
+              newDocuments={addedDocs.map((d): Document => ({ id: d.id, name: d.fileName, type: 'Nuevo', status: 'Aprobado', version: '1' }))}
               uploadStatuses={uploadStatuses}
               onUploadStatusChange={setUploadStatuses}
               onNext={handleNext}
@@ -105,6 +106,7 @@ export default function App() {
           {currentStep === 3 && (
             <DefineChanges
               selectedDocuments={selectedDocuments}
+              newDocuments={addedDocs.map((d): Document => ({ id: d.id, name: d.fileName, type: 'Nuevo', status: 'Aprobado', version: '1' }))}
               changes={changes}
               onChangesUpdate={setChanges}
               step3Data={step3Data}
