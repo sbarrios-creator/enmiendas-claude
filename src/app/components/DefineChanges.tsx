@@ -92,8 +92,29 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
   };
 
-  const allDocuments = [...baseDocuments, ...newDocuments];
+  const CATEGORY_ORDER = [
+    'Presupuesto del estudio',
+    'Proyecto de investigación',
+    'Consentimiento informado',
+    'Asentimientos',
+    'Instrumentos del proyecto',
+  ];
+
+  const allDocuments = [
+    ...baseDocuments,
+    ...newDocuments.map((d) => ({ ...d, category: 'Instrumentos del proyecto' })),
+  ];
   const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+
+  const getDocCategory = (doc: (typeof allDocuments)[number]) =>
+    (doc as { category?: string }).category || 'Instrumentos del proyecto';
+
+  // Documentos disponibles agrupados por las 5 categorías
+  const groupedAvailable = (filtered: typeof documents) =>
+    CATEGORY_ORDER.map((cat) => ({
+      category: cat,
+      docs: filtered.filter((d) => getDocCategory(d) === cat),
+    })).filter((g) => g.docs.length > 0);
   // Cambios agrupados
   const globalChanges = changes.filter((c) => c.isGlobal);
   const getChangesForDoc = (docId: string) => changes.filter((c) => !c.isGlobal && c.appliesTo.includes(docId));
@@ -1340,25 +1361,34 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         />
                       </div>
                     </div>
-                    <div className="overflow-y-auto max-h-36 divide-y divide-gray-100">
-                      {documents
-                        .filter((doc) => !newChange.appliesTo.includes(doc.id) && doc.name.toLowerCase().includes(docPickerSearch.toLowerCase()))
-                        .map((doc) => (
-                          <button
-                            key={doc.id}
-                            type="button"
-                            onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
-                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors flex items-center justify-between gap-2"
-                          >
-                            <span className="truncate flex-1">{doc.name}</span>
-                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {doc.type}
-                            </span>
-                          </button>
-                        ))}
-                      {documents.filter((doc) => !newChange.appliesTo.includes(doc.id) && doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())).length === 0 && (
-                        <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>
-                      )}
+                    <div className="overflow-y-auto max-h-48 divide-y divide-gray-100">
+                      {(() => {
+                        const available = documents.filter(
+                          (doc) =>
+                            !newChange.appliesTo.includes(doc.id) &&
+                            doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())
+                        );
+                        const groups = groupedAvailable(available);
+                        if (groups.length === 0)
+                          return <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>;
+                        return groups.map((group) => (
+                          <div key={group.category}>
+                            <div className="px-3 py-1 bg-gray-100 border-b border-gray-200">
+                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{group.category}</span>
+                            </div>
+                            {group.docs.map((doc) => (
+                              <button
+                                key={doc.id}
+                                type="button"
+                                onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors"
+                              >
+                                {doc.name}
+                              </button>
+                            ))}
+                          </div>
+                        ));
+                      })()}
                     </div>
                     <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
                       <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} disponibles</span>
