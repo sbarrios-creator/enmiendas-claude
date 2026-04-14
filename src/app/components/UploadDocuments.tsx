@@ -44,7 +44,7 @@ export function UploadDocuments({
 
   const allDocuments = [
     ...baseDocuments,
-    ...newDocuments.map((d) => ({ ...d, category: 'Documentos Nuevos' })),
+    ...newDocuments.map((d) => ({ ...d, category: 'Instrumentos del proyecto' })),
   ];
   const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
