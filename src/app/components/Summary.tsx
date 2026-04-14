@@ -25,8 +25,22 @@ function getGroupLabel(field: string): string {
   return 'Otros';
 }
 
+const CATEGORY_ORDER = [
+  'Presupuesto del estudio',
+  'Proyecto de investigación',
+  'Consentimiento informado',
+  'Asentimientos',
+  'Instrumentos del proyecto',
+];
+
+const getDocCategory = (doc: { category?: string; type?: string }) =>
+  doc.category || 'Instrumentos del proyecto';
+
 export function Summary({ selectedDocuments, newDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
-  const allDocuments = [...baseDocuments, ...newDocuments];
+  const allDocuments = [
+    ...baseDocuments,
+    ...newDocuments.map((d) => ({ ...d, category: 'Instrumentos del proyecto' })),
+  ];
   const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   // Documentos nuevos
@@ -79,6 +93,12 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
     doc,
     items: changes.filter((c) => c.isGlobal || c.appliesTo.includes(doc.id)),
   })).filter((g) => g.items.length > 0);
+
+  // Cambios agrupados por categoría → por documento
+  const changesByCategory = CATEGORY_ORDER.map((cat) => ({
+    category: cat,
+    groups: changesByDoc.filter((g) => getDocCategory(g.doc as { category?: string; type?: string }) === cat),
+  })).filter((c) => c.groups.length > 0);
 
   // Analyze impact for each document
   const analyzeImpact = (docId: string): ImpactAnalysis => {
@@ -326,8 +346,15 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
             No se registraron cambios en documentos
           </div>
         ) : (
-          <div className="space-y-3">
-            {changesByDoc.map(({ doc, items }) => (
+          <div className="space-y-5">
+            {changesByCategory.map(({ category, groups }) => (
+              <div key={category}>
+                {/* Cabecera de categoría */}
+                <div className="mb-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-md">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{category}</span>
+                </div>
+                <div className="space-y-3 pl-2 border-l-2 border-gray-200">
+                {groups.map(({ doc, items }) => (
               <div key={doc.id} className="border border-gray-200 rounded-lg overflow-hidden">
 
                 {/* Acordeón header — siempre visible */}
@@ -487,6 +514,9 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+                </div> {/* fin grupos de categoría */}
               </div>
             ))}
           </div>
