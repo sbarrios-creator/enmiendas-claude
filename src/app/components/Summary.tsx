@@ -239,10 +239,15 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
               {step3Data.modifiesOperativeUnits ?? 'Sin respuesta'}
             </span>
           </div>
-          {step3Data.modifiesOperativeUnits === 'SI' && step3Data.operativeUnitsData.units && (
+          {step3Data.modifiesOperativeUnits === 'SI' && (step3Data.operativeUnitsData.internalUnits.length > 0 || step3Data.operativeUnitsData.externalUnits.length > 0) && (
             <div className="p-4 bg-white">
               <p className="text-xs text-gray-500 mb-1">Detalle</p>
-              <p className="text-sm text-gray-900 whitespace-pre-wrap">{step3Data.operativeUnitsData.units}</p>
+              <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                {[
+                  ...step3Data.operativeUnitsData.internalUnits.map((u) => u.name),
+                  ...step3Data.operativeUnitsData.externalUnits.map((u) => u.name),
+                ].join(', ')}
+              </p>
             </div>
           )}
         </div>
