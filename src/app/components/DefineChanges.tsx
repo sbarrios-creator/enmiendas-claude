@@ -860,8 +860,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             <div className="flex items-center justify-center gap-3">
                               <button onClick={() => alert('Ver: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Ver</button>
                               <button onClick={() => alert('Descargando: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Descargar</button>
-                              <button onClick={() => openAssignExternalModal(unit.name)} className="text-xs text-blue-600 hover:text-blue-800 underline font-medium">Agregar al proyecto</button>
-                              <button onClick={() => openConfirm({ title: 'Eliminar unidad externa', message: `¿Desea eliminar la unidad "${unit.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveExternalUnit(unit.id); closeConfirm(); } })} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
+<button onClick={() => openConfirm({ title: 'Eliminar unidad externa', message: `¿Desea eliminar la unidad "${unit.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveExternalUnit(unit.id); closeConfirm(); } })} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
                             </div>
                           </td>
                         </tr>
