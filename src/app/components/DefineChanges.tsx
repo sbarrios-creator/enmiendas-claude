@@ -1402,13 +1402,15 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     </div>
                     <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
                       <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} disponibles</span>
-                      <button
-                        type="button"
-                        onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: documents.map(d => d.id) })}
-                        className="text-xs text-[#C41E3A] hover:underline font-medium"
-                      >
-                        Agregar todos
-                      </button>
+                      {documents.length - newChange.appliesTo.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: documents.map(d => d.id) })}
+                          className="text-xs text-[#C41E3A] hover:underline font-medium"
+                        >
+                          Agregar todos
+                        </button>
+                      )}
                     </div>
                   </div>
 
