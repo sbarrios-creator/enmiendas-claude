@@ -37,11 +37,31 @@ export interface ResearcherChange {
   justification: string;
 }
 
+export interface InternalOperativeUnit {
+  id: string;
+  name: string;        // selected from dropdown or custom value when "Otros"
+  isOther: boolean;    // true when user selected "Otros"
+  managementUnit: string; // free-text unit when isOther is true
+  registrationDate?: string; // ISO date string
+  declarationFileName?: string; // carta de declaración del jefe de unidad
+}
+
+export interface ExternalOperativeUnit {
+  id: string;
+  name: string;
+  registrationDate: string; // ISO date string
+  hasApprovalLetter: boolean;
+  approvalFileName?: string;
+}
+
 export interface Step3Data {
   modifiesTitleOrSummary: 'NO' | 'SI' | null;
   titleSummaryData: { title: string; summary: string };
   modifiesOperativeUnits: 'NO' | 'SI' | null;
-  operativeUnitsData: { units: string };
+  operativeUnitsData: {
+    internalUnits: InternalOperativeUnit[];
+    externalUnits: ExternalOperativeUnit[];
+  };
   modifiesResearchers: 'NO' | 'SI' | null;
   researchers: ResearcherChange[];
 }

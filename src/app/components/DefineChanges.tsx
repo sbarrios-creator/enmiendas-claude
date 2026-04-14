@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Change, Document, Step3Data, ResearcherChange } from '../types';
+import type { Change, Document, Step3Data, ResearcherChange, InternalOperativeUnit, ExternalOperativeUnit } from '../types';
 import { baseDocuments } from '../data/documents';
 
 interface DefineChangesProps {
@@ -54,7 +54,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     onStep3DataChange({ ...step3Data, modifiesResearchers: v });
   const setTitleSummaryData = (d: { title: string; summary: string }) =>
     onStep3DataChange({ ...step3Data, titleSummaryData: d });
-  const setOperativeUnitsData = (d: { units: string }) =>
+  const setOperativeUnitsData = (d: { internalUnits: InternalOperativeUnit[]; externalUnits: ExternalOperativeUnit[] }) =>
     onStep3DataChange({ ...step3Data, operativeUnitsData: d });
   const setResearchers = (r: ResearcherChange[]) =>
     onStep3DataChange({ ...step3Data, researchers: r });
@@ -85,6 +85,130 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const docHasChanges = (docId: string) => globalChanges.length > 0 || getChangesForDoc(docId).length > 0;
   const docsWithChanges = documents.filter((doc) => docHasChanges(doc.id)).length;
   const allDocsHaveChanges = documents.length > 0 && documents.every((doc) => docHasChanges(doc.id));
+
+  // Operative units form state
+  const [showAddInternal, setShowAddInternal] = useState(false);
+  const [showAddExternal, setShowAddExternal] = useState(false);
+  const [newInternal, setNewInternal] = useState({ name: '', isOther: false, managementUnit: '', declarationFileName: '' });
+  const [internalSearch, setInternalSearch] = useState('');
+  const [internalDropdownOpen, setInternalDropdownOpen] = useState(false);
+  const [newExternal, setNewExternal] = useState({ name: '', approvalFileName: '' });
+  const [externalSearch, setExternalSearch] = useState('');
+  const [externalDropdownOpen, setExternalDropdownOpen] = useState(false);
+
+  const openAssignInternalModal = () => {
+    setNewInternal({ name: '', isOther: false, managementUnit: '', declarationFileName: '' });
+    setInternalSearch('');
+    setInternalDropdownOpen(false);
+    setShowAddInternal(true);
+  };
+
+  const closeAssignInternalModal = () => {
+    setShowAddInternal(false);
+    setNewInternal({ name: '', isOther: false, managementUnit: '', declarationFileName: '' });
+    setInternalSearch('');
+    setInternalDropdownOpen(false);
+  };
+
+  const openAssignExternalModal = (prefillName = '') => {
+    setNewExternal({ name: prefillName, approvalFileName: '' });
+    setExternalSearch('');
+    setExternalDropdownOpen(false);
+    setShowAddExternal(true);
+  };
+
+  const closeAssignExternalModal = () => {
+    setShowAddExternal(false);
+    setNewExternal({ name: '', approvalFileName: '' });
+    setExternalSearch('');
+    setExternalDropdownOpen(false);
+  };
+
+  const INTERNAL_UNIT_OPTIONS = [
+    'Unidad de Gestión Central',
+    'Facultad de Medicina Alberto Hurtado',
+    'Facultad de Ciencias de la Salud',
+    'Instituto de Medicina Tropical',
+    'Centro de Investigación Clínica',
+    'Hospital Nacional Cayetano Heredia',
+    'Otros',
+  ];
+
+  const internalFilterTerm = internalSearch || newInternal.name;
+  const filteredInternalOptions = INTERNAL_UNIT_OPTIONS.filter((opt) =>
+    opt.toLowerCase().includes(internalFilterTerm.toLowerCase())
+  );
+
+  const handleAddInternalUnit = () => {
+    const name = newInternal.isOther ? newInternal.managementUnit : newInternal.name;
+    if (!name || !newInternal.declarationFileName) return;
+    const unit: InternalOperativeUnit = {
+      id: Date.now().toString(),
+      name,
+      isOther: newInternal.isOther,
+      managementUnit: newInternal.isOther ? newInternal.managementUnit : '',
+      registrationDate: new Date().toISOString().split('T')[0],
+      declarationFileName: newInternal.declarationFileName,
+    };
+    setOperativeUnitsData({
+      ...operativeUnitsData,
+      internalUnits: [...operativeUnitsData.internalUnits, unit],
+    });
+    closeAssignInternalModal();
+  };
+
+  const handleRemoveInternalUnit = (id: string) => {
+    setOperativeUnitsData({
+      ...operativeUnitsData,
+      internalUnits: operativeUnitsData.internalUnits.filter((u) => u.id !== id),
+    });
+  };
+
+  const EXTERNAL_UNIT_OPTIONS = [
+    'Hospital Nacional Edgardo Rebagliati Martins',
+    'Hospital Nacional Guillermo Almenara Irigoyen',
+    'Hospital Nacional Arzobispo Loayza',
+    'Hospital Nacional Dos de Mayo',
+    'Instituto Nacional de Enfermedades Neoplásicas',
+    'Instituto Nacional de Salud del Niño',
+    'Instituto Nacional de Salud',
+    'Hospital Regional de Ica',
+    'Hospital Regional de Cusco',
+    'Hospital Regional de Arequipa',
+    'Hospital Regional de Trujillo',
+    'Hospital Regional de Piura',
+  ];
+
+  const externalFilterTerm = externalSearch || newExternal.name;
+  const filteredExternalOptions = EXTERNAL_UNIT_OPTIONS.filter((opt) =>
+    opt.toLowerCase().includes(externalFilterTerm.toLowerCase())
+  );
+
+  const handleAddExternalUnit = () => {
+    if (!newExternal.name || !newExternal.approvalFileName) return;
+    const unit: ExternalOperativeUnit = {
+      id: Date.now().toString(),
+      name: newExternal.name,
+      registrationDate: new Date().toISOString().split('T')[0],
+      hasApprovalLetter: true,
+      approvalFileName: newExternal.approvalFileName,
+    };
+    setOperativeUnitsData({
+      ...operativeUnitsData,
+      externalUnits: [...operativeUnitsData.externalUnits, unit],
+    });
+    setNewExternal({ name: '', approvalFileName: '' });
+    setExternalSearch('');
+    setExternalDropdownOpen(false);
+    setShowAddExternal(false);
+  };
+
+  const handleRemoveExternalUnit = (id: string) => {
+    setOperativeUnitsData({
+      ...operativeUnitsData,
+      externalUnits: operativeUnitsData.externalUnits.filter((u) => u.id !== id),
+    });
+  };
 
   // Researchers form state (local, no necesita persistir)
   const [showAddResearcher, setShowAddResearcher] = useState(false);
@@ -318,17 +442,425 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           </div>
 
         {modifiesOperativeUnits === 'SI' && (
-          <div className="p-4">
+          <div className="p-4 space-y-6">
+
+            {/* ── Unidades Internas ── */}
             <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700">Detalle de las nuevas unidades operativas</label>
-              <textarea
-                value={operativeUnitsData.units}
-                onChange={(e) => setOperativeUnitsData({ ...operativeUnitsData, units: e.target.value })}
-                placeholder="Describa las unidades operativas que serán modificadas o agregadas"
-                rows={4}
-                className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-              />
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Internas</h4>
+                {!showAddInternal && (
+                  <button
+                    onClick={openAssignInternalModal}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Agregar
+                  </button>
+                )}
+              </div>
+
+              {/* Modal: asignar unidad operativa interna al proyecto */}
+              {showAddInternal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-[#C41E3A] px-5 py-4 flex items-center justify-between">
+                      <h3 className="text-white text-base font-semibold m-0">Asignar unidad operativa interna</h3>
+                      <button
+                        onClick={closeAssignInternalModal}
+                        className="text-white/70 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="p-5 space-y-5">
+
+                      {/* Search / select internal unit */}
+                      <div className="relative">
+                        <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                          Buscar unidad operativa por su nombre
+                        </label>
+                        <div
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded cursor-pointer bg-white hover:border-[#C41E3A] focus-within:ring-2 focus-within:ring-[#C41E3A] focus-within:border-transparent"
+                          onClick={() => setInternalDropdownOpen(true)}
+                        >
+                          <input
+                            type="text"
+                            value={newInternal.name && !newInternal.isOther ? newInternal.name : internalSearch}
+                            onChange={(e) => {
+                              setInternalSearch(e.target.value);
+                              setNewInternal({ ...newInternal, name: '', isOther: false, managementUnit: '' });
+                              setInternalDropdownOpen(true);
+                            }}
+                            onFocus={() => setInternalDropdownOpen(true)}
+                            placeholder="Buscar unidad operativa por su nombre ▼"
+                            className="flex-1 outline-none text-sm text-gray-700 bg-transparent placeholder-gray-400"
+                          />
+                          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+
+                        {internalDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {filteredInternalOptions.length > 0 ? (
+                              filteredInternalOptions.map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    if (opt === 'Otros') {
+                                      setNewInternal({ ...newInternal, name: 'Otros', isOther: true, managementUnit: '' });
+                                    } else {
+                                      setNewInternal({ ...newInternal, name: opt, isOther: false, managementUnit: '' });
+                                    }
+                                    setInternalSearch('');
+                                    setInternalDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors"
+                                >
+                                  {opt}
+                                </button>
+                              ))
+                            ) : (
+                              internalSearch.trim() && (
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    setNewInternal({ ...newInternal, name: internalSearch.trim(), isOther: false, managementUnit: '' });
+                                    setInternalSearch('');
+                                    setInternalDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 italic"
+                                >
+                                  Usar "{internalSearch.trim()}"
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Custom name when "Otros" selected */}
+                      {newInternal.isOther && (
+                        <div>
+                          <label className="block mb-1.5 text-sm font-semibold text-gray-700">Especifique la unidad de gestión *</label>
+                          <input
+                            type="text"
+                            value={newInternal.managementUnit}
+                            onChange={(e) => setNewInternal({ ...newInternal, managementUnit: e.target.value })}
+                            placeholder="Nombre de la unidad de gestión"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                          />
+                        </div>
+                      )}
+
+                      {/* File upload */}
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                          Carta de declaración del jefe de unidad operativa
+                        </label>
+                        {newInternal.declarationFileName ? (
+                          <div className="flex items-center gap-3 bg-green-50 border border-green-300 rounded-lg px-4 py-3">
+                            <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span className="text-sm text-green-800 font-medium flex-1 truncate">{newInternal.declarationFileName}</span>
+                            <button
+                              onClick={() => setNewInternal({ ...newInternal, declarationFileName: '' })}
+                              className="text-green-600 hover:text-red-600 flex-shrink-0 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <label
+                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:border-[#C41E3A] hover:bg-red-50 transition-colors group"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const f = e.dataTransfer.files?.[0];
+                              if (f) setNewInternal({ ...newInternal, declarationFileName: f.name });
+                            }}
+                          >
+                            <svg className="w-8 h-8 text-gray-400 group-hover:text-[#C41E3A] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                            <span className="text-sm text-gray-500 group-hover:text-[#C41E3A] transition-colors text-center">
+                              Arrastra el archivo aquí o{' '}
+                              <span className="font-semibold underline">haz clic para subir</span>
+                            </span>
+                            <span className="text-xs text-gray-400">PDF, DOCX — máx. 200 MB</span>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".pdf,.doc,.docx"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) setNewInternal({ ...newInternal, declarationFileName: f.name });
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 pb-5 flex gap-3">
+                      <button
+                        onClick={closeAssignInternalModal}
+                        className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddInternalUnit}
+                        disabled={!(newInternal.isOther ? newInternal.managementUnit : newInternal.name) || !newInternal.declarationFileName}
+                        className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                      >
+                        Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Internal units list */}
+              {operativeUnitsData.internalUnits.length > 0 ? (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Unidad</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Fecha de registro</th>
+                        <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase w-48">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {operativeUnitsData.internalUnits.map((unit) => (
+                        <tr key={unit.id} className="bg-white hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-800">{unit.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {unit.registrationDate
+                              ? new Date(unit.registrationDate).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                              : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-3">
+                              <button onClick={() => alert('Ver: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Ver</button>
+                              <button onClick={() => alert('Descargando: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Descargar</button>
+                              <button onClick={() => handleRemoveInternalUnit(unit.id)} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-5 text-center text-sm text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No se han agregado unidades internas
+                </div>
+              )}
             </div>
+
+            {/* ── Unidades Externas ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Externas</h4>
+                {!showAddExternal && (
+                  <button
+                    onClick={() => openAssignExternalModal()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Agregar
+                  </button>
+                )}
+              </div>
+
+              {/* Modal: asignar unidad operativa al proyecto */}
+              {showAddExternal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-[#C41E3A] px-5 py-4 flex items-center justify-between">
+                      <h3 className="text-white text-base font-semibold m-0">Asignar unidad operativa al proyecto</h3>
+                      <button
+                        onClick={closeAssignExternalModal}
+                        className="text-white/70 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="p-5 space-y-5">
+
+                      {/* Search / select unit */}
+                      <div className="relative">
+                        <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                          Buscar unidad operativa por su nombre
+                        </label>
+                        <div
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded cursor-pointer bg-white hover:border-[#C41E3A] focus-within:ring-2 focus-within:ring-[#C41E3A] focus-within:border-transparent"
+                          onClick={() => setExternalDropdownOpen(true)}
+                        >
+                          <input
+                            type="text"
+                            value={newExternal.name || externalSearch}
+                            onChange={(e) => {
+                              setExternalSearch(e.target.value);
+                              setNewExternal({ ...newExternal, name: '' });
+                              setExternalDropdownOpen(true);
+                            }}
+                            onFocus={() => setExternalDropdownOpen(true)}
+                            placeholder="Buscar unidad operativa por su nombre ▼"
+                            className="flex-1 outline-none text-sm text-gray-700 bg-transparent placeholder-gray-400"
+                          />
+                          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+
+                        {externalDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {filteredExternalOptions.length > 0 ? (
+                              filteredExternalOptions.map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    setNewExternal({ ...newExternal, name: opt });
+                                    setExternalSearch('');
+                                    setExternalDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors"
+                                >
+                                  {opt}
+                                </button>
+                              ))
+                            ) : (
+                              externalSearch.trim() && (
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    setNewExternal({ ...newExternal, name: externalSearch.trim() });
+                                    setExternalSearch('');
+                                    setExternalDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 italic"
+                                >
+                                  Usar "{externalSearch.trim()}"
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* File upload */}
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                          Carta de declaración del jefe de unidad operativa
+                        </label>
+                        {newExternal.approvalFileName ? (
+                          <div className="flex items-center gap-3 bg-green-50 border border-green-300 rounded-lg px-4 py-3">
+                            <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span className="text-sm text-green-800 font-medium flex-1 truncate">{newExternal.approvalFileName}</span>
+                            <button
+                              onClick={() => setNewExternal({ ...newExternal, approvalFileName: '' })}
+                              className="text-green-600 hover:text-red-600 flex-shrink-0 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <label
+                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:border-[#C41E3A] hover:bg-red-50 transition-colors group"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const f = e.dataTransfer.files?.[0];
+                              if (f) setNewExternal({ ...newExternal, approvalFileName: f.name });
+                            }}
+                          >
+                            <svg className="w-8 h-8 text-gray-400 group-hover:text-[#C41E3A] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                            <span className="text-sm text-gray-500 group-hover:text-[#C41E3A] transition-colors text-center">
+                              Arrastra el archivo aquí o{' '}
+                              <span className="font-semibold underline">haz clic para subir</span>
+                            </span>
+                            <span className="text-xs text-gray-400">PDF, DOCX — máx. 200 MB</span>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".pdf,.doc,.docx"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) setNewExternal({ ...newExternal, approvalFileName: f.name });
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 pb-5 flex gap-3">
+                      <button
+                        onClick={closeAssignExternalModal}
+                        className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddExternalUnit}
+                        disabled={!newExternal.name || !newExternal.approvalFileName}
+                        className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                      >
+                        Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* External units list */}
+              {operativeUnitsData.externalUnits.length > 0 ? (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Unidad</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Fecha de registro</th>
+                        <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase w-48">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {operativeUnitsData.externalUnits.map((unit) => (
+                        <tr key={unit.id} className="bg-white hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-800">{unit.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {new Date(unit.registrationDate).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-3">
+                              <button onClick={() => alert('Ver: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Ver</button>
+                              <button onClick={() => alert('Descargando: ' + unit.name)} className="text-xs text-gray-500 hover:text-gray-800 underline">Descargar</button>
+                              <button onClick={() => openAssignExternalModal(unit.name)} className="text-xs text-blue-600 hover:text-blue-800 underline font-medium">Agregar al proyecto</button>
+                              <button onClick={() => handleRemoveExternalUnit(unit.id)} className="text-xs text-red-500 hover:text-red-700 underline">Deshacer</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-5 text-center text-sm text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  No se han agregado unidades externas
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>

@@ -20,7 +20,7 @@ export default function App() {
     modifiesTitleOrSummary: null,
     titleSummaryData: { title: '', summary: '' },
     modifiesOperativeUnits: null,
-    operativeUnitsData: { units: '' },
+    operativeUnitsData: { internalUnits: [], externalUnits: [] },
     modifiesResearchers: null,
     researchers: [],
   });
@@ -49,7 +49,7 @@ export default function App() {
       modifiesTitleOrSummary: null,
       titleSummaryData: { title: '', summary: '' },
       modifiesOperativeUnits: null,
-      operativeUnitsData: { units: '' },
+      operativeUnitsData: { internalUnits: [], externalUnits: [] },
       modifiesResearchers: null,
       researchers: [],
     });
