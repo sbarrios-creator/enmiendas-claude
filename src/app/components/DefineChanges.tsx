@@ -1361,7 +1361,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         />
                       </div>
                     </div>
-                    <div className="overflow-y-auto max-h-48 divide-y divide-gray-100">
+                    <div className="overflow-y-auto max-h-48">
                       {(() => {
                         const available = documents.filter(
                           (doc) =>
@@ -1372,16 +1372,26 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         if (groups.length === 0)
                           return <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>;
                         return groups.map((group) => (
-                          <div key={group.category}>
-                            <div className="px-3 py-1 bg-gray-100 border-b border-gray-200">
-                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{group.category}</span>
+                          <div key={group.category} className="border-b border-gray-100">
+                            <div className="px-3 py-1.5 bg-gray-100 flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{group.category}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const toAdd = group.docs.map((d) => d.id).filter((id) => !newChange.appliesTo.includes(id));
+                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, ...toAdd] });
+                                }}
+                                className="shrink-0 text-[10px] text-[#C41E3A] hover:underline font-medium"
+                              >
+                                Agregar todos
+                              </button>
                             </div>
                             {group.docs.map((doc) => (
                               <button
                                 key={doc.id}
                                 type="button"
                                 onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
-                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors"
+                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors border-t border-gray-100"
                               >
                                 {doc.name}
                               </button>
@@ -1407,31 +1417,42 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
                       <p className="text-xs font-semibold text-gray-600 m-0">Seleccionados</p>
                     </div>
-                    <div className="overflow-y-auto max-h-48 divide-y divide-gray-100">
-                      {newChange.appliesTo.length === 0 && (
+                    <div className="overflow-y-auto max-h-48">
+                      {newChange.appliesTo.length === 0 ? (
                         <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Ninguno seleccionado</p>
-                      )}
-                      {newChange.appliesTo.map((id) => {
-                        const doc = documents.find((d) => d.id === id);
-                        if (!doc) return null;
-                        return (
-                          <div key={id} className="flex items-center justify-between gap-2 px-3 py-2">
-                            <span className="text-xs text-gray-700 truncate flex-1">{doc.name}</span>
-                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {doc.type}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((a) => a !== id) })}
-                              className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                            >
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                      ) : (
+                        groupedAvailable(documents.filter((d) => newChange.appliesTo.includes(d.id))).map((group) => (
+                          <div key={group.category} className="border-b border-gray-100">
+                            <div className="px-3 py-1.5 bg-gray-100 flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{group.category}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const toRemove = group.docs.map((d) => d.id);
+                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => !toRemove.includes(id)) });
+                                }}
+                                className="shrink-0 text-[10px] text-red-600 hover:underline font-medium"
+                              >
+                                Quitar todos
+                              </button>
+                            </div>
+                            {group.docs.map((doc) => (
+                              <div key={doc.id} className="flex items-center justify-between gap-2 px-3 py-2 border-t border-gray-100">
+                                <span className="text-xs text-gray-700 truncate flex-1">{doc.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((a) => a !== doc.id) })}
+                                  className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
                     <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
                       <span className="text-xs text-gray-500">{newChange.appliesTo.length} seleccionados</span>
