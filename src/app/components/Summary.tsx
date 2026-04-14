@@ -25,7 +25,8 @@ function getGroupLabel(field: string): string {
 }
 
 export function Summary({ selectedDocuments, newDocuments, changes, uploadStatuses, step3Data, onFinish, onBack }: SummaryProps) {
-  const documents = baseDocuments.filter((doc) => selectedDocuments.includes(doc.id));
+  const allDocuments = [...baseDocuments, ...newDocuments];
+  const documents = allDocuments.filter((doc) => selectedDocuments.includes(doc.id));
 
   // Documentos nuevos
   const [newDocs, setNewDocs] = useState<Array<{ id: string; fileType: string; name: string }>>([]);
