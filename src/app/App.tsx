@@ -6,12 +6,12 @@ import { SelectDocuments } from './components/SelectDocuments';
 import { UploadDocuments } from './components/UploadDocuments';
 import { DefineChanges } from './components/DefineChanges';
 import { Summary } from './components/Summary';
-import type { AddedDoc, Change, UploadStatus, Step3Data } from './types';
+import type { Document, Change, UploadStatus, Step3Data } from './types';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  const [addedDocs, setAddedDocs] = useState<AddedDoc[]>([]);
+  const [newDocuments, setNewDocuments] = useState<Document[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [changes, setChanges] = useState<Change[]>([]);
   const [step3Data, setStep3Data] = useState<Step3Data>({
@@ -40,7 +40,7 @@ export default function App() {
     // Reset wizard
     setCurrentStep(1);
     setSelectedDocuments([]);
-    setAddedDocs([]);
+    setNewDocuments([]);
     setUploadStatuses({});
     setChanges([]);
     setStep3Data({
@@ -86,8 +86,8 @@ export default function App() {
             <SelectDocuments
               selectedDocuments={selectedDocuments}
               onSelectDocuments={setSelectedDocuments}
-              addedDocs={addedDocs}
-              onAddedDocsChange={setAddedDocs}
+              newDocuments={newDocuments}
+              onNewDocumentsChange={setNewDocuments}
               onNext={handleNext}
             />
           )}
@@ -95,6 +95,7 @@ export default function App() {
           {currentStep === 2 && (
             <UploadDocuments
               selectedDocuments={selectedDocuments}
+              newDocuments={newDocuments}
               uploadStatuses={uploadStatuses}
               onUploadStatusChange={setUploadStatuses}
               onNext={handleNext}
@@ -105,6 +106,7 @@ export default function App() {
           {currentStep === 3 && (
             <DefineChanges
               selectedDocuments={selectedDocuments}
+              newDocuments={newDocuments}
               changes={changes}
               onChangesUpdate={setChanges}
               step3Data={step3Data}
@@ -117,7 +119,7 @@ export default function App() {
           {currentStep === 4 && (
             <Summary
               selectedDocuments={selectedDocuments}
-              addedDocs={addedDocs}
+              newDocuments={newDocuments}
               changes={changes}
               uploadStatuses={uploadStatuses}
               step3Data={step3Data}

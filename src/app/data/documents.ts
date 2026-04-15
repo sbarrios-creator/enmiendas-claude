@@ -1,0 +1,35 @@
+import type { Document } from '../types';
+
+export type DocumentWithCategory = Document & { category: string };
+
+export const baseDocuments: DocumentWithCategory[] = [
+  { id: 'presupuesto', name: 'Presupuesto general del estudio', type: 'Presupuesto', status: 'Aprobado', version: '1', category: 'Presupuesto del estudio' },
+  { id: '1',   name: 'Proyecto investigación',               type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Proyecto de investigación' },
+  { id: '2',   name: 'Consentimiento informado',             type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Consentimiento informado' },
+  { id: '3',   name: 'Asentimiento(12-17)',                  type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Asentimientos' },
+  { id: '4',   name: 'Asentimiento(<12)',                    type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Asentimientos' },
+  { id: '5',   name: 'Consentimiento animales',              type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '6',   name: 'Constancia conducta responsable',      type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '7',   name: 'Constancia ética',                     type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '8',   name: 'Buenas prácticas clínicas',            type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '9',   name: 'Carta Jefe Unidad Operativa',          type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '10',  name: 'Externa',                              type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '11',  name: 'VRI',                                  type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '12',  name: 'Instrumentos',                         type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '13',  name: 'Recurso descargable',                  type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '14',  name: 'CV',                                   type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '15',  name: 'Carta aprobación ética(proy madre)',   type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '16',  name: 'Carta renovación',                     type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '17',  name: 'Presupuesto',                          type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '18',  name: 'SERFOR',                               type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '19',  name: 'SANIPES',                              type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '20',  name: 'SERNANP',                              type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '21',  name: 'Cierre proyecto madre',                type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '22',  name: 'Varios',                               type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '23',  name: 'Carta justificación postvigencia',     type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '24',  name: 'Reporte EA',                           type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '25',  name: 'Carta descriptiva EA',                 type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '26',  name: 'Carta Desviaciones',                   type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '27',  name: 'Relevancia Etica',                     type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+  { id: '100', name: 'Otros',                                type: 'Instrumento', status: 'Aprobado', version: '1', category: 'Instrumentos del proyecto' },
+];
