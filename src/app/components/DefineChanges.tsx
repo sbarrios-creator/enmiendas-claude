@@ -29,6 +29,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [docPickerSearch, setDocPickerSearch] = useState('');
+  const [viewDocsModal, setViewDocsModal] = useState<string[] | null>(null);
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -1211,14 +1212,35 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                 .map(id => documents.find(d => d.id === id)?.name)
                                 .filter(Boolean) as string[];
                               if (names.length === 0) return <span className="text-gray-400 text-xs">—</span>;
+                              if (names.length >= 7) {
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#C41E3A]/10 text-[#C41E3A]">
+                                      {names.length} documentos
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewDocsModal(names)}
+                                      className="text-xs text-blue-600 hover:underline font-medium"
+                                    >
+                                      Ver
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              const visible = names.length <= 3 ? names : names.slice(0, 3);
+                              const extra = names.length > 3 ? names.length - 3 : 0;
                               return (
                                 <ul className="space-y-1 m-0 p-0 list-none">
-                                  {names.map((name, i) => (
+                                  {visible.map((name, i) => (
                                     <li key={i} className="flex items-start gap-1.5">
                                       <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#C41E3A] shrink-0" />
                                       <span className="text-xs text-gray-700 leading-snug">{name}</span>
                                     </li>
                                   ))}
+                                  {extra > 0 && (
+                                    <li className="text-xs text-gray-400 pl-3">+{extra} más</li>
+                                  )}
                                 </ul>
                               );
                             })()}
@@ -1543,6 +1565,40 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         onConfirm={confirm.onConfirm}
         onCancel={closeConfirm}
       />
+
+      {/* Modal: Ver todos los documentos del cambio */}
+      {viewDocsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="bg-[#C41E3A] px-5 py-4 flex items-center justify-between">
+              <h3 className="text-white text-base font-semibold m-0">Documentos del cambio</h3>
+              <button onClick={() => setViewDocsModal(null)} className="text-white hover:text-red-200 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-5 py-4 max-h-80 overflow-y-auto">
+              <ul className="space-y-2 m-0 p-0 list-none">
+                {viewDocsModal.map((name, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#C41E3A] shrink-0" />
+                    <span className="text-sm text-gray-700">{name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="px-5 py-3 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setViewDocsModal(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
