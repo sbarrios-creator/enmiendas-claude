@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Document, Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
 
 interface SummaryProps {
   selectedDocuments: string[];
@@ -200,7 +199,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
   };
 
   return (
-    <div className="w-full">
+    <div>
       <div className="mb-6">
         <h3 className="text-base font-semibold text-gray-900 mb-1">Resumen de enmiendas</h3>
         <p className="text-sm text-gray-600 m-0">Revise el impacto de los cambios antes de confirmar</p>
@@ -744,15 +743,6 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
         </button>
       </div>
 
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }

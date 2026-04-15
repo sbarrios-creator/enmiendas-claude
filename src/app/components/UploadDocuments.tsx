@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Document, UploadStatus } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
 
 interface UploadDocumentsProps {
   selectedDocuments: string[];
@@ -27,6 +26,7 @@ export function UploadDocuments({
 }: UploadDocumentsProps) {
   const [files, setFiles] = useState<Record<string, { controlChanges: FileUpload | null; finalVersion: FileUpload | null }>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Confirm dialog state
   const [confirm, setConfirm] = useState<{
@@ -94,12 +94,13 @@ export function UploadDocuments({
 
   const progress = getProgress();
 
-  const applyFilter = (docs: typeof documents) =>
+  const applyFilter = (docs: typeof documents, withSearch = false) =>
     docs.filter((doc) => {
       const status = uploadStatuses[doc.id];
       const isComplete = status?.controlChanges && status?.finalVersion;
-      if (statusFilter === 'completed') return isComplete;
-      if (statusFilter === 'pending') return !isComplete;
+      if (statusFilter === 'completed' && !isComplete) return false;
+      if (statusFilter === 'pending' && isComplete) return false;
+      if (withSearch && searchQuery.trim() && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
 
@@ -115,11 +116,14 @@ export function UploadDocuments({
     return acc;
   }, []);
 
-  const canContinue = Object.keys(uploadStatuses).length === selectedDocuments.length &&
-    Object.values(uploadStatuses).every((status) => status.controlChanges && status.finalVersion);
+  const canContinue = selectedDocuments.length > 0 &&
+    selectedDocuments.every((docId) => {
+      const status = uploadStatuses[docId];
+      return status?.controlChanges && status?.finalVersion;
+    });
 
   return (
-    <div className="w-full">
+    <div>
       <div className="mb-6">
         <h3 className="text-base font-semibold text-gray-900 mb-1">Subir documentos modificados</h3>
         <p className="text-sm text-gray-600 m-0">Cargue el archivo con control de cambios y la versión final de cada documento</p>
@@ -156,17 +160,47 @@ export function UploadDocuments({
 
       {/* Documentos agrupados por categoría */}
       {groupedDocuments.map(({ category, docs }) => {
-        const filteredDocs = applyFilter(docs);
-        if (filteredDocs.length === 0) return null;
+        const isInstrumentos = category === 'Instrumentos del proyecto';
+        const filteredDocs = applyFilter(docs, isInstrumentos);
+        if (filteredDocs.length === 0 && !(isInstrumentos && searchQuery)) return null;
         return (
           <div key={category} className="mb-6 border border-gray-300 rounded overflow-hidden">
             {/* Cabecera de categoría */}
-            <div className="bg-[#C41E3A] px-4 py-3">
+            <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between gap-4">
               <h4 className="m-0 text-white text-base font-normal">{category}</h4>
+              {isInstrumentos && docs.length > 5 && (
+                <div className="relative w-64">
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Buscar instrumento..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 text-sm bg-white/20 text-white placeholder-white/60 border border-white/30 rounded focus:outline-none focus:bg-white/30"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Documentos dentro de la categoría */}
-            {filteredDocs.map((doc) => {
+            {/* Documentos dentro de la categoría — scrollbar si hay más de 5 */}
+            <div className={filteredDocs.length > 5 ? 'max-h-[480px] overflow-y-auto' : ''}>
+            {filteredDocs.length === 0 && isInstrumentos && searchQuery ? (
+              <div className="py-6 text-center text-gray-500 bg-white text-sm">
+                Sin resultados para <span className="font-medium">"{searchQuery}"</span>
+              </div>
+            ) : filteredDocs.map((doc) => {
           const docFiles = files[doc.id] || { controlChanges: null, finalVersion: null };
           const status = uploadStatuses[doc.id] || { controlChanges: false, finalVersion: false };
           const isComplete = status.controlChanges && status.finalVersion;
@@ -272,11 +306,12 @@ export function UploadDocuments({
           </div>
           );
         })}
+            </div>
           </div>
         );
       })}
 
-      {applyFilter(documents).length === 0 && (
+      {applyFilter(documents, false).length === 0 && (
         <div className="py-8 text-center text-gray-500 bg-gray-50 rounded border border-gray-200 text-sm">
           No se encontraron documentos con el filtro seleccionado
         </div>
@@ -291,31 +326,13 @@ export function UploadDocuments({
           Volver
         </button>
         <button
-          onClick={() =>
-            openConfirm({
-              title: 'Continuar al paso 3',
-              message: 'Ha cargado los archivos requeridos. ¿Desea continuar a la definición de cambios?',
-              confirmLabel: 'Continuar',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onNext(); },
-            })
-          }
+          onClick={onNext}
           disabled={!canContinue}
           className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           Continuar
         </button>
       </div>
-
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }
