@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Document, Change, UploadStatus, ImpactAnalysis, Step3Data } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
+
 
 interface SummaryProps {
   selectedDocuments: string[];
@@ -56,20 +56,6 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
   };
 
   const handleRemoveDoc = (id: string) => setNewDocs(newDocs.filter((d) => d.id !== id));
-
-  // Confirm dialog state
-  const [confirm, setConfirm] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    variant?: 'danger' | 'warning' | 'primary';
-    onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  const openConfirm = (opts: Omit<typeof confirm, 'isOpen'>) =>
-    setConfirm({ isOpen: true, ...opts });
-  const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
 
   // Comentarios adicionales
   const [comments, setComments] = useState('');
@@ -619,15 +605,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                             </svg>
                           </button>
                           <button
-                            onClick={() =>
-                              openConfirm({
-                                title: 'Eliminar documento',
-                                message: `¿Desea eliminar "${doc.name}"? Esta acción no se puede deshacer.`,
-                                confirmLabel: 'Eliminar',
-                                variant: 'danger',
-                                onConfirm: () => { handleRemoveDoc(doc.id); closeConfirm(); },
-                              })
-                            }
+                            onClick={() => handleRemoveDoc(doc.id)}
                             className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
                             title="Eliminar"
                           >
@@ -667,15 +645,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() =>
-                              openConfirm({
-                                title: 'Guardar documento',
-                                message: `¿Desea agregar "${newDocForm.name}" a la lista de documentos nuevos?`,
-                                confirmLabel: 'Guardar',
-                                variant: 'primary',
-                                onConfirm: () => { handleAddDoc(); closeConfirm(); },
-                              })
-                            }
+                            onClick={handleAddDoc}
                             disabled={!newDocForm.fileType || !newDocForm.name}
                             className="px-3 py-1.5 bg-[#C41E3A] text-white rounded-md text-xs font-medium hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                           >
@@ -726,15 +696,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
           ← Volver
         </button>
         <button
-          onClick={() =>
-            openConfirm({
-              title: 'Enviar enmienda',
-              message: '¿Está seguro de que desea finalizar y enviar la enmienda? Esta acción no se puede deshacer.',
-              confirmLabel: 'Finalizar',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onFinish(); },
-            })
-          }
+          onClick={onFinish}
           className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -744,15 +706,6 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
         </button>
       </div>
 
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Document, UploadStatus } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
+
 
 interface UploadDocumentsProps {
   selectedDocuments: string[];
@@ -27,20 +27,6 @@ export function UploadDocuments({
 }: UploadDocumentsProps) {
   const [files, setFiles] = useState<Record<string, { controlChanges: FileUpload | null; finalVersion: FileUpload | null }>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
-
-  // Confirm dialog state
-  const [confirm, setConfirm] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    variant?: 'danger' | 'warning' | 'primary';
-    onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  const openConfirm = (opts: Omit<typeof confirm, 'isOpen'>) =>
-    setConfirm({ isOpen: true, ...opts });
-  const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
 
   const allDocuments = [
     ...baseDocuments,
@@ -200,7 +186,7 @@ export function UploadDocuments({
                           {docFiles.controlChanges.name}
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.controlChanges?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'controlChanges'); closeConfirm(); } })} className="text-xs text-gray-600 hover:text-gray-800 underline">Eliminar</button>
+                          <button onClick={() => handleFileRemove(doc.id, 'controlChanges')} className="text-xs text-gray-600 hover:text-gray-800 underline">Eliminar</button>
                           <span className="text-gray-400">|</span>
                           <button onClick={() => alert('Ver archivo: ' + docFiles.controlChanges?.name)} className="text-xs text-gray-600 hover:text-gray-800 underline">Ver</button>
                         </div>
@@ -211,7 +197,7 @@ export function UploadDocuments({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         <span className="text-sm text-[#155724] flex-1 truncate font-medium">{docFiles.controlChanges.name}</span>
-                        <button onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.controlChanges?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'controlChanges'); closeConfirm(); } })} className="text-gray-500 hover:text-red-600 flex-shrink-0">
+                        <button onClick={() => handleFileRemove(doc.id, 'controlChanges')} className="text-gray-500 hover:text-red-600 flex-shrink-0">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </div>
@@ -236,7 +222,7 @@ export function UploadDocuments({
                       <div className="bg-white border border-gray-300 rounded px-3 py-2">
                         <div className="text-sm text-[#C41E3A] font-medium mb-1 underline">{docFiles.finalVersion.name}</div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.finalVersion?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'finalVersion'); closeConfirm(); } })} className="text-xs text-gray-600 hover:text-gray-800 underline">Eliminar</button>
+                          <button onClick={() => handleFileRemove(doc.id, 'finalVersion')} className="text-xs text-gray-600 hover:text-gray-800 underline">Eliminar</button>
                           <span className="text-gray-400">|</span>
                           <button onClick={() => alert('Ver archivo: ' + docFiles.finalVersion?.name)} className="text-xs text-gray-600 hover:text-gray-800 underline">Ver</button>
                         </div>
@@ -245,7 +231,7 @@ export function UploadDocuments({
                       <div className="flex items-center gap-2 bg-[#D4EDDA] border border-[#28A745] rounded px-3 py-2">
                         <svg className="w-4 h-4 text-[#28A745] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                         <span className="text-sm text-[#155724] flex-1 truncate font-medium">{docFiles.finalVersion.name}</span>
-                        <button onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.finalVersion?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'finalVersion'); closeConfirm(); } })} className="text-gray-500 hover:text-red-600 flex-shrink-0">
+                        <button onClick={() => handleFileRemove(doc.id, 'finalVersion')} className="text-gray-500 hover:text-red-600 flex-shrink-0">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </div>
@@ -291,15 +277,7 @@ export function UploadDocuments({
           Volver
         </button>
         <button
-          onClick={() =>
-            openConfirm({
-              title: 'Continuar al paso 3',
-              message: 'Ha cargado los archivos requeridos. ¿Desea continuar a la definición de cambios?',
-              confirmLabel: 'Continuar',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onNext(); },
-            })
-          }
+          onClick={onNext}
           disabled={!canContinue}
           className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
@@ -307,15 +285,6 @@ export function UploadDocuments({
         </button>
       </div>
 
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }

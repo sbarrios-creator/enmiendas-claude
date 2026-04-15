@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Document } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
+
 
 interface SelectDocumentsProps {
   selectedDocuments: string[];
@@ -35,20 +35,6 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
   const [sectionSearches, setSectionSearches] = useState<Record<string, string>>({});
   const [showModal, setShowModal] = useState(false);
   const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
-
-  // Confirm dialog state
-  const [confirm, setConfirm] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    variant?: 'danger' | 'warning' | 'primary';
-    onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  const openConfirm = (opts: Omit<typeof confirm, 'isOpen'>) =>
-    setConfirm({ isOpen: true, ...opts });
-  const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
 
   // Lista completa = documentos base + nuevos agregados por el usuario
   const documents = [...baseDocuments, ...newDocuments];
@@ -273,18 +259,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                             <td className="px-4 py-3 text-center border-t border-gray-200">
                               <div className="flex gap-2 justify-center">
                                 <button
-                                  onClick={() =>
-                                    openConfirm({
-                                      title: 'Eliminar documento',
-                                      message: `¿Desea eliminar "${doc.name}"? Esta acción no se puede deshacer.`,
-                                      confirmLabel: 'Eliminar',
-                                      variant: 'danger',
-                                      onConfirm: () => {
-                                        onNewDocumentsChange(newDocuments.filter((d) => d.id !== doc.id));
-                                        closeConfirm();
-                                      },
-                                    })
-                                  }
+                                  onClick={() => onNewDocumentsChange(newDocuments.filter((d) => d.id !== doc.id))}
                                   className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
                                   title="Eliminar"
                                 >
@@ -332,15 +307,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
               </span>
             </div>
             <button
-              onClick={() =>
-                openConfirm({
-                  title: 'Limpiar selección',
-                  message: '¿Desea deseleccionar todos los documentos?',
-                  confirmLabel: 'Limpiar',
-                  variant: 'warning',
-                  onConfirm: () => { onSelectDocuments([]); closeConfirm(); },
-                })
-              }
+              onClick={() => onSelectDocuments([])}
               className="text-sm text-blue-700 hover:text-blue-900 underline"
             >
               Limpiar selección
@@ -352,15 +319,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       {/* Action Buttons */}
       <div className="flex justify-end gap-4 mt-6">
         <button
-          onClick={() =>
-            openConfirm({
-              title: 'Continuar al paso 2',
-              message: `Ha seleccionado ${selectedDocuments.length} ${selectedDocuments.length === 1 ? 'documento' : 'documentos'}. ¿Desea continuar?`,
-              confirmLabel: 'Siguiente',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onNext(); },
-            })
-          }
+          onClick={onNext}
           disabled={selectedDocuments.length === 0}
           className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
         >
@@ -453,15 +412,6 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
         </div>
       )}
 
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }
