@@ -119,7 +119,7 @@ export function UploadDocuments({
     Object.values(uploadStatuses).every((status) => status.controlChanges && status.finalVersion);
 
   return (
-    <div>
+    <div className="w-full">
       <div className="mb-6">
         <h3 className="text-base font-semibold text-gray-900 mb-1">Subir documentos modificados</h3>
         <p className="text-sm text-gray-600 m-0">Cargue el archivo con control de cambios y la versión final de cada documento</p>

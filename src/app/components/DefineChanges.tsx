@@ -375,7 +375,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   ];
 
   return (
-    <div>
+    <div className="w-full">
       <div className="mb-6">
         <h2 className="text-base font-semibold text-gray-900 mb-2">Redacción de cambio</h2>
         <p className="text-sm text-gray-600">
@@ -498,7 +498,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
               {/* Modal: asignar unidad operativa interna al proyecto */}
               {showAddInternal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
                     {/* Header */}
                     <div className="bg-[#C41E3A] px-5 py-4 flex items-center justify-between">
                       <h3 className="text-white text-base font-semibold m-0">Asignar unidad operativa interna</h3>
@@ -716,7 +716,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
               {/* Modal: asignar unidad operativa al proyecto */}
               {showAddExternal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
                     {/* Header */}
                     <div className="bg-[#C41E3A] px-5 py-4 flex items-center justify-between">
                       <h3 className="text-white text-base font-semibold m-0">Asignar unidad operativa al proyecto</h3>
@@ -1348,71 +1348,86 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
                       <p className="text-xs font-semibold text-gray-600 m-0 mb-1.5">Disponibles</p>
-                      {newChange.appliesTo.length === 0 && (
-                        <div className="relative">
-                          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                          <input
-                            type="text"
-                            placeholder="Buscar..."
-                            value={docPickerSearch}
-                            onChange={(e) => setDocPickerSearch(e.target.value)}
-                            className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
-                          />
-                        </div>
-                      )}
+                      <div className="relative">
+                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={docPickerSearch}
+                          onChange={(e) => setDocPickerSearch(e.target.value)}
+                          className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
+                        />
+                      </div>
                     </div>
                     <div className="overflow-y-auto max-h-48">
                       {(() => {
-                        const available = documents.filter(
-                          (doc) =>
-                            !newChange.appliesTo.includes(doc.id) &&
-                            doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())
+                        const filtered = documents.filter((doc) =>
+                          doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())
                         );
-                        const groups = groupedAvailable(available);
+                        const groups = groupedAvailable(filtered);
                         if (groups.length === 0 && docPickerSearch.trim())
                           return <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>;
                         if (groups.length === 0)
                           return null;
-                        return groups.map((group) => (
-                          <div key={group.category} className="border-b border-gray-100">
-                            <div className="px-3 py-1.5 bg-gray-100 flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{group.category}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const toAdd = group.docs.map((d) => d.id).filter((id) => !newChange.appliesTo.includes(id));
-                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, ...toAdd] });
-                                }}
-                                className="shrink-0 text-[10px] text-[#C41E3A] hover:underline font-medium"
-                              >
-                                Agregar todos
-                              </button>
+                        return groups.map((group) => {
+                          const allChecked = group.docs.every((d) => newChange.appliesTo.includes(d.id));
+                          const someChecked = group.docs.some((d) => newChange.appliesTo.includes(d.id));
+                          return (
+                            <div key={group.category} className="border-b border-gray-100">
+                              <label className="px-3 py-1.5 bg-gray-100 flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={allChecked}
+                                  ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
+                                  onChange={() => {
+                                    const ids = group.docs.map((d) => d.id);
+                                    if (allChecked) {
+                                      setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => !ids.includes(id)) });
+                                    } else {
+                                      const toAdd = ids.filter((id) => !newChange.appliesTo.includes(id));
+                                      setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, ...toAdd] });
+                                    }
+                                  }}
+                                  className="accent-[#C41E3A] w-3 h-3 shrink-0"
+                                />
+                                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate flex-1">{group.category}</span>
+                              </label>
+                              {group.docs.map((doc) => (
+                                <label
+                                  key={doc.id}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-red-50 cursor-pointer border-t border-gray-100 select-none"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={newChange.appliesTo.includes(doc.id)}
+                                    onChange={() => {
+                                      if (newChange.appliesTo.includes(doc.id)) {
+                                        setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => id !== doc.id) });
+                                      } else {
+                                        setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] });
+                                      }
+                                    }}
+                                    className="accent-[#C41E3A] w-3 h-3 shrink-0"
+                                  />
+                                  <span className="truncate">{doc.name}</span>
+                                </label>
+                              ))}
                             </div>
-                            {group.docs.map((doc) => (
-                              <button
-                                key={doc.id}
-                                type="button"
-                                onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] })}
-                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-[#C41E3A] transition-colors border-t border-gray-100"
-                              >
-                                {doc.name}
-                              </button>
-                            ))}
-                          </div>
-                        ));
+                          );
+                        });
                       })()}
                     </div>
                     <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
-                      <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} disponibles</span>
-                      {documents.length - newChange.appliesTo.length > 0 && (
+                      <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} sin seleccionar</span>
+                      {newChange.appliesTo.length < documents.length && (
                         <button
                           type="button"
                           onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: documents.map(d => d.id) })}
                           className="text-xs text-[#C41E3A] hover:underline font-medium"
                         >
-                          Agregar todos
+                          Seleccionar todos
                         </button>
                       )}
                     </div>
