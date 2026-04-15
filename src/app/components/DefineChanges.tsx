@@ -1344,152 +1344,74 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
               <div>
                 <label className="block mb-1.5 text-sm font-semibold text-gray-700">Alcance del cambio <span className="text-[#C41E3A]">*</span></label>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Lista disponible */}
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 m-0 mb-1.5">Disponibles</p>
-                      <div className="relative">
-                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                          type="text"
-                          placeholder="Buscar..."
-                          value={docPickerSearch}
-                          onChange={(e) => setDocPickerSearch(e.target.value)}
-                          className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    <div className="overflow-y-auto max-h-48">
-                      {(() => {
-                        const filtered = documents.filter((doc) =>
-                          doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())
-                        );
-                        const groups = groupedAvailable(filtered);
-                        if (groups.length === 0 && docPickerSearch.trim())
-                          return <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>;
-                        if (groups.length === 0)
-                          return null;
-                        return groups.map((group) => {
-                          const allChecked = group.docs.every((d) => newChange.appliesTo.includes(d.id));
-                          const someChecked = group.docs.some((d) => newChange.appliesTo.includes(d.id));
-                          return (
-                            <div key={group.category} className="border-b border-gray-100">
-                              <label className="px-3 py-1.5 bg-gray-100 flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={allChecked}
-                                  ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
-                                  onChange={() => {
-                                    const ids = group.docs.map((d) => d.id);
-                                    if (allChecked) {
-                                      setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => !ids.includes(id)) });
-                                    } else {
-                                      const toAdd = ids.filter((id) => !newChange.appliesTo.includes(id));
-                                      setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, ...toAdd] });
-                                    }
-                                  }}
-                                  className="accent-[#C41E3A] w-3 h-3 shrink-0"
-                                />
-                                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate flex-1">{group.category}</span>
-                              </label>
-                              {group.docs.map((doc) => (
-                                <label
-                                  key={doc.id}
-                                  className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-red-50 cursor-pointer border-t border-gray-100 select-none"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={newChange.appliesTo.includes(doc.id)}
-                                    onChange={() => {
-                                      if (newChange.appliesTo.includes(doc.id)) {
-                                        setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => id !== doc.id) });
-                                      } else {
-                                        setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, doc.id] });
-                                      }
-                                    }}
-                                    className="accent-[#C41E3A] w-3 h-3 shrink-0"
-                                  />
-                                  <span className="truncate">{doc.name}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                    <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
-                      <span className="text-xs text-gray-500">{documents.length - newChange.appliesTo.length} sin seleccionar</span>
-                      {newChange.appliesTo.length < documents.length && (
-                        <button
-                          type="button"
-                          onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: documents.map(d => d.id) })}
-                          className="text-xs text-[#C41E3A] hover:underline font-medium"
-                        >
-                          Seleccionar todos
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Lista seleccionados */}
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 m-0">Seleccionados</p>
-                    </div>
-                    <div className="overflow-y-auto max-h-48">
-                      {newChange.appliesTo.length === 0 ? (
-                        <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Ninguno seleccionado</p>
-                      ) : (
-                        groupedAvailable(documents.filter((d) => newChange.appliesTo.includes(d.id))).map((group) => (
-                          <div key={group.category} className="border-b border-gray-100">
-                            <div className="px-3 py-1.5 bg-gray-100 flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{group.category}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const toRemove = group.docs.map((d) => d.id);
-                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => !toRemove.includes(id)) });
-                                }}
-                                className="shrink-0 text-[10px] text-red-600 hover:underline font-medium"
-                              >
-                                Quitar todos
-                              </button>
-                            </div>
-                            {group.docs.map((doc) => (
-                              <div key={doc.id} className="flex items-center justify-between gap-2 px-3 py-2 border-t border-gray-100">
-                                <span className="text-xs text-gray-700 truncate flex-1">{doc.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((a) => a !== doc.id) })}
-                                  className="shrink-0 w-4 h-4 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                                >
-                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    <div className="bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-between items-center">
-                      <span className="text-xs text-gray-500">{newChange.appliesTo.length} seleccionados</span>
-                      {newChange.appliesTo.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setNewChange({ ...newChange, isGlobal: false, appliesTo: [] })}
-                          className="text-xs text-red-600 hover:underline font-medium"
-                        >
-                          Quitar todos
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setNewChange({ ...newChange, isGlobal: true, appliesTo: [] })}
+                    className={`px-4 py-2 rounded border transition-all text-sm font-medium ${newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}
+                  >
+                    Todos los documentos
+                  </button>
+                  <button
+                    onClick={() => setNewChange({ ...newChange, isGlobal: false })}
+                    className={`px-4 py-2 rounded border transition-all text-sm font-medium ${!newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}
+                  >
+                    Documentos específicos
+                  </button>
                 </div>
               </div>
+
+              {/* Selección de documentos específicos */}
+              {!newChange.isGlobal && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                  <div className="px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide m-0">Documentos afectados</p>
+                    <span className="text-xs text-gray-500">{newChange.appliesTo.length} de {documents.length} seleccionados</span>
+                  </div>
+                  <div className="divide-y divide-gray-200 overflow-y-auto max-h-60">
+                    {groupedAvailable(documents).map((group) => {
+                      const allChecked = group.docs.every((d) => newChange.appliesTo.includes(d.id));
+                      const someChecked = group.docs.some((d) => newChange.appliesTo.includes(d.id));
+                      return (
+                        <div key={group.category}>
+                          {/* Header de categoría con checkbox */}
+                          <label className="flex items-center gap-2 px-3 py-2 bg-gray-100 cursor-pointer select-none hover:bg-gray-200 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={allChecked}
+                              ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
+                              onChange={() => {
+                                const ids = group.docs.map((d) => d.id);
+                                if (allChecked) {
+                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: newChange.appliesTo.filter((id) => !ids.includes(id)) });
+                                } else {
+                                  const toAdd = ids.filter((id) => !newChange.appliesTo.includes(id));
+                                  setNewChange({ ...newChange, isGlobal: false, appliesTo: [...newChange.appliesTo, ...toAdd] });
+                                }
+                              }}
+                              className="w-4 h-4 accent-[#C41E3A] shrink-0"
+                            />
+                            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{group.category}</span>
+                            <span className="ml-auto text-xs text-gray-400">{group.docs.filter((d) => newChange.appliesTo.includes(d.id)).length}/{group.docs.length}</span>
+                          </label>
+                          {/* Documentos de la categoría */}
+                          <div className="divide-y divide-gray-100">
+                            {group.docs.map((doc) => (
+                              <label key={doc.id} className="flex items-center gap-3 px-4 py-2 hover:bg-white cursor-pointer transition-colors select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={newChange.appliesTo.includes(doc.id)}
+                                  onChange={() => handleToggleDocument(doc.id)}
+                                  className="w-4 h-4 accent-[#C41E3A] shrink-0"
+                                />
+                                <span className="text-sm text-gray-700">{doc.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
