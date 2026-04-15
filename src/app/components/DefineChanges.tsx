@@ -337,7 +337,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   value={titleSummaryData.title}
                   onChange={(e) => setTitleSummaryData({ ...titleSummaryData, title: e.target.value })}
                   placeholder="Ingrese el nuevo título del estudio"
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                 />
               </div>
               <div>
@@ -347,7 +347,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   onChange={(e) => setTitleSummaryData({ ...titleSummaryData, summary: e.target.value })}
                   placeholder="Ingrese el nuevo resumen del estudio"
                   rows={4}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                 />
               </div>
             </div>
@@ -402,7 +402,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Internas</h4>
                 <button
                   onClick={() => setUnitModalType('internal')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -441,7 +441,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           <td className="px-4 py-3 text-center">
                             <button
                               onClick={() => handleRemoveInternalUnit(unit.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors font-medium"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -463,7 +463,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 <h4 className="text-sm font-semibold text-gray-800 m-0">Unidades Externas</h4>
                 <button
                   onClick={() => setUnitModalType('external')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -505,7 +505,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => { const url = URL.createObjectURL(unit.file); window.open(url, '_blank'); }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors font-medium"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                           title="Ver documento"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,7 +521,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             a.href = url; a.download = unit.fileName; a.click();
                             URL.revokeObjectURL(url);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                           title="Descargar documento"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,7 +531,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         </button>
                         <button
                           onClick={() => handleRemoveExternalUnit(unit.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors font-medium"
                           title="Deshacer registro"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -593,7 +593,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             {/* Existing Researchers List */}
             {researchers.length > 0 && (
               <div>
-                <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-gray-900">
                       <tr>
@@ -648,7 +648,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             {!showAddResearcher && (
               <button
                   onClick={() => setShowAddResearcher(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-medium"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -659,7 +659,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
               {/* Add Researcher Form */}
               {showAddResearcher && (
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-5 space-y-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
                   <h4 className="font-semibold text-gray-900 text-base m-0">Agregar cambio en equipo</h4>
 
                   <div>
@@ -667,7 +667,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <select
                       value={newResearcher.changeType}
                       onChange={(e) => setNewResearcher({ ...newResearcher, changeType: e.target.value as 'add' | 'remove' | 'modify' })}
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                     >
                       <option value="add">Agregar nuevo investigador</option>
                       <option value="modify">Modificar rol de investigador</option>
@@ -683,7 +683,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         value={newResearcher.name}
                         onChange={(e) => setNewResearcher({ ...newResearcher, name: e.target.value })}
                         placeholder="Ej: Juan Pérez García"
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                       />
                     </div>
 
@@ -694,7 +694,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         value={newResearcher.email}
                         onChange={(e) => setNewResearcher({ ...newResearcher, email: e.target.value })}
                         placeholder="ejemplo@upch.pe"
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -705,7 +705,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <select
                         value={newResearcher.currentRole}
                         onChange={(e) => setNewResearcher({ ...newResearcher, currentRole: e.target.value })}
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                       >
                         <option value="">Seleccione rol actual</option>
                         {researcherRoles.map((role) => (
@@ -721,7 +721,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <select
                         value={newResearcher.proposedRole}
                         onChange={(e) => setNewResearcher({ ...newResearcher, proposedRole: e.target.value })}
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white"
                       >
                         <option value="">Seleccione rol propuesto</option>
                         {researcherRoles.map((role) => (
@@ -738,7 +738,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       onChange={(e) => setNewResearcher({ ...newResearcher, justification: e.target.value })}
                       placeholder="Describa la justificación para este cambio"
                       rows={3}
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                     />
                   </div>
 
@@ -755,14 +755,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           justification: '',
                         });
                       }}
-                      className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+                      className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                     >
                       Cancelar
                     </button>
                     <button
                       onClick={handleAddResearcher}
                       disabled={!newResearcher.name || !newResearcher.email || !newResearcher.justification || (newResearcher.changeType !== 'remove' && !newResearcher.proposedRole)}
-                      className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                      className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
                       Agregar a la lista
                     </button>
@@ -883,14 +883,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               <div className="flex gap-1 justify-center">
                                 <button
                                   onClick={() => handleEditChange(change)}
-                                  className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                  className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                   title="Editar"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                 </button>
                                 <button
                                   onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
-                                  className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                  className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                                   title="Eliminar"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -946,7 +946,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
 
             {/* Dialog */}
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                 <div>
@@ -1342,7 +1342,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <button
                       type="button"
                       onClick={() => setUnitDropdownOpen((prev) => !prev)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent transition-colors"
                     >
                       <span className={selectedUnitName ? 'text-gray-900' : 'text-gray-400'}>
                         {selectedUnitName || 'Seleccione una unidad operativa'}
@@ -1361,7 +1361,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               placeholder="Buscar unidad..."
                               value={unitSearch}
                               onChange={(e) => setUnitSearch(e.target.value)}
-                              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                             />
                             <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1403,7 +1403,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       value={extUnitName}
                       onChange={(e) => setExtUnitName(e.target.value)}
                       placeholder="Ej: Laboratorio de Genómica"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                     />
                   </div>
 
@@ -1493,7 +1493,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
               <button
                 onClick={closeUnitModal}
-                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 Cancelar
               </button>
@@ -1504,7 +1504,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     ? !selectedUnitName || !unitFile
                     : !extUnitName.trim() || extHasCarta === 'NO' || !unitFile
                 }
-                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 Agregar
               </button>
@@ -1517,14 +1517,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
         <button
           onClick={onBack}
-          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           ← Volver
         </button>
         <button
           onClick={onNext}
           disabled={changes.length === 0}
-          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           Continuar al resumen →
         </button>

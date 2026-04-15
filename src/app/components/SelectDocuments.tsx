@@ -31,7 +31,7 @@ interface DocumentSection {
 }
 
 export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [sectionSearches, setSectionSearches] = useState<Record<string, string>>({});
   const [showModal, setShowModal] = useState(false);
   const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
 
@@ -77,6 +77,18 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
     }
   };
 
+  const handleToggleSection = (sectionDocs: Document[]) => {
+    const sectionIds = sectionDocs.map((doc) => doc.id);
+    const allSelected = sectionIds.every((id) => selectedDocuments.includes(id));
+    if (allSelected) {
+      onSelectDocuments(selectedDocuments.filter((id) => !sectionIds.includes(id)));
+    } else {
+      const newSelection = [...selectedDocuments];
+      sectionIds.forEach((id) => { if (!newSelection.includes(id)) newSelection.push(id); });
+      onSelectDocuments(newSelection);
+    }
+  };
+
   const handleSelectAll = () => {
     const allIds = documents.map((doc) => doc.id);
     const allSelected = allIds.every((id) => selectedDocuments.includes(id));
@@ -87,36 +99,28 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
     }
   };
 
-  const PROYECTO_IDS = ['1'];
-  const CONSENTIMIENTO_IDS = ['2'];
-  const ASENTIMIENTO_IDS = ['3', '4'];
+  const getCategory = (doc: Document) => (doc as { category?: string }).category ?? '';
 
   const sections: DocumentSection[] = [
     {
       title: 'Presupuesto del estudio',
-      documents: documents.filter((doc) => doc.type === 'Presupuesto'),
+      documents: documents.filter((doc) => getCategory(doc) === 'Presupuesto del estudio'),
     },
     {
       title: 'Proyecto de investigación',
-      documents: documents.filter((doc) => PROYECTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => getCategory(doc) === 'Proyecto de investigación'),
     },
     {
       title: 'Consentimiento informado',
-      documents: documents.filter((doc) => CONSENTIMIENTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => getCategory(doc) === 'Consentimiento informado'),
     },
     {
       title: 'Asentimientos',
-      documents: documents.filter((doc) => ASENTIMIENTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => getCategory(doc) === 'Asentimientos'),
     },
     {
       title: 'Instrumentos del proyecto',
-      documents: documents.filter(
-        (doc) =>
-          doc.type === 'Instrumento' &&
-          !PROYECTO_IDS.includes(doc.id) &&
-          !CONSENTIMIENTO_IDS.includes(doc.id) &&
-          !ASENTIMIENTO_IDS.includes(doc.id)
-      ),
+      documents: documents.filter((doc) => getCategory(doc) === 'Instrumentos del proyecto'),
     },
     {
       title: 'Documentos Nuevos',
@@ -163,22 +167,35 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       {/* Document Sections */}
       <div className="space-y-6">
         {sections.map((section) => {
-          const isInstrumentos = section.title === 'Instrumentos del proyecto';
           const isNuevos = section.title === 'Documentos Nuevos';
-
-          const displayDocuments = isInstrumentos
-            ? section.documents.filter((doc) =>
-                doc.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
+          const showSearch = section.documents.length > 10;
+          const searchValue = sectionSearches[section.title] ?? '';
+          const displayDocuments = showSearch
+            ? section.documents.filter((doc) => doc.name.toLowerCase().includes(searchValue.toLowerCase()))
             : section.documents;
 
-          if (displayDocuments.length === 0 && !isNuevos && !isInstrumentos) return null;
+          if (section.documents.length === 0 && !isNuevos) return null;
+
+          const allSectionSelected = section.documents.length > 0 && section.documents.every((d) => selectedDocuments.includes(d.id));
+          const someSectionSelected = section.documents.some((d) => selectedDocuments.includes(d.id));
 
           return (
             <div key={section.title} className="border border-gray-300 rounded overflow-hidden mb-6">
               {/* Section Header */}
-              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
-                <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
+              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {!isNuevos && (
+                    <input
+                      type="checkbox"
+                      checked={allSectionSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSectionSelected && !allSectionSelected; }}
+                      onChange={() => handleToggleSection(section.documents)}
+                      className="w-4 h-4 accent-white cursor-pointer shrink-0"
+                      title={allSectionSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                    />
+                  )}
+                  <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
+                </div>
                 {isNuevos && (
                   <button
                     onClick={() => setShowModal(true)}
@@ -190,21 +207,16 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                     Agregar Documentos
                   </button>
                 )}
-                {isInstrumentos && section.documents.length > 5 && (
-                  <div className="relative w-64">
+                {showSearch && (
+                  <div className="relative w-72">
                     <input
                       type="text"
-                      placeholder="Buscar instrumento..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={`Buscar en ${section.title.toLowerCase()}...`}
+                      value={searchValue}
+                      onChange={(e) => setSectionSearches((prev) => ({ ...prev, [section.title]: e.target.value }))}
                       className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
                     />
-                    <svg
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
@@ -213,7 +225,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
 
               {/* Section Table */}
               {displayDocuments.length > 0 ? (
-                <div className={isInstrumentos && section.documents.length > 5 ? 'max-h-72 overflow-y-auto' : ''}>
+                <div className={showSearch ? 'max-h-72 overflow-y-auto' : ''}>
                   <table className="w-full">
                     <thead className="bg-gray-900 sticky top-0 z-10">
                       <tr>
@@ -287,7 +299,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                 </div>
               ) : (
                 <div className="bg-white py-8 text-center text-gray-500">
-                  {isInstrumentos && searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'No se han agregado documentos nuevos'}
+                  {searchValue ? 'No se encontraron resultados para tu búsqueda' : 'No se han agregado documentos nuevos'}
                 </div>
               )}
             </div>
