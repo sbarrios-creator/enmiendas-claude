@@ -4,6 +4,7 @@ export interface Document {
   type: 'Presupuesto' | 'Instrumento' | 'Nuevo';
   status: 'Borrador' | 'Aprobado' | 'Firmado';
   version: string;
+  category?: string;
 }
 
 export interface UploadStatus {
