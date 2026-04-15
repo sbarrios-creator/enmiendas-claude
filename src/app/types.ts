@@ -4,6 +4,7 @@ export interface Document {
   type: 'Presupuesto' | 'Instrumento' | 'Nuevo';
   status: 'Borrador' | 'Aprobado' | 'Firmado';
   version: string;
+  category?: string;
 }
 
 export interface UploadStatus {
@@ -19,13 +20,6 @@ export interface Change {
   justification: string;
   appliesTo: string[];
   isGlobal: boolean;
-}
-
-export interface AddedDoc {
-  id: string;
-  type: string;
-  fileName: string;
-  file: File;
 }
 
 export interface ImpactAnalysis {
@@ -44,19 +38,31 @@ export interface ResearcherChange {
   justification: string;
 }
 
-export interface OperativeUnit {
+export interface InternalOperativeUnit {
+  id: string;
+  name: string;        // selected from dropdown or custom value when "Otros"
+  isOther: boolean;    // true when user selected "Otros"
+  managementUnit: string; // free-text unit when isOther is true
+  registrationDate?: string; // ISO date string
+  declarationFileName?: string; // carta de declaración del jefe de unidad
+}
+
+export interface ExternalOperativeUnit {
   id: string;
   name: string;
-  fileName: string;
-  file: File;
-  registeredAt: string;
+  registrationDate: string; // ISO date string
+  hasApprovalLetter: boolean;
+  approvalFileName?: string;
 }
 
 export interface Step3Data {
   modifiesTitleOrSummary: 'NO' | 'SI' | null;
   titleSummaryData: { title: string; summary: string };
   modifiesOperativeUnits: 'NO' | 'SI' | null;
-  operativeUnitsData: { internalUnits: OperativeUnit[]; externalUnits: OperativeUnit[] };
+  operativeUnitsData: {
+    internalUnits: InternalOperativeUnit[];
+    externalUnits: ExternalOperativeUnit[];
+  };
   modifiesResearchers: 'NO' | 'SI' | null;
   researchers: ResearcherChange[];
 }
