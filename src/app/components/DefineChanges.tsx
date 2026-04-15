@@ -836,12 +836,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       </svg>
                       <span>
                         {change.isGlobal
-                        ? 'Todos los documentos'
-                        : change.appliesTo
-                            .map((id) => documents.find((d) => d.id === id)?.name)
-                            .filter(Boolean)
-                            .join(' · ')
-                      }
+                          ? documents.map((d) => d.name).join(' · ')
+                          : change.appliesTo
+                              .map((id) => documents.find((d) => d.id === id)?.name)
+                              .filter(Boolean)
+                              .join(' · ')
+                        }
                       </span>
                     </div>
                   </div>

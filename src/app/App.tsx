@@ -119,7 +119,7 @@ export default function App() {
           {currentStep === 4 && (
             <Summary
               selectedDocuments={selectedDocuments}
-              addedDocs={addedDocs}
+              newDocuments={addedDocs.map((d): Document => ({ id: d.id, name: d.fileName, type: 'Nuevo', status: 'Aprobado', version: '1' }))}
               changes={changes}
               uploadStatuses={uploadStatuses}
               step3Data={step3Data}

@@ -169,7 +169,7 @@ export function UploadDocuments({
             {/* Cabecera de categoría */}
             <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between gap-4">
               <h4 className="m-0 text-white text-base font-normal">{category}</h4>
-              {isInstrumentos && (
+              {isInstrumentos && docs.length > 5 && (
                 <div className="relative w-64">
                   <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -327,15 +327,7 @@ export function UploadDocuments({
           Volver
         </button>
         <button
-          onClick={() =>
-            openConfirm({
-              title: 'Continuar al paso 3',
-              message: 'Ha cargado los archivos requeridos. ¿Desea continuar a la definición de cambios?',
-              confirmLabel: 'Continuar',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onNext(); },
-            })
-          }
+          onClick={onNext}
           disabled={!canContinue}
           className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
