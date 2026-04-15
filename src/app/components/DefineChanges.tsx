@@ -1177,8 +1177,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <thead className="bg-gray-100 sticky top-0 z-10">
                       <tr>
                         <th className="px-3 py-2 text-left font-semibold text-gray-600">Cambio</th>
-                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Valor Anterior</th>
-                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Valor Nuevo</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Versión Anterior</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Versión Nueva</th>
                         <th className="px-3 py-2 text-left font-semibold text-gray-600">Justificación</th>
                         <th className="px-3 py-2 text-left font-semibold text-gray-600">Documentos</th>
                         <th className="px-3 py-2 text-center font-semibold text-gray-600 w-20">Acciones</th>
@@ -1301,10 +1301,10 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 />
               </div>
 
-              {/* Valor Anterior / Valor Nuevo */}
+              {/* Versión Anterior / Versión Nueva */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Valor Anterior</label>
+                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Versión Anterior</label>
                   <p className="text-xs text-gray-400 mb-2 m-0">Texto o valor actual en el documento</p>
                   <input
                     type="text"
@@ -1315,7 +1315,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   />
                 </div>
                 <div>
-                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Valor Nuevo <span className="text-[#C41E3A]">*</span></label>
+                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">Versión Nueva <span className="text-[#C41E3A]">*</span></label>
                   <p className="text-xs text-gray-400 mb-2 m-0">Texto o valor que reemplazará al anterior</p>
                   <input
                     type="text"
