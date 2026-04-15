@@ -33,6 +33,7 @@ interface DocumentSection {
 
 export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchConsentimiento, setSearchConsentimiento] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
 
@@ -105,10 +106,6 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
     }
   };
 
-  const PROYECTO_IDS = ['1'];
-  const CONSENTIMIENTO_IDS = ['2'];
-  const ASENTIMIENTO_IDS = ['3', '4'];
-
   const sections: DocumentSection[] = [
     {
       title: 'Presupuesto del estudio',
@@ -116,25 +113,19 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
     },
     {
       title: 'Proyecto de investigación',
-      documents: documents.filter((doc) => PROYECTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => doc.category === 'Proyecto de investigación'),
     },
     {
       title: 'Consentimiento informado',
-      documents: documents.filter((doc) => CONSENTIMIENTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => doc.category === 'Consentimiento informado'),
     },
     {
       title: 'Asentimientos',
-      documents: documents.filter((doc) => ASENTIMIENTO_IDS.includes(doc.id)),
+      documents: documents.filter((doc) => doc.category === 'Asentimientos'),
     },
     {
       title: 'Instrumentos del proyecto',
-      documents: documents.filter(
-        (doc) =>
-          doc.type === 'Instrumento' &&
-          !PROYECTO_IDS.includes(doc.id) &&
-          !CONSENTIMIENTO_IDS.includes(doc.id) &&
-          !ASENTIMIENTO_IDS.includes(doc.id)
-      ),
+      documents: documents.filter((doc) => doc.category === 'Instrumentos del proyecto'),
     },
     {
       title: 'Documentos Nuevos',
@@ -182,15 +173,20 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       <div className="space-y-6">
         {sections.map((section) => {
           const isInstrumentos = section.title === 'Instrumentos del proyecto';
+          const isConsentimiento = section.title === 'Consentimiento informado';
           const isNuevos = section.title === 'Documentos Nuevos';
 
           const displayDocuments = isInstrumentos
             ? section.documents.filter((doc) =>
                 doc.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
+            : isConsentimiento
+            ? section.documents.filter((doc) =>
+                doc.name.toLowerCase().includes(searchConsentimiento.toLowerCase())
+              )
             : section.documents;
 
-          if (displayDocuments.length === 0 && !isNuevos && !isInstrumentos) return null;
+          if (displayDocuments.length === 0 && !isNuevos && !isInstrumentos && !isConsentimiento) return null;
 
           return (
             <div key={section.title} className="border border-gray-300 rounded overflow-hidden mb-6">
@@ -208,8 +204,27 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                     Agregar Documentos
                   </button>
                 )}
+                {isConsentimiento && (
+                  <div className="relative w-96">
+                    <input
+                      type="text"
+                      placeholder="Buscar consentimiento..."
+                      value={searchConsentimiento}
+                      onChange={(e) => setSearchConsentimiento(e.target.value)}
+                      className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
+                    />
+                    <svg
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                )}
                 {isInstrumentos && (
-                  <div className="relative w-64">
+                  <div className="relative w-96">
                     <input
                       type="text"
                       placeholder="Buscar instrumento..."
@@ -231,7 +246,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
 
               {/* Section Table */}
               {displayDocuments.length > 0 ? (
-                <div className={isInstrumentos ? 'max-h-72 overflow-y-auto' : ''}>
+                <div className={(isInstrumentos || isConsentimiento) ? 'max-h-72 overflow-y-auto' : ''}>
                   <table className="w-full">
                     <thead className="bg-gray-900 sticky top-0 z-10">
                       <tr>
@@ -305,7 +320,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                 </div>
               ) : (
                 <div className="bg-white py-8 text-center text-gray-500">
-                  {isInstrumentos && searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
+                  {(isInstrumentos && searchTerm) || (isConsentimiento && searchConsentimiento) ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
                 </div>
               )}
             </div>
@@ -370,7 +385,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={handleModalClose} />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl mx-4">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h4 className="font-semibold text-gray-900 text-base m-0">Agregar Documento</h4>
