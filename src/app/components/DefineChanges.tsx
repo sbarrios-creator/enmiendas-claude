@@ -786,7 +786,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
             {/* Existing Changes */}
             {changes.length > 0 && (
-              <div className="space-y-3 mb-4 max-h-[460px] overflow-y-auto">
+              <div className="space-y-3 mb-4 max-h-[700px] overflow-y-auto">
                 {changes
                   .filter((c) =>
                     !searchChange ||
@@ -900,8 +900,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           {/* Dialog */}
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h4 className="font-semibold text-gray-900 text-base m-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h4 className="font-semibold text-gray-900 text-sm m-0">
                 {editingId ? 'Editar cambio' : 'Nuevo cambio'}
               </h4>
               <button
@@ -913,69 +913,69 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 }}
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto flex-1 px-6 py-5">
-              <div className="space-y-4">
-                {/* Field Selection */}
+            <div className="overflow-y-auto flex-1 px-4 py-3">
+              <div className="space-y-3">
+                {/* Campo a modificar */}
                 <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Campo a modificar *</label>
+                  <label className="block mb-1 text-xs font-semibold text-gray-700">Campo a modificar *</label>
                   <input
                     type="text"
                     value={newChange.field}
                     onChange={(e) => setNewChange({ ...newChange, field: e.target.value })}
                     placeholder="Campo a modificar *"
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Versión Anterior</label>
-                    <input
-                      type="text"
+                    <label className="block mb-1 text-xs font-semibold text-gray-700">Versión Anterior</label>
+                    <textarea
                       value={newChange.oldValue}
                       onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })}
                       placeholder="Ej: Estudio ABC-123"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      rows={3}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Versión Nueva *</label>
-                    <input
-                      type="text"
+                    <label className="block mb-1 text-xs font-semibold text-gray-700">Versión Nueva *</label>
+                    <textarea
                       value={newChange.newValue}
                       onChange={(e) => setNewChange({ ...newChange, newValue: e.target.value })}
                       placeholder="Ej: Estudio XYZ-456"
-                      className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                      rows={3}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none"
                     />
                   </div>
                 </div>
 
-                {/* Justification */}
+                {/* Justificación */}
                 <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Justificación *</label>
+                  <label className="block mb-1 text-xs font-semibold text-gray-700">Justificación *</label>
                   <textarea
                     value={newChange.justification}
                     onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })}
                     placeholder="Describa la justificación para este cambio"
-                    rows={3}
-                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
+                    rows={2}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
                   />
                 </div>
 
-                {/* Scope Selection */}
+                {/* Alcance */}
                 <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio *</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block mb-1 text-xs font-semibold text-gray-700">Alcance del cambio *</label>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setNewChange({ ...newChange, isGlobal: true })}
-                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
+                      className={`px-3 py-1.5 rounded border transition-all text-xs font-medium ${
                         newChange.isGlobal
                           ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
@@ -985,7 +985,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     </button>
                     <button
                       onClick={() => setNewChange({ ...newChange, isGlobal: false })}
-                      className={`px-4 py-2 rounded border transition-all text-sm font-medium ${
+                      className={`px-3 py-1.5 rounded border transition-all text-xs font-medium ${
                         !newChange.isGlobal
                           ? 'border-[#C41E3A] bg-white text-[#C41E3A]'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
@@ -996,62 +996,108 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   </div>
                 </div>
 
-                {/* Document Selection */}
-                {!newChange.isGlobal && (
-                  <div className="border border-gray-300 rounded-lg p-4 bg-white">
-                    <p className="text-sm font-semibold text-gray-700 mb-3 m-0">Seleccione los documentos:</p>
+                {/* Selección de documentos agrupados */}
+                {!newChange.isGlobal && (() => {
+                  // Agrupar por categoría preservando orden
+                  const grouped = documents.reduce<{ category: string; docs: typeof documents }[]>((acc, doc) => {
+                    const cat = (doc as { category?: string }).category ?? (doc.type === 'Nuevo' ? 'Documentos Nuevos' : doc.type);
+                    const existing = acc.find((g) => g.category === cat);
+                    if (existing) existing.docs.push(doc);
+                    else acc.push({ category: cat, docs: [doc] });
+                    return acc;
+                  }, []);
 
-                    {/* Buscador */}
-                    <div className="relative mb-3">
-                      <input
-                        type="text"
-                        placeholder="Buscar documento..."
-                        value={searchDocument}
-                        onChange={(e) => setSearchDocument(e.target.value)}
-                        className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                      />
-                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
+                  const filtered = grouped.map((g) => ({
+                    ...g,
+                    docs: g.docs.filter((d) => d.name.toLowerCase().includes(searchDocument.toLowerCase())),
+                  })).filter((g) => g.docs.length > 0);
+
+                  return (
+                    <div className="border border-gray-300 rounded bg-white">
+                      {/* Buscador + contador */}
+                      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            placeholder="Buscar documento..."
+                            value={searchDocument}
+                            onChange={(e) => setSearchDocument(e.target.value)}
+                            className="w-full px-3 py-1 pl-7 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A]"
+                          />
+                          <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">{newChange.appliesTo.length}/{documents.length}</span>
+                      </div>
+
+                      {/* Grupos */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {filtered.length === 0 && (
+                          <p className="text-xs text-gray-500 text-center py-3 m-0">Sin resultados.</p>
+                        )}
+                        {filtered.map(({ category, docs: groupDocs }) => {
+                          const allGroupSelected = groupDocs.every((d) => newChange.appliesTo.includes(d.id));
+                          const someGroupSelected = groupDocs.some((d) => newChange.appliesTo.includes(d.id));
+                          const toggleGroup = () => {
+                            if (allGroupSelected) {
+                              setNewChange((prev) => ({ ...prev, appliesTo: prev.appliesTo.filter((id) => !groupDocs.map((d) => d.id).includes(id)) }));
+                            } else {
+                              const toAdd = groupDocs.map((d) => d.id).filter((id) => !newChange.appliesTo.includes(id));
+                              setNewChange((prev) => ({ ...prev, appliesTo: [...prev.appliesTo, ...toAdd] }));
+                            }
+                          };
+                          return (
+                            <div key={category}>
+                              {/* Cabecera de grupo */}
+                              <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 border-b border-gray-200 sticky top-0">
+                                <span className="text-xs font-semibold text-gray-700">{category}</span>
+                                <button
+                                  onClick={toggleGroup}
+                                  className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+                                    allGroupSelected
+                                      ? 'bg-[#C41E3A] text-white hover:bg-[#A01828]'
+                                      : someGroupSelected
+                                      ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                  }`}
+                                >
+                                  {allGroupSelected ? 'Quitar todos' : 'Agregar todos'}
+                                </button>
+                              </div>
+                              {/* Filas de documentos */}
+                              {groupDocs.map((doc) => (
+                                <div
+                                  key={doc.id}
+                                  onClick={() => handleToggleDocument(doc.id)}
+                                  className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${
+                                    newChange.appliesTo.includes(doc.id) ? 'bg-green-50' : 'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${
+                                    newChange.appliesTo.includes(doc.id) ? 'bg-green-600 border-green-600' : 'border-gray-400'
+                                  }`}>
+                                    {newChange.appliesTo.includes(doc.id) && (
+                                      <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-gray-700 flex-1">{doc.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-
-                    {/* Lista con scroll */}
-                    <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-                      {documents
-                        .filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))
-                        .map((doc) => (
-                          <div key={doc.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
-                            <button
-                              onClick={() => handleToggleDocument(doc.id)}
-                              className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                                newChange.appliesTo.includes(doc.id)
-                                  ? 'bg-green-600 text-white hover:bg-green-700'
-                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              }`}
-                            >
-                              {newChange.appliesTo.includes(doc.id) ? '✓ Seleccionado' : 'Seleccionar'}
-                            </button>
-                            <span className="text-sm text-gray-700 flex-1">{doc.name}</span>
-                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${doc.type === 'Presupuesto' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {doc.type}
-                            </span>
-                          </div>
-                        ))}
-                      {searchDocument && !documents.some((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())) && (
-                        <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-gray-600 mt-3 m-0">
-                      {newChange.appliesTo.length} de {documents.length} seleccionados
-                    </p>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+            <div className="flex gap-2 px-4 py-3 border-t border-gray-200">
               <button
                 onClick={() => {
                   setShowAddChange(false);
@@ -1059,7 +1105,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
                   setSearchDocument('');
                 }}
-                className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="flex-1 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-xs font-medium"
               >
                 Cancelar
               </button>
@@ -1071,7 +1117,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   !newChange.justification ||
                   (!newChange.isGlobal && newChange.appliesTo.length === 0)
                 }
-                className="flex-1 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="flex-1 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-xs font-medium"
               >
                 {editingId ? 'Guardar cambios' : 'Agregar cambio'}
               </button>
