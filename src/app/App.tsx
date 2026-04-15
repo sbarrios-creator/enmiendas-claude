@@ -83,7 +83,7 @@ export default function App() {
 
         <WizardSteps currentStep={currentStep} />
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mt-6">
           {currentStep === 1 && (
             <SelectDocuments
               selectedDocuments={selectedDocuments}

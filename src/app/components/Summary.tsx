@@ -543,17 +543,8 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
 
       {/* Documentos Nuevos */}
       <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
+        <div className="bg-[#C41E3A] px-4 py-3">
           <h3 className="text-white text-base font-normal m-0">Documentos Nuevos</h3>
-          <button
-            onClick={() => setShowAddDoc(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded hover:bg-white/30 transition-colors text-xs font-medium"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Agregar documento
-          </button>
         </div>
 
         <div className="border-t border-gray-200 overflow-hidden">
