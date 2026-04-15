@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { Document, AddedDoc } from '../types';
+import type { Document } from '../types';
 import { baseDocuments } from '../data/documents';
 
 interface SelectDocumentsProps {
   selectedDocuments: string[];
   onSelectDocuments: (ids: string[]) => void;
-  addedDocs: AddedDoc[];
-  onAddedDocsChange: (docs: AddedDoc[]) => void;
+  newDocuments: Document[];
+  onNewDocumentsChange: (docs: Document[]) => void;
   onNext: () => void;
 }
 
@@ -28,19 +28,22 @@ const documentTypes = [
   'Otro',
 ];
 
-export function SelectDocuments({ selectedDocuments, onSelectDocuments, addedDocs, onAddedDocsChange, onNext }: SelectDocumentsProps) {
+export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [modalForm, setModalForm] = useState({ type: '', file: null as File | null });
 
   const handleModalSave = () => {
     if (!modalForm.type || !modalForm.file) return;
-    onAddedDocsChange([...addedDocs, {
+    const newDoc: Document = {
       id: Date.now().toString(),
-      type: modalForm.type,
-      fileName: modalForm.file!.name,
-      file: modalForm.file!,
-    }]);
+      name: modalForm.file!.name,
+      type: 'Nuevo',
+      status: 'Aprobado',
+      version: '1',
+    };
+    onNewDocumentsChange([...newDocuments, newDoc]);
+    onSelectDocuments([...selectedDocuments, newDoc.id]);
     setShowModal(false);
     setModalForm({ type: '', file: null });
   };
@@ -50,13 +53,9 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, addedDoc
     setModalForm({ type: '', file: null });
   };
 
-  const handleRemoveAddedDoc = (id: string) => {
-    onAddedDocsChange(addedDocs.filter((d) => d.id !== id));
-  };
-
-  const handleViewAddedDoc = (doc: AddedDoc) => {
-    const url = URL.createObjectURL(doc.file);
-    window.open(url, '_blank');
+  const handleRemoveNewDoc = (id: string) => {
+    onNewDocumentsChange(newDocuments.filter((d) => d.id !== id));
+    onSelectDocuments(selectedDocuments.filter((sid) => sid !== id));
   };
 
   const handleToggleDocument = (id: string) => {

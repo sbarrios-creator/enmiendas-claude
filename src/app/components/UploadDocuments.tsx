@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Document, UploadStatus } from '../types';
 import { baseDocuments } from '../data/documents';
-import { ConfirmDialog } from './ConfirmDialog';
 
 interface UploadDocumentsProps {
   selectedDocuments: string[];
@@ -334,16 +333,6 @@ export function UploadDocuments({
           Continuar
         </button>
       </div>
-
-      <ConfirmDialog
-        isOpen={confirm.isOpen}
-        title={confirm.title}
-        message={confirm.message}
-        confirmLabel={confirm.confirmLabel}
-        variant={confirm.variant}
-        onConfirm={confirm.onConfirm}
-        onCancel={closeConfirm}
-      />
     </div>
   );
 }
