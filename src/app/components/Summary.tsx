@@ -77,7 +77,10 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
   // Cambios agrupados por documento
   const changesByDoc = documents.map((doc) => ({
     doc,
-    items: changes.filter((c) => c.isGlobal || c.appliesTo.includes(doc.id)),
+    items: changes
+      .filter((c) => c.isGlobal || c.appliesTo.includes(doc.id))
+      .slice()
+      .reverse(),
   })).filter((g) => g.items.length > 0);
 
   // Cambios agrupados por categoría → por documento
@@ -371,40 +374,48 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                 {/* Acordeón body */}
                 {openDocs[doc.id] && (
                   <div>
-                    {/* Tabla de cambios */}
-                    <div className="max-h-64 overflow-y-auto">
-                      <table className="w-full text-sm">
-                        <thead className="sticky top-0 z-10">
-                          <tr className="bg-white border-b border-gray-200">
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-48">Versión anterior</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-48">Versión nueva</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Justificación</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 bg-white">
-                          {items.map((change) => (
-                            <tr key={change.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="px-4 py-3">
-                                {change.oldValue ? (
-                                  <span className="inline-block px-2 py-0.5 bg-red-50 border border-red-200 rounded text-red-700 line-through text-sm">
-                                    {change.oldValue}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300 italic text-sm">Sin valor previo</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="inline-block px-2 py-0.5 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-sm">
-                                  {change.newValue}
+                    {/* Grilla de cambios */}
+                    <div className="max-h-72 overflow-y-auto">
+                      {/* Cabecera fija */}
+                      <div className="sticky top-0 z-10 grid grid-cols-[7rem_1fr_1fr_1.5fr] gap-0 bg-white border-b border-gray-200">
+                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Cambio - N° página</div>
+                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión anterior</div>
+                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión nueva</div>
+                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
+                      </div>
+                      {/* Filas */}
+                      <div className="divide-y divide-gray-100 bg-white">
+                        {items.map((change, index) => (
+                          <div key={change.id} className="grid grid-cols-[7rem_1fr_1fr_1.5fr] gap-0 hover:bg-gray-50 transition-colors">
+                            {/* N° cambio */}
+                            <div className="px-3 py-3 flex items-start justify-center pt-3.5">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#C41E3A] text-white text-[11px] font-semibold shrink-0">
+                                {items.length - index}
+                              </span>
+                            </div>
+                            {/* Versión anterior */}
+                            <div className="px-3 py-3 border-l border-gray-100">
+                              {change.oldValue ? (
+                                <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed break-words w-full">
+                                  {change.oldValue}
                                 </span>
-                              </td>
-                              <td className="px-4 py-3 text-gray-600 text-sm">
-                                {change.justification || <span className="text-gray-300 italic">—</span>}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              ) : (
+                                <span className="text-gray-300 italic text-xs">Sin valor previo</span>
+                              )}
+                            </div>
+                            {/* Versión nueva */}
+                            <div className="px-3 py-3 border-l border-gray-100">
+                              <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed break-words w-full">
+                                {change.newValue}
+                              </span>
+                            </div>
+                            {/* Justificación */}
+                            <div className="px-3 py-3 border-l border-gray-100 text-gray-600 text-xs leading-relaxed">
+                              {change.justification || <span className="text-gray-300 italic">—</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* 3 cards en fila horizontal */}
@@ -441,7 +452,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                           <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide m-0">Control de Cambios</p>
                         </div>
                         <div className="px-3 py-3">
-                          <p className="text-xs text-gray-500 font-mono mb-3 truncate">{doc.id}-CC-v{doc.version}</p>
+                          <p className="text-xs text-gray-500 font-mono mb-3 truncate">{items.length}-CC-v{items.length}</p>
                           <div className="flex flex-wrap gap-1.5">
                             <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
