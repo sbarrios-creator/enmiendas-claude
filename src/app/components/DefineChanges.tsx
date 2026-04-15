@@ -1253,7 +1253,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={handleCloseModal} />
 
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>
@@ -1348,18 +1348,20 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
                       <p className="text-xs font-semibold text-gray-600 m-0 mb-1.5">Disponibles</p>
-                      <div className="relative">
-                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                          type="text"
-                          placeholder="Buscar..."
-                          value={docPickerSearch}
-                          onChange={(e) => setDocPickerSearch(e.target.value)}
-                          className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
-                        />
-                      </div>
+                      {newChange.appliesTo.length === 0 && (
+                        <div className="relative">
+                          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={docPickerSearch}
+                            onChange={(e) => setDocPickerSearch(e.target.value)}
+                            className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="overflow-y-auto max-h-48">
                       {(() => {
@@ -1369,8 +1371,10 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             doc.name.toLowerCase().includes(docPickerSearch.toLowerCase())
                         );
                         const groups = groupedAvailable(available);
-                        if (groups.length === 0)
+                        if (groups.length === 0 && docPickerSearch.trim())
                           return <p className="px-3 py-3 text-xs text-gray-400 text-center m-0">Sin resultados</p>;
+                        if (groups.length === 0)
+                          return null;
                         return groups.map((group) => (
                           <div key={group.category} className="border-b border-gray-100">
                             <div className="px-3 py-1.5 bg-gray-100 flex items-center justify-between gap-2">
