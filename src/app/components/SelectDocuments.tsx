@@ -32,8 +32,7 @@ interface DocumentSection {
 
 
 export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocuments, onNewDocumentsChange, onNext }: SelectDocumentsProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchConsentimiento, setSearchConsentimiento] = useState('');
+  const [sectionSearches, setSectionSearches] = useState<Record<string, string>>({});
   const [showModal, setShowModal] = useState(false);
   const [modalForm, setModalForm] = useState({ name: '', file: null as File | null });
 
@@ -172,28 +171,38 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
       {/* Document Sections */}
       <div className="space-y-6">
         {sections.map((section) => {
-          const isInstrumentos = section.title === 'Instrumentos del proyecto';
-          const isConsentimiento = section.title === 'Consentimiento informado';
           const isNuevos = section.title === 'Documentos Nuevos';
-
-          const displayDocuments = isInstrumentos
+          const showSearch = section.documents.length > 10;
+          const searchValue = sectionSearches[section.title] ?? '';
+          const displayDocuments = showSearch
             ? section.documents.filter((doc) =>
-                doc.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-            : isConsentimiento
-            ? section.documents.filter((doc) =>
-                doc.name.toLowerCase().includes(searchConsentimiento.toLowerCase())
+                doc.name.toLowerCase().includes(searchValue.toLowerCase())
               )
             : section.documents;
 
-          if (displayDocuments.length === 0 && !isNuevos && !isInstrumentos && !isConsentimiento) return null;
+          if (section.documents.length === 0 && !isNuevos) return null;
+
+          const allSectionSelected = section.documents.length > 0 && section.documents.every((d) => selectedDocuments.includes(d.id));
+          const someSectionSelected = section.documents.some((d) => selectedDocuments.includes(d.id));
 
           return (
             <div key={section.title} className="border border-gray-300 rounded overflow-hidden mb-6">
               {/* Section Header */}
-              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
-                <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
-                {section.title === 'Documentos Nuevos' && (
+              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {!isNuevos && (
+                    <input
+                      type="checkbox"
+                      checked={allSectionSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSectionSelected && !allSectionSelected; }}
+                      onChange={() => handleToggleSection(section.documents)}
+                      className="w-4 h-4 accent-white cursor-pointer shrink-0"
+                      title={allSectionSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                    />
+                  )}
+                  <h4 className="m-0 text-white text-base font-normal">{section.title}</h4>
+                </div>
+                {isNuevos && (
                   <button
                     onClick={() => setShowModal(true)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#C41E3A] rounded hover:bg-gray-100 transition-colors text-sm font-medium"
@@ -204,32 +213,13 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                     Agregar Documentos
                   </button>
                 )}
-                {isConsentimiento && (
-                  <div className="relative w-96">
+                {showSearch && (
+                  <div className="relative w-72">
                     <input
                       type="text"
-                      placeholder="Buscar consentimiento..."
-                      value={searchConsentimiento}
-                      onChange={(e) => setSearchConsentimiento(e.target.value)}
-                      className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
-                    />
-                    <svg
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                )}
-                {isInstrumentos && (
-                  <div className="relative w-96">
-                    <input
-                      type="text"
-                      placeholder="Buscar instrumento..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={`Buscar en ${section.title.toLowerCase()}...`}
+                      value={searchValue}
+                      onChange={(e) => setSectionSearches((prev) => ({ ...prev, [section.title]: e.target.value }))}
                       className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
                     />
                     <svg
@@ -246,7 +236,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
 
               {/* Section Table */}
               {displayDocuments.length > 0 ? (
-                <div className={(isInstrumentos || isConsentimiento) ? 'max-h-72 overflow-y-auto' : ''}>
+                <div className={showSearch ? 'max-h-72 overflow-y-auto' : ''}>
                   <table className="w-full">
                     <thead className="bg-gray-900 sticky top-0 z-10">
                       <tr>
@@ -320,7 +310,7 @@ export function SelectDocuments({ selectedDocuments, onSelectDocuments, newDocum
                 </div>
               ) : (
                 <div className="bg-white py-8 text-center text-gray-500">
-                  {(isInstrumentos && searchTerm) || (isConsentimiento && searchConsentimiento) ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
+                  {searchValue ? 'No se encontraron resultados para tu búsqueda' : 'No se encontraron resultados'}
                 </div>
               )}
             </div>
