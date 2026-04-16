@@ -81,6 +81,9 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
   const toggleDoc = (docId: string) =>
     setOpenDocs((prev) => ({ ...prev, [docId]: !prev[docId] }));
 
+  // Página activa por documento en la sección de cambios
+  const [activeChangeIndex, setActiveChangeIndex] = useState<Record<string, number>>({});
+
   // Accordion por documento (versiones modificadas)
   const [openModified, setOpenModified] = useState<Record<string, boolean>>(
     () => Object.fromEntries(selectedDocuments.map((id) => [id, true]))
@@ -363,7 +366,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                 {/* Acordeón header — siempre visible */}
                 <button
                   onClick={() => toggleDoc(doc.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 transition-colors text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,141 +381,141 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                     </span>
                   </div>
                   <svg
-                    className={`w-4 h-4 text-gray-500 transition-transform shrink-0 ml-2 ${openDocs[doc.id] ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0 ml-2 ${openDocs[doc.id] ? 'rotate-90' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
 
                 {/* Acordeón body */}
-                {openDocs[doc.id] && (
-                  <div className="divide-y divide-gray-200">
-                    {items.map((change, index) => {
-                      const changeNum = items.length - index;
-                      const label = `Cambio #${changeNum}`;
-                      return (
-                      <div key={change.id} className="px-4 pt-4 pb-6 bg-white">
+                {openDocs[doc.id] && (() => {
+                  const idx = activeChangeIndex[doc.id] ?? 0;
+                  const change = items[idx];
+                  const changeNum = items.length - idx;
+                  const ccId = `${change.field || changeNum}-CC-v${changeNum}`;
+                  const eyeIcon = (
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  );
+                  const downloadIcon = (
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  );
+                  const editIcon = (
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  );
+                  return (
+                    <div className="bg-white divide-y divide-gray-200">
 
-                        {/* Cabecera del cambio */}
-                        <div className="flex items-start gap-3 mb-3">
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#C41E3A] text-white text-[11px] font-semibold shrink-0 mt-0.5">
-                            {changeNum}
+                      {/* Fila superior: cambio + versiones + justificación */}
+                      <div className="px-4 py-3 bg-gray-50 grid grid-cols-4 gap-3 items-start">
+
+                        {/* CAMBIO # */}
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Cambio #{changeNum}</p>
+                          <p className="text-sm font-semibold text-gray-800 m-0 mt-0.5 truncate" title={change.field}>{change.field}</p>
+                          {items.length > 1 && (
+                            <span className="text-[10px] text-gray-400 font-medium tabular-nums mt-1">{idx + 1} de {items.length}</span>
+                          )}
+                        </div>
+
+                        {/* VERSIÓN ANTERIOR */}
+                        <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión anterior</p>
+                          {change.oldValue ? (
+                            <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed">
+                              {change.oldValue}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic text-xs">Sin valor previo</span>
+                          )}
+                        </div>
+
+                        {/* VERSIÓN NUEVA */}
+                        <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión nueva</p>
+                          <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed">
+                            {change.newValue}
                           </span>
-                          <div className="flex-1 min-w-0 grid grid-cols-[1fr_1fr_1.5fr] gap-3">
-                            <div>
-                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 m-0">Versión anterior</p>
-                              {change.oldValue ? (
-                                <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed break-words w-full">
-                                  {change.oldValue}
-                                </span>
-                              ) : (
-                                <span className="text-gray-300 italic text-xs">Sin valor previo</span>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 m-0">Versión nueva</p>
-                              <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed break-words w-full">
-                                {change.newValue}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 m-0">Justificación</p>
-                              <span className="text-xs text-gray-600 leading-relaxed">
-                                {change.justification || <span className="text-gray-300 italic">—</span>}
-                              </span>
-                            </div>
+                        </div>
+
+                        {/* JUSTIFICACIÓN */}
+                        <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Justificación</p>
+                          <span className="text-xs text-gray-600 leading-relaxed">
+                            {change.justification || <span className="text-gray-400 italic">—</span>}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      {/* DOCUMENTOS — fila de 3 columnas */}
+                      <div className="px-4 py-3 grid grid-cols-3 gap-3">
+
+                        {/* DOCUMENTO VIGENTE APROBADO */}
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide m-0">Documento vigente aprobado</p>
+                          <p className="text-[11px] text-gray-400 italic m-0">El siguiente documento es el que será reemplazado</p>
+                          <p className="text-xs text-gray-700 m-0 truncate" title={doc.name}>{doc.name}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
                           </div>
                         </div>
 
-                        {/* 3 cards por cambio — gap 8px entre cards, 24px entre grupos (pb-6 arriba) */}
-                        <div className="grid grid-cols-3 gap-2 pl-9">
-                          {([
-                            {
-                              slot: '1/3',
-                              title: 'Documento vigente aprobado',
-                              titleCls: 'text-gray-700',
-                              headerBg: '#f9fafb',
-                              subtitle: doc.name,
-                              buttons: [
-                                { label: 'Ver',       cls: 'border border-gray-300 text-gray-600 hover:bg-gray-50', icon: 'eye' as const },
-                                { label: 'Descargar', cls: 'bg-blue-600 text-white hover:bg-blue-700',               icon: 'download' as const },
-                              ],
-                            },
-                            {
-                              slot: '2/3',
-                              title: 'Control de Cambios',
-                              titleCls: 'text-amber-700',
-                              headerBg: '#fffbeb',
-                              subtitle: `${change.field || (index + 1)}-CC-v${index + 1}`,
-                              buttons: [
-                                { label: 'Ver',            cls: 'border border-gray-300 text-gray-600 hover:bg-gray-50',                       icon: 'eye' as const },
-                                { label: 'Descargar',      cls: 'bg-blue-600 text-white hover:bg-blue-700',                                     icon: 'download' as const },
-                                { label: 'Cambiar nombre', cls: 'bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100',    icon: 'edit' as const },
-                              ],
-                            },
-                            {
-                              slot: '3/3',
-                              title: 'Versión Final',
-                              titleCls: 'text-green-700',
-                              headerBg: '#f0fdf4',
-                              subtitle: `${doc.name} — versión final`,
-                              buttons: [
-                                { label: 'Ver',            cls: 'border border-gray-300 text-gray-600 hover:bg-gray-50',                       icon: 'eye' as const },
-                                { label: 'Descargar',      cls: 'bg-blue-600 text-white hover:bg-blue-700',                                     icon: 'download' as const },
-                                { label: 'Cambiar nombre', cls: 'bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100',    icon: 'edit' as const },
-                              ],
-                            },
-                          ]).map((card) => (
-                            <div
-                              key={card.slot}
-                              className="rounded-lg bg-white flex flex-col"
-                              style={{ border: '1px solid #e5e7eb', borderLeftWidth: '3px', borderLeftColor: '#d1d5db' }}
-                            >
-                              {/* Identificador de grupo */}
-                              <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100">
-                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide m-0">{label} — {card.slot}</p>
-                              </div>
-                              {/* Título de la card */}
-                              <div className="px-3 py-2 border-b border-gray-100 min-h-[36px] flex items-center" style={{ backgroundColor: card.headerBg }}>
-                                <p className={`text-[11px] font-semibold uppercase tracking-wide m-0 ${card.titleCls}`}>{card.title}</p>
-                              </div>
-                              {/* Contenido */}
-                              <div className="px-3 py-3 flex flex-col gap-2 flex-1">
-                                <p className="text-xs text-gray-700 leading-snug truncate m-0" title={card.subtitle}>{card.subtitle}</p>
-                                {/* Botones en fila horizontal con gap de 16px */}
-                                <div className="flex items-center gap-4 mt-auto pt-1">
-                                  {card.buttons.map((btn) => (
-                                    <button key={btn.label} className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded transition-colors ${btn.cls}`}>
-                                      {btn.icon === 'eye' && (
-                                        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                      )}
-                                      {btn.icon === 'download' && (
-                                        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                        </svg>
-                                      )}
-                                      {btn.icon === 'edit' && (
-                                        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                      )}
-                                      {btn.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                        {/* DOCUMENTO DE CONTROL DE CAMBIOS */}
+                        <div className="flex flex-col gap-1.5 border-l border-gray-200 pl-3">
+                          <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide m-0">Documento de control de cambios</p>
+                          <p className="text-xs text-gray-700 m-0 truncate" title={ccId}>{ccId}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 transition-colors">{editIcon} Cambiar nombre</button>
+                          </div>
                         </div>
+
+                        {/* VERSIÓN FINAL */}
+                        <div className="flex flex-col gap-1.5 border-l border-gray-200 pl-3">
+                          <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide m-0">Versión final</p>
+                          <p className="text-xs text-gray-700 m-0 truncate" title={`${doc.name} — versión final`}>{doc.name} — versión final</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
+                            <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 transition-colors">{editIcon} Cambiar nombre</button>
+                          </div>
+                        </div>
+
                       </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                      {/* Paginación — solo si hay más de un cambio */}
+                      {items.length > 1 && (
+                        <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
+                          <button
+                            disabled={idx === 0}
+                            onClick={() => setActiveChangeIndex((prev) => ({ ...prev, [doc.id]: idx - 1 }))}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ← Anterior
+                          </button>
+                          <span className="text-xs text-gray-500 font-medium tabular-nums">{idx + 1} / {items.length}</span>
+                          <button
+                            disabled={idx === items.length - 1}
+                            onClick={() => setActiveChangeIndex((prev) => ({ ...prev, [doc.id]: idx + 1 }))}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Siguiente →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
                 </div> {/* fin grupos de categoría */}
