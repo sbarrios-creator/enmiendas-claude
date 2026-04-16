@@ -102,11 +102,7 @@ export function UploadDocuments({
     return acc;
   }, []);
 
-  const canContinue = selectedDocuments.length > 0 &&
-    selectedDocuments.every((docId) => {
-      const status = uploadStatuses[docId];
-      return status?.controlChanges && status?.finalVersion;
-    });
+  const canContinue = selectedDocuments.length > 0;
 
   return (
     <div>
