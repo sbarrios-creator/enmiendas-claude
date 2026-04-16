@@ -15,6 +15,7 @@ export interface UploadStatus {
 export interface Change {
   id: string;
   field: string;
+  pageNumber: string[];
   oldValue: string;
   newValue: string;
   justification: string;

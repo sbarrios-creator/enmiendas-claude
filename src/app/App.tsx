@@ -25,7 +25,14 @@ export default function App() {
     researchers: [],
   });
 
+  const canAdvanceFromStep2 =
+    selectedDocuments.length > 0 &&
+    selectedDocuments.every(
+      (id) => uploadStatuses[id]?.controlChanges && uploadStatuses[id]?.finalVersion
+    );
+
   const handleNext = () => {
+    if (currentStep === 2 && !canAdvanceFromStep2) return;
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }

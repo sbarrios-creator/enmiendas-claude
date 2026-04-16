@@ -319,28 +319,37 @@ export function UploadDocuments({
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-between gap-4 mt-6">
+      <div className="flex justify-between items-center gap-4 mt-6">
         <button
           onClick={onBack}
           className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           Volver
         </button>
-        <button
-          onClick={() =>
-            openConfirm({
-              title: 'Continuar al paso 3',
-              message: 'Ha cargado los archivos requeridos. ¿Desea continuar a la definición de cambios?',
-              confirmLabel: 'Continuar',
-              variant: 'primary',
-              onConfirm: () => { closeConfirm(); onNext(); },
-            })
-          }
-          disabled={!canContinue}
-          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-        >
-          Continuar
-        </button>
+
+        <div className="flex items-center gap-3">
+          {!canContinue && selectedDocuments.length > 0 && (
+            <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+              {progress.pending} {progress.pending === 1 ? 'documento pendiente' : 'documentos pendientes'} — suba ambos archivos por cada documento para continuar
+            </span>
+          )}
+          <button
+            onClick={() => {
+              if (!canContinue) return;
+              openConfirm({
+                title: 'Continuar al paso 3',
+                message: `Se han cargado los archivos de los ${progress.completed} documento(s). ¿Desea continuar?`,
+                confirmLabel: 'Continuar',
+                variant: 'primary',
+                onConfirm: () => { closeConfirm(); onNext(); },
+              });
+            }}
+            disabled={!canContinue}
+            className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            Continuar
+          </button>
+        </div>
       </div>
 
       <ConfirmDialog
