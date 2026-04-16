@@ -413,19 +413,24 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                   return (
                     <div className="bg-white divide-y divide-gray-200">
 
-                      {/* Fila superior: cambio + versiones + justificación */}
+                      {/* Fila superior: 4 columnas */}
                       <div className="px-4 py-3 bg-gray-50 grid grid-cols-4 gap-3 items-start">
 
-                        {/* CAMBIO # */}
+                        {/* Campo modificado + página */}
                         <div className="flex flex-col gap-0.5">
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Cambio #{changeNum}</p>
-                          <p className="text-sm font-semibold text-gray-800 m-0 mt-0.5 truncate" title={change.field}>{change.field}</p>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Campo - N° Pág</p>
+                          <p className="text-sm font-semibold text-gray-800 m-0 mt-0.5">
+                            {change.field}
+                            {change.pageNumber && change.pageNumber.length > 0 && (
+                              <span className="text-gray-400 font-normal"> - {change.pageNumber.join(', ')}</span>
+                            )}
+                          </p>
                           {items.length > 1 && (
                             <span className="text-[10px] text-gray-400 font-medium tabular-nums mt-1">{idx + 1} de {items.length}</span>
                           )}
                         </div>
 
-                        {/* VERSIÓN ANTERIOR */}
+                        {/* Versión anterior */}
                         <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
                           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión anterior</p>
                           {change.oldValue ? (
@@ -437,7 +442,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                           )}
                         </div>
 
-                        {/* VERSIÓN NUEVA */}
+                        {/* Versión nueva */}
                         <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
                           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión nueva</p>
                           <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed">
@@ -445,7 +450,7 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                           </span>
                         </div>
 
-                        {/* JUSTIFICACIÓN */}
+                        {/* Justificación */}
                         <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
                           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Justificación</p>
                           <span className="text-xs text-gray-600 leading-relaxed">
