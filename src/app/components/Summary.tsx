@@ -74,9 +74,12 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
   // Comentarios adicionales
   const [comments, setComments] = useState('');
 
-  // Accordion por documento (cambios)
+  // Accordion por documento (cambios) — colapsado si tiene 1 solo cambio
   const [openDocs, setOpenDocs] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(selectedDocuments.map((id) => [id, true]))
+    () => Object.fromEntries(selectedDocuments.map((id) => {
+      const count = changes.filter((c) => c.isGlobal || c.appliesTo.includes(id)).length;
+      return [id, count > 1];
+    }))
   );
   const toggleDoc = (docId: string) =>
     setOpenDocs((prev) => ({ ...prev, [docId]: !prev[docId] }));
