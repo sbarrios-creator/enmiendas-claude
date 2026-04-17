@@ -388,24 +388,28 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                 {/* Acordeón body */}
                 {openDocs[doc.id] && (
                   <div>
-                    {/* Grilla de cambios */}
-                    <div className="max-h-72 overflow-y-auto">
-                      {/* Cabecera fija */}
-                      <div className="sticky top-0 z-10 grid grid-cols-[7rem_1fr_1fr_1.5fr] gap-0 bg-white border-b border-gray-200">
-                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Cambio - N° página</div>
-                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión anterior</div>
-                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión nueva</div>
-                        <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
-                      </div>
-                      {/* Filas */}
-                      <div className="divide-y divide-gray-100 bg-white">
-                        {items.map((change, index) => (
-                          <div key={change.id} className="grid grid-cols-[7rem_1fr_1fr_1.5fr] gap-0 hover:bg-gray-50 transition-colors">
-                            {/* N° cambio */}
-                            <div className="px-3 py-3 flex items-start justify-center pt-3.5">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#C41E3A] text-white text-[11px] font-semibold shrink-0">
-                                {items.length - index}
-                              </span>
+                    {/* Cabecera de tabla */}
+                    <div className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-[#C41E3A]/5 border-b border-gray-200">
+                      <div className="px-3 py-2.5 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide">Cambio - N° página</div>
+                      <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión anterior</div>
+                      <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión nueva</div>
+                      <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
+                    </div>
+
+                    {/* Un bloque por cada cambio: fila de datos + 3 cards */}
+                    <div className="divide-y divide-gray-200">
+                      {items.map((change, index) => (
+                        <div key={change.id}>
+                          {/* Fila de datos */}
+                          <div className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-white">
+                            {/* Cambio - N° página */}
+                            <div className="px-3 py-3">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-gray-800 font-medium text-xs break-words">{change.field || '—'}</span>
+                                {change.pageNumber && (
+                                  <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {change.pageNumber}</span>
+                                )}
+                              </div>
                             </div>
                             {/* Versión anterior */}
                             <div className="px-3 py-3 border-l border-gray-100">
@@ -428,100 +432,100 @@ export function Summary({ selectedDocuments, newDocuments, changes, uploadStatus
                               {change.justification || <span className="text-gray-300 italic">—</span>}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
 
-                    {/* 3 cards en fila horizontal */}
-                    <div className="grid grid-cols-3 gap-3 p-4 border-t border-gray-100 bg-gray-50">
+                          {/* 3 cards para este cambio */}
+                          <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border-t border-gray-100">
 
-                      {/* Card 1: Documento vigente aprobado */}
-                      <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
-                        <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-                          <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide m-0">Documento vigente aprobado</p>
-                        </div>
-                        <div className="px-3 py-3">
-                          <p className="text-xs text-gray-800 mb-3 leading-snug truncate" title={doc.name}>{doc.name}</p>
-                          <div className="flex gap-1.5">
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              Ver
-                            </button>
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              Descargar
-                            </button>
+                            {/* Card 1: Documento vigente aprobado */}
+                            <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+                              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                                <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide m-0">Documento vigente aprobado</p>
+                              </div>
+                              <div className="px-3 py-3">
+                                <p className="text-xs text-gray-800 mb-3 leading-snug truncate" title={doc.name}>{doc.name}</p>
+                                <div className="flex gap-1.5">
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Ver
+                                  </button>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Descargar
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card 2: Control de Cambios */}
+                            <div className="border border-amber-200 rounded-lg bg-white overflow-hidden">
+                              <div className="px-3 py-2 border-b border-amber-100 bg-amber-50">
+                                <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide m-0">Control de Cambios</p>
+                              </div>
+                              <div className="px-3 py-3">
+                                <p className="text-xs text-gray-500 font-mono mb-3 truncate">{index + 1}-CC-v{index + 1}</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Ver
+                                  </button>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Descargar
+                                  </button>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Cambiar nombre
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card 3: Versión Final */}
+                            <div className="border border-green-200 rounded-lg bg-white overflow-hidden">
+                              <div className="px-3 py-2 border-b border-green-100 bg-green-50">
+                                <p className="text-[11px] font-semibold text-green-700 uppercase tracking-wide m-0">Versión Final</p>
+                              </div>
+                              <div className="px-3 py-3">
+                                <p className="text-xs text-gray-800 mb-3 leading-snug truncate" title={`${doc.name} — versión final`}>{doc.name} — versión final</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Ver
+                                  </button>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Descargar
+                                  </button>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Cambiar nombre
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
                           </div>
                         </div>
-                      </div>
-
-                      {/* Card 2: Documento de Control de Cambios */}
-                      <div className="border border-amber-200 rounded-lg bg-white overflow-hidden">
-                        <div className="px-3 py-2 border-b border-amber-100 bg-amber-50">
-                          <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide m-0">Control de Cambios</p>
-                        </div>
-                        <div className="px-3 py-3">
-                          <p className="text-xs text-gray-500 font-mono mb-3 truncate">{items.length}-CC-v{items.length}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              Ver
-                            </button>
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              Descargar
-                            </button>
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Cambiar nombre
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Versión Final */}
-                      <div className="border border-green-200 rounded-lg bg-white overflow-hidden">
-                        <div className="px-3 py-2 border-b border-green-100 bg-green-50">
-                          <p className="text-[11px] font-semibold text-green-700 uppercase tracking-wide m-0">Versión Final</p>
-                        </div>
-                        <div className="px-3 py-3">
-                          <p className="text-xs text-gray-800 mb-3 leading-snug truncate" title={`${doc.name} — versión final`}>{doc.name} — versión final</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              Ver
-                            </button>
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              Descargar
-                            </button>
-                            <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Cambiar nombre
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
+                      ))}
                     </div>
                   </div>
                 )}

@@ -34,8 +34,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const openConfirm = (opts: Omit<typeof confirm, 'isOpen'>) => setConfirm({ isOpen: true, ...opts });
   const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
-  const [searchChange, setSearchChange] = useState('');
   const [searchDocument, setSearchDocument] = useState('');
+  const [docPages, setDocPages] = useState<Record<string, number>>({});
   const [docPickerSearch, setDocPickerSearch] = useState('');
   const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
   const [showPreview, setShowPreview] = useState(false);
@@ -54,6 +54,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     oldValue: '',
     newValue: '',
     justification: '',
+    pageNumber: '',
     appliesTo: [] as string[],
     isGlobal: true,
   });
@@ -177,6 +178,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       oldValue: newChange.oldValue,
       newValue: newChange.newValue,
       justification: newChange.justification,
+      pageNumber: newChange.pageNumber,
       appliesTo,
       isGlobal: newChange.isGlobal,
     };
@@ -188,6 +190,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       oldValue: '',
       newValue: '',
       justification: '',
+      pageNumber: '',
       appliesTo: [],
       isGlobal: true,
     });
@@ -206,6 +209,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       oldValue: change.oldValue,
       newValue: change.newValue,
       justification: change.justification,
+      pageNumber: change.pageNumber || '',
       appliesTo: change.appliesTo,
       isGlobal: change.isGlobal,
     });
@@ -220,10 +224,10 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     const appliesTo = newChange.isGlobal ? selectedDocuments : newChange.appliesTo;
     onChangesUpdate(changes.map((c) =>
       c.id === editingId
-        ? { ...c, field, oldValue: newChange.oldValue, newValue: newChange.newValue, justification: newChange.justification, appliesTo, isGlobal: newChange.isGlobal }
+        ? { ...c, field, oldValue: newChange.oldValue, newValue: newChange.newValue, justification: newChange.justification, pageNumber: newChange.pageNumber, appliesTo, isGlobal: newChange.isGlobal }
         : c
     ));
-    setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+    setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
     setSearchDocument('');
     setModalStep(1);
     setEditingId(null);
@@ -782,126 +786,155 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           </div>
 
           <div className="p-4 space-y-5">
-            {/* Lista de cambios */}
+            {/* Cambios registrados - Cards por documento */}
             <div>
               {/* Header */}
-              <div className="flex items-center justify-between mb-3 gap-3">
+              <div className="flex items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <h4 className="text-sm font-semibold text-gray-800 m-0 whitespace-nowrap">Cambios registrados</h4>
                   {changes.length > 0 && (
                     <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">{changes.length}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {changes.length > 0 && (
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Filtrar cambios..."
-                        value={searchChange}
-                        onChange={(e) => setSearchChange(e.target.value)}
-                        className="w-40 px-3 py-1.5 pl-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                      />
-                      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
-                      setModalStep(1);
-                      setShowPreview(false);
-                      setShowAddChange(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Agregar cambio
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
+                    setModalStep(1);
+                    setShowPreview(false);
+                    setShowAddChange(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded-lg hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar
+                </button>
               </div>
 
-              {changes.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Aún no hay cambios registrados. Usa el botón para agregar.</p>
+              {/* Cards por documento */}
+              {documents.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">No hay documentos seleccionados.</p>
               ) : (
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="overflow-x-auto overflow-y-auto max-h-64">
-                    <table className="w-full text-xs">
-                      <thead className="bg-gray-100 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Cambio</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Versión Anterior</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Versión Nueva</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Justificación</th>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-600">Documentos</th>
-                          <th className="px-3 py-2 text-center font-semibold text-gray-600 w-20">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {(searchChange
-                          ? changes.filter((c) => {
-                              const q = searchChange.toLowerCase();
-                              return c.field.toLowerCase().includes(q) || c.oldValue.toLowerCase().includes(q) || c.newValue.toLowerCase().includes(q) || c.justification.toLowerCase().includes(q);
-                            })
-                          : changes
-                        ).map((change, idx) => (
-                          <tr key={change.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-3 py-2 max-w-[140px]">
-                              <p className="truncate text-gray-800 font-medium m-0" title={change.field}>{change.field || '—'}</p>
-                            </td>
-                            <td className="px-3 py-2 max-w-[120px]">
-                              <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
-                            </td>
-                            <td className="px-3 py-2 max-w-[120px]">
-                              <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue}</p>
-                            </td>
-                            <td className="px-3 py-2 max-w-[160px]">
-                              <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
-                            </td>
-                            <td className="px-3 py-2 max-w-[200px]">
-                              {(() => {
-                                const names = change.appliesTo
-                                  .map(id => documents.find(d => d.id === id)?.name)
-                                  .filter(Boolean) as string[];
-                                if (names.length === 0) return <span className="text-gray-400">—</span>;
-                                return (
-                                  <ul className="space-y-1 m-0 p-0 list-none">
-                                    {names.map((name, i) => (
-                                      <li key={i} className="flex items-start gap-1.5">
-                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#C41E3A] shrink-0" />
-                                        <span className="text-xs text-gray-700 leading-snug">{name}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                );
-                              })()}
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="flex gap-1 justify-center">
-                                <button
-                                  onClick={() => handleEditChange(change)}
-                                  className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                  title="Editar"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                </button>
-                                <button
-                                  onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
-                                  className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                                  title="Eliminar"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="space-y-4">
+                  {documents.map((doc) => {
+                    const docChanges = changes.filter(
+                      (c) => c.isGlobal || c.appliesTo.includes(doc.id)
+                    );
+                    const ITEMS_PER_PAGE = 5;
+                    const currentPage = docPages[doc.id] ?? 1;
+                    const totalPages = Math.max(1, Math.ceil(docChanges.length / ITEMS_PER_PAGE));
+                    const paginatedChanges = docChanges.slice(
+                      (currentPage - 1) * ITEMS_PER_PAGE,
+                      currentPage * ITEMS_PER_PAGE
+                    );
+                    const setPage = (page: number) =>
+                      setDocPages((prev) => ({ ...prev, [doc.id]: page }));
+
+                    return (
+                      <div key={doc.id} className="rounded-lg border border-gray-200 overflow-hidden">
+                        {/* Card header */}
+                        <div className="px-4 py-3 border-b border-[#C41E3A]/20 bg-[#C41E3A]/5 border-l-4 border-l-[#C41E3A]">
+                          <p className="text-sm font-semibold text-gray-900 m-0">{doc.name}</p>
+                          <p className="text-xs text-[#C41E3A]/70 m-0 mt-0.5 font-medium">({getDocCategory(doc)})</p>
+                        </div>
+
+                        {/* Tabla */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead className="bg-[#C41E3A]/5">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold text-[#C41E3A] uppercase tracking-wide text-[10px]">Cambio - N° Página</th>
+                                <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide text-[10px]">Versión Anterior</th>
+                                <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide text-[10px]">Versión Nueva</th>
+                                <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide text-[10px]">Justificación</th>
+                                <th className="px-3 py-2 text-center font-semibold text-gray-600 uppercase tracking-wide text-[10px] w-20">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {paginatedChanges.length === 0 ? (
+                                <tr>
+                                  <td colSpan={5} className="px-3 py-4 text-center text-gray-400 italic text-xs">
+                                    Sin cambios registrados para este documento.
+                                  </td>
+                                </tr>
+                              ) : (
+                                paginatedChanges.map((change, idx) => {
+                                  return (
+                                  <tr key={change.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                    <td className="px-3 py-2">
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-gray-800 font-medium truncate max-w-[130px]" title={change.field}>{change.field || '—'}</span>
+                                        {change.pageNumber && (
+                                          <span className="text-[10px] text-gray-400">Pág. {change.pageNumber}</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-3 py-2 max-w-[120px]">
+                                      <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
+                                    </td>
+                                    <td className="px-3 py-2 max-w-[120px]">
+                                      <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue || '—'}</p>
+                                    </td>
+                                    <td className="px-3 py-2 max-w-[160px]">
+                                      <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <div className="flex gap-1 justify-center">
+                                        <button
+                                          onClick={() => handleEditChange(change)}
+                                          className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                          title="Editar"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        <button
+                                          onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
+                                          className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                                          title="Eliminar"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Paginador */}
+                        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
+                            {docChanges.length === 0
+                              ? '0 resultados'
+                              : `Mostrando ${(currentPage - 1) * ITEMS_PER_PAGE + 1}–${Math.min(currentPage * ITEMS_PER_PAGE, docChanges.length)} de ${docChanges.length} resultado${docChanges.length !== 1 ? 's' : ''}`}
+                          </span>
+                          {totalPages > 1 && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                                className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                              </button>
+                              <span className="text-xs text-gray-600 px-1">{currentPage} / {totalPages}</span>
+                              <button
+                                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -916,17 +949,18 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
           setEditingId(null);
           setSubmitAttempted(false);
           setShowChangePreview(false);
-          setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', appliesTo: [], isGlobal: true });
+          setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
           setSearchDocument('');
         };
         const activeField = newChange.field;
-        const isValid = !!activeField && !!newChange.newValue && !!newChange.justification && (newChange.isGlobal || newChange.appliesTo.length > 0);
+        const isValid = !!activeField && !!newChange.newValue && !!newChange.justification && !!newChange.pageNumber && (newChange.isGlobal || newChange.appliesTo.length > 0);
 
         // Errores de validación — solo visibles tras intento de envío
         const err = {
           field: submitAttempted && !activeField,
           newValue: submitAttempted && !newChange.newValue,
           justification: submitAttempted && !newChange.justification,
+          pageNumber: submitAttempted && !newChange.pageNumber,
           appliesTo: submitAttempted && !newChange.isGlobal && newChange.appliesTo.length === 0,
         };
 
@@ -988,6 +1022,30 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   )}
                 </div>
 
+
+                {/* ── N° de página ── */}
+                <div>
+                  <label className="block mb-1.5 text-sm font-semibold text-gray-700">
+                    N° de página <span className="text-[#C41E3A]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newChange.pageNumber}
+                    onChange={(e) => { setNewChange({ ...newChange, pageNumber: e.target.value }); setSubmitAttempted(false); }}
+                    placeholder="Ej: 5, 12-14, 20"
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+                      err.pageNumber ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'
+                    }`}
+                  />
+                  {err.pageNumber ? (
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                      Campo requerido
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-400 m-0">Indique la página o rango de páginas donde se realiza este cambio.</p>
+                  )}
+                </div>
 
                 {/* ── Antes / Después en columnas ── */}
                 <div className="grid grid-cols-2 gap-3">

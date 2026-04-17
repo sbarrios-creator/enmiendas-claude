@@ -17,6 +17,7 @@ export interface Change {
   oldValue: string;
   newValue: string;
   justification: string;
+  pageNumber?: string;
   appliesTo: string[];
   isGlobal: boolean;
 }
