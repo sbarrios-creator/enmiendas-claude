@@ -139,6 +139,8 @@ export function Summary({
   const toggleDoc = (docId: string) =>
     setOpenDocs((prev) => ({ ...prev, [docId]: !prev[docId] }));
 
+  const [docPages, setDocPages] = useState<Record<string, number>>({});
+
   // Accordion por documento (versiones modificadas)
   const [openModified, setOpenModified] = useState<
     Record<string, boolean>
@@ -710,74 +712,68 @@ export function Summary({
                         </button>
 
                         {/* Acordeón body */}
-                        {openDocs[doc.id] && (
+                        {openDocs[doc.id] && (() => {
+                          const ITEMS_PER_PAGE = 5;
+                          const currentPage = docPages[doc.id] ?? 1;
+                          const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
+                          const paginatedItems = items.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+                          const setPage = (page: number) => setDocPages((prev) => ({ ...prev, [doc.id]: page }));
+                          return (
                           <div>
                             {/* Cabecera de tabla */}
                             <div className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-[#C41E3A]/5 border-b border-gray-200">
-                              <div className="px-3 py-2.5 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide">
-                                Cambio - N° página
-                              </div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">
-                                Versión anterior
-                              </div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">
-                                Versión nueva
-                              </div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">
-                                Justificación
-                              </div>
+                              <div className="px-3 py-2.5 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide">Cambio - N° página</div>
+                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión anterior</div>
+                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión nueva</div>
+                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
                             </div>
 
-                            {/* Un bloque por cada cambio: fila de datos */}
+                            {/* Filas paginadas */}
                             <div className="divide-y divide-gray-200">
-                              {items.map((change) => (
-                                <div key={change.id}>
-                                  {/* Fila de datos */}
-                                  <div className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-white">
-                                    {/* Cambio - N° página */}
-                                    <div className="px-3 py-3">
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-gray-800 font-medium text-xs break-words">
-                                          {change.field || "—"}
-                                        </span>
-                                        {change.pageNumber && (
-                                          <span className="text-[10px] text-[#C41E3A]/70 font-medium">
-                                            Pág.{" "}
-                                            {change.pageNumber}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {/* Versión anterior */}
-                                    <div className="px-3 py-3 border-l border-gray-100">
-                                      {change.oldValue ? (
-                                        <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed break-words w-full">
-                                          {change.oldValue}
-                                        </span>
-                                      ) : (
-                                        <span className="text-gray-300 italic text-xs">
-                                          Sin valor previo
-                                        </span>
+                              {paginatedItems.map((change) => (
+                                <div key={change.id} className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-white">
+                                  <div className="px-3 py-3">
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-800 font-medium text-xs break-words">{change.field || "—"}</span>
+                                      {change.pageNumber && (
+                                        <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {change.pageNumber}</span>
                                       )}
                                     </div>
-                                    {/* Versión nueva */}
-                                    <div className="px-3 py-3 border-l border-gray-100">
-                                      <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed break-words w-full">
-                                        {change.newValue}
-                                      </span>
-                                    </div>
-                                    {/* Justificación */}
-                                    <div className="px-3 py-3 border-l border-gray-100 text-gray-600 text-xs leading-relaxed">
-                                      {change.justification || (
-                                        <span className="text-gray-300 italic">
-                                          —
-                                        </span>
-                                      )}
-                                    </div>
+                                  </div>
+                                  <div className="px-3 py-3 border-l border-gray-100">
+                                    {change.oldValue ? (
+                                      <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed break-words w-full">{change.oldValue}</span>
+                                    ) : (
+                                      <span className="text-gray-300 italic text-xs">Sin valor previo</span>
+                                    )}
+                                  </div>
+                                  <div className="px-3 py-3 border-l border-gray-100">
+                                    <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed break-words w-full">{change.newValue}</span>
+                                  </div>
+                                  <div className="px-3 py-3 border-l border-gray-100 text-gray-600 text-xs leading-relaxed">
+                                    {change.justification || <span className="text-gray-300 italic">—</span>}
                                   </div>
                                 </div>
                               ))}
                             </div>
+
+                            {/* Paginador */}
+                            {totalPages > 1 && (
+                              <div className="px-4 py-2 border-t border-gray-100 bg-white flex items-center justify-between">
+                                <span className="text-[10px] text-gray-500">
+                                  Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, items.length)} de {items.length}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                  </button>
+                                  <span className="text-[10px] text-gray-600 px-1">{currentPage} / {totalPages}</span>
+                                  <button onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
 
                             {/* 3 cards globales para este documento (Vigente, CC, Final) */}
                             <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border-t border-gray-200">
@@ -982,7 +978,8 @@ export function Summary({
                               </div>
                             </div>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>{" "}
