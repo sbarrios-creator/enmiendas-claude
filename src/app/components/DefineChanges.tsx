@@ -28,6 +28,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlineEditDocId, setInlineEditDocId] = useState<string | null>(null);
+  const [inlineEditData, setInlineEditData] = useState<{ field: string; pageNumber: string; oldValue: string; newValue: string; justification: string }>({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' });
   const [confirm, setConfirm] = useState<{
     isOpen: boolean; title: string; message: string;
     confirmLabel?: string; variant?: 'danger' | 'warning' | 'primary';
@@ -751,17 +754,6 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {changes.length > 0 && (
-                    <button
-                      onClick={exportToExcel}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-700 text-white rounded hover:bg-green-800 transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Exportar Excel
-                    </button>
-                  )}
                   <button
                     onClick={() => {
                       setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
@@ -865,62 +857,117 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
                         {/* Tabla */}
                         <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
+                          <table className="w-full text-xs table-fixed">
+                            <colgroup>
+                              <col className="w-[22%]" />
+                              <col className="w-[18%]" />
+                              <col className="w-[18%]" />
+                              <col className="w-[26%]" />
+                              <col className="w-[16%]" />
+                            </colgroup>
                             <thead>
                               <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Cambio</th>
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">N° Página</th>
+                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Cambio - N° Página</th>
                                 <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión Anterior</th>
                                 <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión Nueva</th>
                                 <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Justificación</th>
-                                <th className="px-3 py-2 text-center font-semibold text-gray-500 uppercase tracking-wide text-[10px] w-20">Acciones</th>
+                                <th className="px-3 py-2 text-center font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Acciones</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                               {paginatedChanges.length === 0 ? (
                                 <tr>
-                                  <td colSpan={6} className="px-3 py-4 text-center text-gray-400 italic text-xs">
+                                  <td colSpan={5} className="px-3 py-4 text-center text-gray-400 italic text-xs">
                                     Sin cambios registrados para este documento.
                                   </td>
                                 </tr>
                               ) : (
-                                paginatedChanges.map((change, idx) => (
-                                  <tr key={change.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                    <td className="px-3 py-2">
-                                      <span className="text-gray-800 font-medium truncate max-w-[130px] block" title={change.field}>{change.field || '—'}</span>
+                                paginatedChanges.map((change, idx) => {
+                                  const isInline = inlineEditId === change.id && inlineEditDocId === doc.id;
+                                  return (
+                                  <tr key={change.id} className={isInline ? 'bg-blue-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                    <td className="px-2 py-2">
+                                      {isInline ? (
+                                        <div className="flex flex-col gap-1">
+                                          <input autoFocus type="text" value={inlineEditData.field} onChange={(e) => setInlineEditData({ ...inlineEditData, field: e.target.value })} placeholder="Cambio" className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" />
+                                          <input type="text" value={inlineEditData.pageNumber} onChange={(e) => setInlineEditData({ ...inlineEditData, pageNumber: e.target.value })} placeholder="N° página" className="w-full px-2 py-1 text-[10px] border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-[#C41E3A]/80" />
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-gray-800 font-medium block truncate" title={change.field}>{change.field || '—'}</span>
+                                          {change.pageNumber && <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {change.pageNumber}</span>}
+                                        </div>
+                                      )}
                                     </td>
-                                    <td className="px-3 py-2">
-                                      <span className="text-[10px] text-gray-500">{change.pageNumber ? `Pág. ${change.pageNumber}` : '—'}</span>
+                                    <td className="px-2 py-2">
+                                      {isInline
+                                        ? <textarea rows={3} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        : <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
+                                      }
                                     </td>
-                                    <td className="px-3 py-2 max-w-[120px]">
-                                      <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
+                                    <td className="px-2 py-2">
+                                      {isInline
+                                        ? <textarea rows={3} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        : <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue || '—'}</p>
+                                      }
                                     </td>
-                                    <td className="px-3 py-2 max-w-[120px]">
-                                      <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue || '—'}</p>
+                                    <td className="px-2 py-2">
+                                      {isInline
+                                        ? <textarea rows={3} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        : <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
+                                      }
                                     </td>
-                                    <td className="px-3 py-2 max-w-[160px]">
-                                      <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-2 py-1.5">
                                       <div className="flex gap-1 justify-center">
-                                        <button
-                                          onClick={() => handleEditChange(change, doc.id)}
-                                          className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                          title="Editar"
-                                        >
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        </button>
-                                        <button
-                                          onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
-                                          className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-                                          title="Eliminar"
-                                        >
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
+                                        {isInline ? (
+                                          <>
+                                            <button
+                                              onClick={() => {
+                                                if (!inlineEditData.field || !inlineEditData.newValue) return;
+                                                onChangesUpdate(changes.map((c) =>
+                                                  c.id === change.id
+                                                    ? { ...c, field: inlineEditData.field, pageNumber: inlineEditData.pageNumber, oldValue: inlineEditData.oldValue, newValue: inlineEditData.newValue, justification: inlineEditData.justification }
+                                                    : c
+                                                ));
+                                                setInlineEditId(null);
+                                                setInlineEditDocId(null);
+                                              }}
+                                              className="w-6 h-6 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                              title="Guardar"
+                                            >
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button
+                                              onClick={() => { setInlineEditId(null); setInlineEditDocId(null); }}
+                                              className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                                              title="Cancelar"
+                                            >
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button
+                                              onClick={() => { setInlineEditId(change.id); setInlineEditDocId(doc.id); setInlineEditData({ field: change.field, pageNumber: change.pageNumber || '', oldValue: change.oldValue, newValue: change.newValue, justification: change.justification }); }}
+                                              className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                              title="Editar"
+                                            >
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            </button>
+                                            <button
+                                              onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
+                                              className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                              title="Eliminar"
+                                            >
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                          </>
+                                        )}
                                       </div>
                                     </td>
                                   </tr>
-                                ))
+                                  );
+                                })
                               )}
                             </tbody>
                           </table>
@@ -1000,7 +1047,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="w-36 flex-shrink-0 pt-2">
                       <label className="text-sm font-semibold text-gray-700">Cambio a Realizar <span className="text-[#C41E3A]">*</span></label>
                     </div>
-                    <textarea autoFocus rows={2} value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-4 py-2.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <input autoFocus type="text" value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
                   </div>
                   {err.field && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>
@@ -1010,7 +1057,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="w-36 flex-shrink-0">
                       <label className="text-sm font-semibold text-gray-700">N° de página <span className="text-[#C41E3A]">*</span></label>
                     </div>
-                    <input type="text" value={newChange.pageNumber} onChange={(e) => { setNewChange({ ...newChange, pageNumber: e.target.value }); setSubmitAttempted(false); }} placeholder="Ej: 5, 12-14, 20" className={`flex-1 px-4 py-2.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.pageNumber ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
+                    <input type="text" value={newChange.pageNumber} onChange={(e) => { setNewChange({ ...newChange, pageNumber: e.target.value }); setSubmitAttempted(false); }} placeholder="Ej: 5, 12-14, 20" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.pageNumber ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
                   </div>
                   {err.pageNumber ? <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p> : <p className="mt-1 text-xs text-gray-400 m-0">Indique la página o rango de páginas donde se realiza este cambio.</p>}
                 </div>
@@ -1021,7 +1068,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <label className="text-sm font-semibold text-gray-700">Versión Anterior</label>
                       <span className="block px-1.5 py-0.5 bg-gray-100 text-gray-400 text-xs rounded font-normal mt-1">opcional</span>
                     </div>
-                    <textarea rows={3} value={newChange.oldValue} onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })} placeholder="Ingrese el valor que se reemplazará" className="flex-1 px-3 py-2.5 text-sm border border-dashed border-gray-300 rounded bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-white transition-colors resize-none" />
+                    <textarea rows={3} value={newChange.oldValue} onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })} placeholder="Ingrese el valor que se reemplazará" className="flex-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-white transition-colors resize-none" />
                   </div>
                 </div>
 
@@ -1030,7 +1077,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="w-36 flex-shrink-0 pt-2">
                       <label className="text-sm font-semibold text-gray-700">Versión Nueva <span className="text-[#C41E3A]">*</span></label>
                     </div>
-                    <textarea rows={3} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-4 py-2.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <textarea rows={3} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
                   </div>
                   {err.newValue && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>
@@ -1041,7 +1088,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <label className="text-sm font-semibold text-gray-700">Justificación <span className="text-[#C41E3A]">*</span></label>
                       {newChange.justification && <span className="block text-xs text-gray-400 mt-1">{newChange.justification.length} car.</span>}
                     </div>
-                    <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={3} className={`flex-1 px-4 py-2.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={3} className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
                   </div>
                   {err.justification && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>

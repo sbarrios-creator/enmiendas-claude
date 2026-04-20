@@ -124,8 +124,8 @@ export function Summary({
   // Comentarios adicionales
   const [comments, setComments] = useState("");
 
-  // Filtro por tipo de documento en "Cambios a aplicar"
-  const [typeFilter, setTypeFilter] = useState("all");
+  // Filtro por categoría en "Cambios a aplicar"
+  const [categoryFilter, setCategoryFilter] = useState("Todos");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Accordion por documento (cambios)
@@ -166,19 +166,22 @@ export function Summary({
     }))
     .filter((g) => g.items.length > 0);
 
-  // Tipos disponibles para el filtro
-  const availableTypes = Array.from(
-    new Set(changesByDoc.map((g) => g.doc.type)),
-  ).filter(Boolean);
+  // Categorías disponibles para el filtro
+  const availableCategories = CATEGORY_ORDER.filter((cat) =>
+    changesByDoc.some(
+      (g) => getDocCategory(g.doc as { category?: string; type?: string }) === cat,
+    ),
+  );
 
-  // Lista filtrada por tipo y búsqueda
+  // Lista filtrada por categoría y búsqueda
   const filteredByDoc = changesByDoc.filter((g) => {
-    const matchesType =
-      typeFilter === "all" || g.doc.type === typeFilter;
+    const matchesCategory =
+      categoryFilter === "Todos" ||
+      getDocCategory(g.doc as { category?: string; type?: string }) === categoryFilter;
     const matchesSearch = g.doc.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    return matchesType && matchesSearch;
+    return matchesCategory && matchesSearch;
   });
 
   // Cambios agrupados por categoría → por documento (sobre la lista filtrada)
@@ -592,39 +595,45 @@ export function Summary({
             </div>
           ) : (
             <div className="space-y-5">
-              {/* ===== FILTROS AGREGADOS ===== */}
-              {availableTypes.length > 0 && (
+              {/* Tabs por categoría + buscador */}
+              {availableCategories.length > 0 && (
                 <div className="mb-4">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-0 border-b border-gray-200">
                     <button
-                      onClick={() => setTypeFilter('all')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        typeFilter === 'all'
-                          ? 'bg-[#C41E3A] text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      onClick={() => setCategoryFilter("Todos")}
+                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                        categoryFilter === "Todos"
+                          ? "border-[#C41E3A] text-[#C41E3A]"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       }`}
                     >
-                      Todos ({changesByDoc.length})
+                      Todos
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
+                        {changesByDoc.length}
+                      </span>
                     </button>
-                    {availableTypes.map((type) => {
-                      const count = changesByDoc.filter(g => g.doc.type === type).length;
+                    {availableCategories.map((cat) => {
+                      const count = changesByDoc.filter(
+                        (g) => getDocCategory(g.doc as { category?: string; type?: string }) === cat,
+                      ).length;
                       return (
                         <button
-                          key={type}
-                          onClick={() => setTypeFilter(type)}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            typeFilter === type
-                              ? 'bg-[#C41E3A] text-white shadow-sm'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          key={cat}
+                          onClick={() => setCategoryFilter(cat)}
+                          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                            categoryFilter === cat
+                              ? "border-[#C41E3A] text-[#C41E3A]"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          {type} ({count})
+                          {cat}
+                          <span className="ml-1.5 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
+                            {count}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                  
-                  {/* Buscador */}
                   <div className="relative mt-3">
                     <input
                       type="text"
@@ -642,13 +651,14 @@ export function Summary({
 
               {changesByCategory.map(({ category, groups }) => (
                 <div key={category}>
-                  {/* Cabecera de categoría */}
-                  <div className="mb-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-md">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {category}
-                    </span>
-                  </div>
-                  <div className="space-y-3 pl-2 border-l-2 border-gray-200">
+                  {categoryFilter === "Todos" && (
+                    <div className="mb-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-md">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {category}
+                      </span>
+                    </div>
+                  )}
+                  <div className={`space-y-3 ${categoryFilter === "Todos" ? "pl-2 border-l-2 border-gray-200" : ""}`}>
                     {groups.map(({ doc, items }) => (
                       <div
                         key={doc.id}
