@@ -133,13 +133,15 @@ export function Summary({
     Record<string, boolean>
   >(() =>
     Object.fromEntries(
-      selectedDocuments.map((id) => [id, true]),
+      selectedDocuments.map((id) => [id, false]),
     ),
   );
   const toggleDoc = (docId: string) =>
     setOpenDocs((prev) => ({ ...prev, [docId]: !prev[docId] }));
 
-  const [docPages, setDocPages] = useState<Record<string, number>>({});
+  const [docSearch, setDocSearch] = useState<Record<string, string>>({});
+  const [docViewMode, setDocViewMode] = useState<Record<string, 'paged' | 'list'>>({});
+  const [docPageIndex, setDocPageIndex] = useState<Record<string, number>>({});
 
   // Accordion por documento (versiones modificadas)
   const [openModified, setOpenModified] = useState<
@@ -651,6 +653,7 @@ export function Summary({
                 </div>
               )}
 
+              <div className="max-h-[600px] overflow-y-auto pr-1 space-y-5">
               {changesByCategory.map(({ category, groups }) => (
                 <div key={category}>
                   {categoryFilter === "Todos" && (
@@ -713,271 +716,177 @@ export function Summary({
 
                         {/* Acordeón body */}
                         {openDocs[doc.id] && (() => {
-                          const ITEMS_PER_PAGE = 5;
-                          const currentPage = docPages[doc.id] ?? 1;
-                          const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-                          const paginatedItems = items.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-                          const setPage = (page: number) => setDocPages((prev) => ({ ...prev, [doc.id]: page }));
+                          const viewMode = docViewMode[doc.id] ?? 'paged';
+                          const idx = docPageIndex[doc.id] ?? 0;
+                          const q = (docSearch[doc.id] ?? "").toLowerCase();
+                          const filtered = q
+                            ? items.filter((c) => (c.field ?? "").toLowerCase().includes(q))
+                            : items;
+                          const change = items[idx] ?? items[0];
+                          const eyeIcon = (
+                            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          );
+                          const downloadIcon = (
+                            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          );
+                          const editIcon = (
+                            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          );
                           return (
-                          <div>
-                            {/* Cabecera de tabla */}
-                            <div className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-[#C41E3A]/5 border-b border-gray-200">
-                              <div className="px-3 py-2.5 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide">Cambio - N° página</div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión anterior</div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Versión nueva</div>
-                              <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
-                            </div>
+                            <div className="bg-white divide-y divide-gray-200">
 
-                            {/* Filas paginadas */}
-                            <div className="divide-y divide-gray-200">
-                              {paginatedItems.map((change) => (
-                                <div key={change.id} className="grid grid-cols-[1.4fr_1fr_1fr_1.5fr] gap-0 bg-white">
-                                  <div className="px-3 py-3">
+                              {/* Toolbar: toggle vista */}
+                              <div className="px-4 py-2 bg-gray-50 flex items-center justify-between gap-3">
+                                <span className="text-[11px] text-gray-400">{items.length} {items.length === 1 ? 'cambio' : 'cambios'}</span>
+                                <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
+                                  <button
+                                    onClick={() => setDocViewMode((prev) => ({ ...prev, [doc.id]: 'paged' }))}
+                                    className={`px-3 py-1 text-[11px] font-medium transition-colors ${viewMode === 'paged' ? 'bg-[#C41E3A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                  >
+                                    Paginado
+                                  </button>
+                                  <button
+                                    onClick={() => setDocViewMode((prev) => ({ ...prev, [doc.id]: 'list' }))}
+                                    className={`px-3 py-1 text-[11px] font-medium transition-colors border-l border-gray-200 ${viewMode === 'list' ? 'bg-[#C41E3A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                  >
+                                    Lista
+                                  </button>
+                                </div>
+                              </div>
+
+                              {viewMode === 'paged' ? (
+                                <>
+                                  {/* Vista paginada: un cambio a la vez */}
+                                  <div className="px-4 py-3 bg-white grid grid-cols-4 gap-3 items-start">
                                     <div className="flex flex-col gap-0.5">
-                                      <span className="text-gray-800 font-medium text-xs break-words">{change.field || "—"}</span>
-                                      {change.pageNumber && (
-                                        <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {change.pageNumber}</span>
+                                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Campo - N° Pág</p>
+                                      <p className="text-sm font-semibold text-gray-800 m-0 mt-0.5">
+                                        {change.field}
+                                        {change.pageNumber && <span className="text-gray-400 font-normal"> — {change.pageNumber}</span>}
+                                      </p>
+                                    </div>
+                                    <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión anterior</p>
+                                      {change.oldValue ? (
+                                        <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed">{change.oldValue}</span>
+                                      ) : (
+                                        <span className="text-gray-400 italic text-xs">Sin valor previo</span>
                                       )}
                                     </div>
+                                    <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Versión nueva</p>
+                                      <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed">{change.newValue}</span>
+                                    </div>
+                                    <div className="border-l border-gray-200 pl-3 flex flex-col gap-1">
+                                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide m-0">Justificación</p>
+                                      <span className="text-xs text-gray-600 leading-relaxed">{change.justification || <span className="text-gray-400 italic">—</span>}</span>
+                                    </div>
                                   </div>
-                                  <div className="px-3 py-3 border-l border-gray-100">
-                                    {change.oldValue ? (
-                                      <span className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-700 line-through text-xs leading-relaxed break-words w-full">{change.oldValue}</span>
-                                    ) : (
-                                      <span className="text-gray-300 italic text-xs">Sin valor previo</span>
-                                    )}
+                                  {items.length > 1 && (
+                                    <div className="px-4 py-2 bg-gray-50 flex items-center justify-between">
+                                      <button
+                                        disabled={idx === 0}
+                                        onClick={() => setDocPageIndex((prev) => ({ ...prev, [doc.id]: idx - 1 }))}
+                                        className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                      >← Anterior</button>
+                                      <span className="text-xs text-gray-500 tabular-nums">{idx + 1} / {items.length}</span>
+                                      <button
+                                        disabled={idx === items.length - 1}
+                                        onClick={() => setDocPageIndex((prev) => ({ ...prev, [doc.id]: idx + 1 }))}
+                                        className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                      >Siguiente →</button>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {/* Vista lista: buscador + tabla */}
+                                  <div className="px-4 py-2 bg-white border-b border-gray-100">
+                                    <div className="relative">
+                                      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                      </svg>
+                                      <input
+                                        type="text"
+                                        value={docSearch[doc.id] ?? ""}
+                                        onChange={(e) => setDocSearch((prev) => ({ ...prev, [doc.id]: e.target.value }))}
+                                        placeholder="Buscar por campo..."
+                                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-[#C41E3A]"
+                                      />
+                                    </div>
                                   </div>
-                                  <div className="px-3 py-3 border-l border-gray-100">
-                                    <span className="inline-block px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-xs leading-relaxed break-words w-full">{change.newValue}</span>
+                                  <div className="grid grid-cols-[1.4fr_1fr_1fr_1.4fr] bg-[#C41E3A]/5">
+                                    <div className="px-4 py-2 text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide">Campo - N° Pág</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">V. Anterior</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">V. Nueva</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
                                   </div>
-                                  <div className="px-3 py-3 border-l border-gray-100 text-gray-600 text-xs leading-relaxed">
-                                    {change.justification || <span className="text-gray-300 italic">—</span>}
+                                  <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                                    {filtered.length === 0 ? (
+                                      <p className="px-4 py-4 text-xs text-gray-400 italic text-center">Sin resultados</p>
+                                    ) : filtered.map((c) => (
+                                      <div key={c.id} className="grid grid-cols-[1.4fr_1fr_1fr_1.4fr] hover:bg-gray-50 transition-colors">
+                                        <div className="px-4 py-2.5 flex flex-col gap-0.5">
+                                          <span className="text-xs font-medium text-gray-800 leading-snug">{c.field || "—"}</span>
+                                          {c.pageNumber && <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {c.pageNumber}</span>}
+                                        </div>
+                                        <div className="px-3 py-2.5 border-l border-gray-100">
+                                          {c.oldValue ? (
+                                            <span className="inline-block px-1.5 py-0.5 bg-red-50 border border-red-200 rounded text-red-700 line-through text-[11px]">{c.oldValue}</span>
+                                          ) : (
+                                            <span className="text-gray-300 italic text-[11px]">—</span>
+                                          )}
+                                        </div>
+                                        <div className="px-3 py-2.5 border-l border-gray-100">
+                                          <span className="inline-block px-1.5 py-0.5 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-[11px]">{c.newValue}</span>
+                                        </div>
+                                        <div className="px-3 py-2.5 border-l border-gray-100 text-[11px] text-gray-500 leading-snug">
+                                          {c.justification || <span className="text-gray-300 italic">—</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Fila documentos: 3 columnas */}
+                              <div className="px-4 py-3 grid grid-cols-3 gap-3 bg-gray-50">
+                                <div className="flex flex-col gap-1.5">
+                                  <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide m-0">Documento vigente aprobado</p>
+                                  <p className="text-xs text-gray-700 m-0 truncate" title={doc.name}>{doc.name}</p>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
                                   </div>
                                 </div>
-                              ))}
+                                <div className="flex flex-col gap-1.5 border-l border-gray-200 pl-3">
+                                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide m-0">Control de Cambios</p>
+                                  <p className="text-xs text-gray-700 m-0 truncate" title={doc.name}>{doc.name}</p>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 transition-colors">{editIcon} Cambiar nombre</button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1.5 border-l border-gray-200 pl-3">
+                                  <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide m-0">Versión Final</p>
+                                  <p className="text-xs text-gray-700 m-0 truncate" title={`${doc.name} (v2)`}>{doc.name} (v2)</p>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">{eyeIcon} Ver</button>
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">{downloadIcon} Descargar</button>
+                                    <button className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 transition-colors">{editIcon} Cambiar nombre</button>
+                                  </div>
+                                </div>
+                              </div>
+
                             </div>
-
-                            {/* Paginador */}
-                            {totalPages > 1 && (
-                              <div className="px-4 py-2 border-t border-gray-100 bg-white flex items-center justify-between">
-                                <span className="text-[10px] text-gray-500">
-                                  Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, items.length)} de {items.length}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                  </button>
-                                  <span className="text-[10px] text-gray-600 px-1">{currentPage} / {totalPages}</span>
-                                  <button onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* 3 cards globales para este documento (Vigente, CC, Final) */}
-                            <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border-t border-gray-200">
-                              {/* Card 1: Documento vigente aprobado */}
-                              <div className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                                <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-                                  <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide m-0">
-                                    Documento vigente aprobado
-                                  </p>
-                                </div>
-                                <div className="px-3 py-3">
-                                  <p
-                                    className="text-xs text-gray-800 mb-3 font-medium truncate"
-                                    title={doc.name}
-                                  >
-                                    {doc.name}
-                                  </p>
-                                  <div className="flex gap-1.5">
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                        />
-                                      </svg>
-                                      Ver
-                                    </button>
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                        />
-                                      </svg>
-                                      Descargar
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Card 2: Control de Cambios */}
-                              <div className="border border-amber-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                                <div className="px-3 py-2 border-b border-amber-100 bg-amber-50">
-                                  <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide m-0">
-                                    Control de Cambios
-                                  </p>
-                                </div>
-                                <div className="px-3 py-3">
-                                  <p className="text-xs text-gray-500 font-mono mb-3 truncate">
-                                    DOC-CC-v1.pdf
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                        />
-                                      </svg>
-                                      Ver
-                                    </button>
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                        />
-                                      </svg>
-                                      Descargar
-                                    </button>
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                        />
-                                      </svg>
-                                      Nombre
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Card 3: Versión Final */}
-                              <div className="border border-green-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                                <div className="px-3 py-2 border-b border-green-100 bg-green-50">
-                                  <p className="text-[11px] font-semibold text-green-700 uppercase tracking-wide m-0">
-                                    Versión Final
-                                  </p>
-                                </div>
-                                <div className="px-3 py-3">
-                                  <p
-                                    className="text-xs text-gray-800 mb-3 font-medium truncate"
-                                    title={`${doc.name} (v2)`}
-                                  >
-                                    {doc.name} (v2)
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] border border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                        />
-                                      </svg>
-                                      Ver
-                                    </button>
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                        />
-                                      </svg>
-                                      Descargar
-                                    </button>
-                                    <button className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                        />
-                                      </svg>
-                                      Nombre
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
                           );
                         })()}
                       </div>
@@ -986,6 +895,7 @@ export function Summary({
                   {/* fin grupos de categoría */}
                 </div>
               ))}
+              </div>
             </div>
           )}
         </div>

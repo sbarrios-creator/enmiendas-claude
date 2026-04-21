@@ -31,6 +31,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditDocId, setInlineEditDocId] = useState<string | null>(null);
   const [inlineEditData, setInlineEditData] = useState<{ field: string; pageNumber: string; oldValue: string; newValue: string; justification: string }>({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' });
+  const [inlineAddDocId, setInlineAddDocId] = useState<string | null>(null);
+  const [inlineAddData, setInlineAddData] = useState({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: true, appliesTo: [] as string[] });
+  const [inlinePickerSearch, setInlinePickerSearch] = useState('');
   const [confirm, setConfirm] = useState<{
     isOpen: boolean; title: string; message: string;
     confirmLabel?: string; variant?: 'danger' | 'warning' | 'primary';
@@ -206,6 +209,24 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
   const handleRemoveChange = (id: string) => {
     onChangesUpdate(changes.filter((change) => change.id !== id));
+  };
+
+  const handleInlineAdd = () => {
+    if (!inlineAddData.field || !inlineAddData.newValue) return;
+    const appliesTo = inlineAddData.isGlobal ? selectedDocuments : inlineAddData.appliesTo;
+    if (!inlineAddData.isGlobal && appliesTo.length === 0) return;
+    onChangesUpdate([...changes, {
+      id: Date.now().toString(),
+      field: inlineAddData.field,
+      oldValue: inlineAddData.oldValue,
+      newValue: inlineAddData.newValue,
+      justification: inlineAddData.justification,
+      pageNumber: inlineAddData.pageNumber,
+      appliesTo,
+      isGlobal: inlineAddData.isGlobal,
+    }]);
+    setInlineAddDocId(null);
+    setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: true, appliesTo: [] });
   };
 
   const handleEditChange = (change: Change, docId?: string) => {
@@ -427,8 +448,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
         {modifiesOperativeUnits === 'SI' && (
           <div className="p-4 space-y-5">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
-              <p className="text-sm text-blue-900 m-0">
+            <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
+              <p className="text-sm text-[#C41E3A] m-0">
                 <strong>Instrucciones:</strong> Agregue las unidades operativas que serán modificadas. Puede registrar unidades internas (dentro de la institución) y unidades externas (fuera de la institución) de forma independiente. Cada unidad requiere adjuntar la carta de declaración del jefe de unidad.
               </p>
             </div>
@@ -552,7 +573,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             a.href = url; a.download = unit.fileName; a.click();
                             URL.revokeObjectURL(url);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors font-medium"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors font-medium"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -613,8 +634,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
         {modifiesResearchers === 'SI' && (
           <div className="p-4 space-y-4">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
-              <p className="text-sm text-blue-900 m-0">
+            <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
+              <p className="text-sm text-[#C41E3A] m-0">
                 <strong>Nota:</strong> Agregue cada modificación haciendo clic en el botón "+ Agregar".
               </p>
             </div>
@@ -645,7 +666,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                               researcher.changeType === 'add' ? 'bg-green-100 text-green-800'
                               : researcher.changeType === 'remove' ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
+                              : 'bg-red-100 text-[#C41E3A]'
                             }`}>
                               {researcher.changeType === 'add' ? 'Agregar' : researcher.changeType === 'remove' ? 'Retirar' : 'Modificar'}
                             </span>
@@ -750,16 +771,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 <div className="flex items-center gap-2 min-w-0">
                   <h4 className="text-sm font-semibold text-gray-800 m-0 whitespace-nowrap">Cambios registrados</h4>
                   {changes.length > 0 && (
-                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">{changes.length}</span>
+                    <span className="px-1.5 py-0.5 bg-red-100 text-[#C41E3A] rounded text-xs font-semibold">{changes.length}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
-                      setModalStep(1);
-                      setShowPreview(false);
-                      setShowAddChange(true);
+                      setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: true, appliesTo: selectedDocuments });
+                      setInlineAddDocId('__global__');
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
                   >
@@ -812,6 +831,117 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 </div>
               )}
 
+              {/* Panel inline global */}
+              {inlineAddDocId === '__global__' && (
+                <div className="border border-red-200 rounded bg-red-50/50 p-3 mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-[#C41E3A]">Nuevo cambio</span>
+                  </div>
+                  <div className="grid grid-cols-[1.4fr_1fr_1fr_1.4fr_40px] gap-2 items-start">
+                    <div className="flex flex-col gap-1">
+                      <input autoFocus type="text" placeholder="Campo *" value={inlineAddData.field} onChange={(e) => setInlineAddData((p) => ({ ...p, field: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white" />
+                      <input type="text" placeholder="N° página" value={inlineAddData.pageNumber} onChange={(e) => setInlineAddData((p) => ({ ...p, pageNumber: e.target.value }))} className="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white text-[#C41E3A]/80" />
+                    </div>
+                    <textarea rows={3} placeholder="Versión anterior" value={inlineAddData.oldValue} onChange={(e) => setInlineAddData((p) => ({ ...p, oldValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
+                    <textarea rows={3} placeholder="Versión nueva *" value={inlineAddData.newValue} onChange={(e) => setInlineAddData((p) => ({ ...p, newValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
+                    <textarea rows={3} placeholder="Justificación" value={inlineAddData.justification} onChange={(e) => setInlineAddData((p) => ({ ...p, justification: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
+                    <div className="flex flex-col gap-1">
+                      <button onClick={handleInlineAdd} className="w-7 h-7 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors" title="Guardar">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      </button>
+                      <button onClick={() => setInlineAddDocId(null)} className="w-7 h-7 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors" title="Cancelar">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Fila de alcance */}
+                  <div className="flex items-start gap-3 mt-2 pt-2 border-t border-red-200">
+                    <span className="text-[10px] text-gray-500 font-medium mt-1 shrink-0">Alcance:</span>
+                    <button
+                      onClick={() => setInlineAddData((p) => ({ ...p, isGlobal: !p.isGlobal, appliesTo: !p.isGlobal ? selectedDocuments : [] }))}
+                      className={`px-2.5 py-0.5 text-[10px] rounded border font-medium transition-colors shrink-0 ${inlineAddData.isGlobal ? 'bg-[#C41E3A] text-white border-[#C41E3A]' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                    >
+                      {inlineAddData.isGlobal ? 'Global' : 'Específico'}
+                    </button>
+                    {!inlineAddData.isGlobal && (
+                      <div className="flex items-start gap-3">
+                        {/* Picker */}
+                        <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[320px]">
+                          <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                            <span className="text-xs font-semibold text-gray-600 tabular-nums">{inlineAddData.appliesTo.length} de {documents.length} seleccionados</span>
+                          </div>
+                          <div className="overflow-y-auto max-h-56">
+                            {groupedAvailable(documents).map((group) => {
+                              const allChecked = group.docs.every((d) => inlineAddData.appliesTo.includes(d.id));
+                              const someChecked = group.docs.some((d) => inlineAddData.appliesTo.includes(d.id));
+                              return (
+                                <div key={group.category}>
+                                  <div className="px-3 py-2 bg-[#C41E3A] flex items-center gap-2.5 cursor-pointer select-none" onClick={() => { const ids = group.docs.map((d) => d.id); if (allChecked) { setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.filter((id) => !ids.includes(id)) })); } else { const toAdd = ids.filter((id) => !inlineAddData.appliesTo.includes(id)); setInlineAddData((p) => ({ ...p, appliesTo: [...p.appliesTo, ...toAdd] })); } }}>
+                                    <span className="shrink-0 w-3.5 h-3.5 border-2 border-white rounded-sm flex items-center justify-center" style={{ backgroundColor: allChecked ? 'white' : someChecked ? 'rgba(255,255,255,0.5)' : 'transparent' }}>
+                                      {allChecked && <svg className="w-2.5 h-2.5 text-[#C41E3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                      {!allChecked && someChecked && <span className="block w-1.5 h-0.5 bg-white rounded-full" />}
+                                    </span>
+                                    <span className="text-xs font-bold text-white uppercase tracking-wide flex-1">{group.category}</span>
+                                  </div>
+                                  {group.docs.map((d) => (
+                                    <label key={d.id} className="flex items-center gap-2.5 pl-8 pr-3 py-2 text-xs text-gray-700 hover:bg-[#C41E3A]/5 cursor-pointer border-t border-gray-100 select-none">
+                                      <input type="checkbox" checked={inlineAddData.appliesTo.includes(d.id)} onChange={() => setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.includes(d.id) ? p.appliesTo.filter((id) => id !== d.id) : [...p.appliesTo, d.id] }))} className="accent-[#C41E3A] w-3.5 h-3.5 shrink-0" />
+                                      <span className="truncate">{d.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        {/* Resumen */}
+                        <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[200px] max-w-[240px]">
+                          <div className="bg-[#C41E3A] px-3 py-2 flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-white uppercase tracking-wide">Seleccionados</span>
+                            {inlineAddData.appliesTo.length > 0 && (
+                              <span className="bg-white/25 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums shrink-0">{inlineAddData.appliesTo.length}</span>
+                            )}
+                          </div>
+                          <div className="overflow-y-auto max-h-56 bg-white">
+                            {inlineAddData.appliesTo.length === 0 ? (
+                              <p className="text-[10px] text-gray-400 italic px-3 py-3 m-0">Ningún documento seleccionado.</p>
+                            ) : (
+                              <div>
+                                {groupedAvailable(documents).map((group) => {
+                                  const selected = group.docs.filter((d) => inlineAddData.appliesTo.includes(d.id));
+                                  if (selected.length === 0) return null;
+                                  const allInGroup = selected.length === group.docs.length;
+                                  return (
+                                    <div key={group.category} className="border-b border-gray-100 last:border-b-0">
+                                      <div className="px-3 py-1.5 bg-[#C41E3A]/8 flex items-center justify-between gap-2">
+                                        <span className="text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide truncate flex-1">{group.category}</span>
+                                        <span className="text-[10px] font-semibold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: allInGroup ? '#C41E3A' : 'rgba(196,30,58,0.12)', color: allInGroup ? 'white' : '#C41E3A' }}>
+                                          {allInGroup ? `Todos (${selected.length})` : selected.length}
+                                        </span>
+                                      </div>
+                                      {!allInGroup && (
+                                        <ul className="p-0 m-0 list-none">
+                                          {selected.map((doc) => (
+                                            <li key={doc.id} className="flex items-start gap-2 pl-5 pr-3 py-1.5 border-t border-gray-50">
+                                              <span className="mt-1.5 w-1 h-1 rounded-full bg-[#C41E3A]/50 shrink-0" />
+                                              <span className="text-[10px] text-gray-600 leading-snug">{doc.name}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Cards por documento */}
               {documents.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">No hay documentos seleccionados.</p>
@@ -841,10 +971,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           </div>
                           <button
                             onClick={() => {
-                              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
-                              setModalStep(1);
-                              setShowPreview(false);
-                              setShowAddChange(true);
+                              setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: false, appliesTo: [doc.id] });
+                              setInlineAddDocId(doc.id);
                             }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium flex-shrink-0"
                           >
@@ -885,12 +1013,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                 paginatedChanges.map((change, idx) => {
                                   const isInline = inlineEditId === change.id && inlineEditDocId === doc.id;
                                   return (
-                                  <tr key={change.id} className={isInline ? 'bg-blue-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <tr key={change.id} className={isInline ? 'bg-red-50/50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                     <td className="px-2 py-2">
                                       {isInline ? (
                                         <div className="flex flex-col gap-1">
-                                          <input autoFocus type="text" value={inlineEditData.field} onChange={(e) => setInlineEditData({ ...inlineEditData, field: e.target.value })} placeholder="Cambio" className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" />
-                                          <input type="text" value={inlineEditData.pageNumber} onChange={(e) => setInlineEditData({ ...inlineEditData, pageNumber: e.target.value })} placeholder="N° página" className="w-full px-2 py-1 text-[10px] border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-[#C41E3A]/80" />
+                                          <input autoFocus type="text" value={inlineEditData.field} onChange={(e) => setInlineEditData({ ...inlineEditData, field: e.target.value })} placeholder="Cambio" className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white" />
+                                          <input type="text" value={inlineEditData.pageNumber} onChange={(e) => setInlineEditData({ ...inlineEditData, pageNumber: e.target.value })} placeholder="N° página" className="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white text-[#C41E3A]/80" />
                                         </div>
                                       ) : (
                                         <div className="flex flex-col gap-0.5">
@@ -901,19 +1029,19 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                     </td>
                                     <td className="px-2 py-2">
                                       {isInline
-                                        ? <textarea rows={3} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        ? <textarea rows={3} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
                                         : <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
                                       }
                                     </td>
                                     <td className="px-2 py-2">
                                       {isInline
-                                        ? <textarea rows={3} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        ? <textarea rows={3} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
                                         : <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue || '—'}</p>
                                       }
                                     </td>
                                     <td className="px-2 py-2">
                                       {isInline
-                                        ? <textarea rows={3} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} className="w-full px-2 py-1 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white resize-none" />
+                                        ? <textarea rows={3} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
                                         : <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
                                       }
                                     </td>
@@ -949,7 +1077,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                           <>
                                             <button
                                               onClick={() => { setInlineEditId(change.id); setInlineEditDocId(doc.id); setInlineEditData({ field: change.field, pageNumber: change.pageNumber || '', oldValue: change.oldValue, newValue: change.newValue, justification: change.justification }); }}
-                                              className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                              className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
                                               title="Editar"
                                             >
                                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -968,6 +1096,127 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                   </tr>
                                   );
                                 })
+                              )}
+                              {/* Fila inline de agregar */}
+                              {inlineAddDocId === doc.id && (
+                                <tr className="bg-red-50/50 border-b-0">
+                                  <td className="px-2 py-2">
+                                    <div className="flex flex-col gap-1">
+                                      <input autoFocus type="text" placeholder="Campo *" value={inlineAddData.field} onChange={(e) => setInlineAddData((p) => ({ ...p, field: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white" />
+                                      <input type="text" placeholder="N° página" value={inlineAddData.pageNumber} onChange={(e) => setInlineAddData((p) => ({ ...p, pageNumber: e.target.value }))} className="w-full px-2 py-1 text-[10px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A]/50 bg-white text-[#C41E3A]/80" />
+                                    </div>
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <textarea rows={3} placeholder="Versión anterior" value={inlineAddData.oldValue} onChange={(e) => setInlineAddData((p) => ({ ...p, oldValue: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <textarea rows={3} placeholder="Versión nueva *" value={inlineAddData.newValue} onChange={(e) => setInlineAddData((p) => ({ ...p, newValue: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <textarea rows={3} placeholder="Justificación" value={inlineAddData.justification} onChange={(e) => setInlineAddData((p) => ({ ...p, justification: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <div className="flex flex-col gap-1 items-center">
+                                      <button onClick={handleInlineAdd} className="w-6 h-6 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors" title="Guardar">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                      </button>
+                                      <button onClick={() => setInlineAddDocId(null)} className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors" title="Cancelar">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              {/* Fila de alcance (Global / Específico) */}
+                              {inlineAddDocId === doc.id && (
+                                <tr className="bg-red-50/30">
+                                  <td colSpan={5} className="px-3 py-2 border-t border-red-100">
+                                    <div className="flex items-start gap-3">
+                                      <span className="text-[10px] text-gray-500 font-medium mt-1 shrink-0">Alcance:</span>
+                                      <button
+                                        onClick={() => setInlineAddData((p) => ({ ...p, isGlobal: !p.isGlobal, appliesTo: !p.isGlobal ? selectedDocuments : [doc.id] }))}
+                                        className={`px-2.5 py-0.5 text-[10px] rounded border font-medium transition-colors shrink-0 ${inlineAddData.isGlobal ? 'bg-[#C41E3A] text-white border-[#C41E3A]' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                                      >
+                                        {inlineAddData.isGlobal ? 'Global' : 'Específico'}
+                                      </button>
+                                      {!inlineAddData.isGlobal && (
+                                        <div className="flex items-start gap-3">
+                                          {/* Picker */}
+                                          <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[320px]">
+                                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                                              <span className="text-xs font-semibold text-gray-600 tabular-nums">{inlineAddData.appliesTo.length} de {documents.length} seleccionados</span>
+                                            </div>
+                                            <div className="overflow-y-auto max-h-56">
+                                              {groupedAvailable(documents).map((group) => {
+                                                const allChecked = group.docs.every((d) => inlineAddData.appliesTo.includes(d.id));
+                                                const someChecked = group.docs.some((d) => inlineAddData.appliesTo.includes(d.id));
+                                                return (
+                                                  <div key={group.category}>
+                                                    <div className="px-3 py-2 bg-[#C41E3A] flex items-center gap-2.5 cursor-pointer select-none" onClick={() => { const ids = group.docs.map((d) => d.id); if (allChecked) { setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.filter((id) => !ids.includes(id)) })); } else { const toAdd = ids.filter((id) => !inlineAddData.appliesTo.includes(id)); setInlineAddData((p) => ({ ...p, appliesTo: [...p.appliesTo, ...toAdd] })); } }}>
+                                                      <span className="shrink-0 w-3.5 h-3.5 border-2 border-white rounded-sm flex items-center justify-center" style={{ backgroundColor: allChecked ? 'white' : someChecked ? 'rgba(255,255,255,0.5)' : 'transparent' }}>
+                                                        {allChecked && <svg className="w-2.5 h-2.5 text-[#C41E3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                        {!allChecked && someChecked && <span className="block w-1.5 h-0.5 bg-white rounded-full" />}
+                                                      </span>
+                                                      <span className="text-xs font-bold text-white uppercase tracking-wide flex-1">{group.category}</span>
+                                                    </div>
+                                                    {group.docs.map((d) => (
+                                                      <label key={d.id} className="flex items-center gap-2.5 pl-8 pr-3 py-2 text-xs text-gray-700 hover:bg-[#C41E3A]/5 cursor-pointer border-t border-gray-100 select-none">
+                                                        <input type="checkbox" checked={inlineAddData.appliesTo.includes(d.id)} onChange={() => setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.includes(d.id) ? p.appliesTo.filter((id) => id !== d.id) : [...p.appliesTo, d.id] }))} className="accent-[#C41E3A] w-3.5 h-3.5 shrink-0" />
+                                                        <span className="truncate">{d.name}</span>
+                                                      </label>
+                                                    ))}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          {/* Resumen */}
+                                          <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[200px] max-w-[240px]">
+                                            <div className="bg-[#C41E3A] px-3 py-2 flex items-center justify-between gap-2">
+                                              <span className="text-xs font-bold text-white uppercase tracking-wide">Seleccionados</span>
+                                              {inlineAddData.appliesTo.length > 0 && (
+                                                <span className="bg-white/25 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums shrink-0">{inlineAddData.appliesTo.length}</span>
+                                              )}
+                                            </div>
+                                            <div className="overflow-y-auto max-h-56 bg-white">
+                                              {inlineAddData.appliesTo.length === 0 ? (
+                                                <p className="text-[10px] text-gray-400 italic px-3 py-3 m-0">Ningún documento seleccionado.</p>
+                                              ) : (
+                                                <div>
+                                                  {groupedAvailable(documents).map((group) => {
+                                                    const selected = group.docs.filter((d) => inlineAddData.appliesTo.includes(d.id));
+                                                    if (selected.length === 0) return null;
+                                                    const allInGroup = selected.length === group.docs.length;
+                                                    return (
+                                                      <div key={group.category} className="border-b border-gray-100 last:border-b-0">
+                                                        <div className="px-3 py-1.5 bg-[#C41E3A]/8 flex items-center justify-between gap-2">
+                                                          <span className="text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide truncate flex-1">{group.category}</span>
+                                                          <span className="text-[10px] font-semibold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: allInGroup ? '#C41E3A' : 'rgba(196,30,58,0.12)', color: allInGroup ? 'white' : '#C41E3A' }}>
+                                                            {allInGroup ? `Todos (${selected.length})` : selected.length}
+                                                          </span>
+                                                        </div>
+                                                        {!allInGroup && (
+                                                          <ul className="p-0 m-0 list-none">
+                                                            {selected.map((doc) => (
+                                                              <li key={doc.id} className="flex items-start gap-2 pl-5 pr-3 py-1.5 border-t border-gray-50">
+                                                                <span className="mt-1.5 w-1 h-1 rounded-full bg-[#C41E3A]/50 shrink-0" />
+                                                                <span className="text-[10px] text-gray-600 leading-snug">{doc.name}</span>
+                                                              </li>
+                                                            ))}
+                                                          </ul>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
                               )}
                             </tbody>
                           </table>
@@ -1047,7 +1296,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="w-36 flex-shrink-0 pt-2">
                       <label className="text-sm font-semibold text-gray-700">Cambio a Realizar <span className="text-[#C41E3A]">*</span></label>
                     </div>
-                    <input autoFocus type="text" value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <input autoFocus type="text" value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
                   </div>
                   {err.field && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>
@@ -1077,7 +1326,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="w-36 flex-shrink-0 pt-2">
                       <label className="text-sm font-semibold text-gray-700">Versión Nueva <span className="text-[#C41E3A]">*</span></label>
                     </div>
-                    <textarea rows={3} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <textarea rows={3} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
                   </div>
                   {err.newValue && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>
@@ -1088,7 +1337,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <label className="text-sm font-semibold text-gray-700">Justificación <span className="text-[#C41E3A]">*</span></label>
                       {newChange.justification && <span className="block text-xs text-gray-400 mt-1">{newChange.justification.length} car.</span>}
                     </div>
-                    <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={3} className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-blue-500'}`} />
+                    <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={3} className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
                   </div>
                   {err.justification && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                 </div>
@@ -1096,16 +1345,16 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 <div>
                   <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio <span className="text-[#C41E3A]">*</span></label>
                   <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-300 rounded">
-                    <button onClick={() => setNewChange({ ...newChange, isGlobal: true })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${newChange.isGlobal ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
+                    <button onClick={() => setNewChange({ ...newChange, isGlobal: true })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>{newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}</div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-[#C41E3A]" />}</div>
                         <span>Todos los docs.</span>
                       </div>
                       <p className="text-xs text-gray-400 m-0 ml-6">Aplica a los {documents.length} docs.</p>
                     </button>
-                    <button onClick={() => setNewChange({ ...newChange, isGlobal: false })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${!newChange.isGlobal ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
+                    <button onClick={() => setNewChange({ ...newChange, isGlobal: false })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${!newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-blue-600' : 'border-gray-300'}`}>{!newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-blue-600" />}</div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{!newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-[#C41E3A]" />}</div>
                         <span>Específicos</span>
                       </div>
                       <p className="text-xs text-gray-400 m-0 ml-6">Selecciona cuáles</p>
@@ -1117,15 +1366,15 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   <div className="border border-gray-300 rounded p-4 bg-gray-50">
                     <div className="flex items-center gap-2 mb-3">
                       <p className="text-sm font-semibold text-gray-700 m-0">Seleccione los documentos</p>
-                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${err.appliesTo ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700'}`}>{newChange.appliesTo.length} / {documents.length}</span>
+                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${err.appliesTo ? 'bg-red-100 text-[#C41E3A]' : 'bg-red-100 text-[#C41E3A]'}`}>{newChange.appliesTo.length} / {documents.length}</span>
                       {err.appliesTo && <span className="text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Seleccione al menos uno</span>}
                     </div>
                     <div className="flex gap-2 mb-3">
                       <div className="relative flex-1">
-                        <input type="text" placeholder="Buscar documento..." value={searchDocument} onChange={(e) => setSearchDocument(e.target.value)} className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" />
+                        <input type="text" placeholder="Buscar documento..." value={searchDocument} onChange={(e) => setSearchDocument(e.target.value)} className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white" />
                         <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </div>
-                      <button onClick={() => { const allIds = documents.map((d) => d.id); const allSelected = allIds.every((id) => newChange.appliesTo.includes(id)); setNewChange({ ...newChange, appliesTo: allSelected ? [] : allIds }); }} className="px-3 py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors whitespace-nowrap bg-white flex-shrink-0">
+                      <button onClick={() => { const allIds = documents.map((d) => d.id); const allSelected = allIds.every((id) => newChange.appliesTo.includes(id)); setNewChange({ ...newChange, appliesTo: allSelected ? [] : allIds }); }} className="px-3 py-2 text-xs font-semibold text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors whitespace-nowrap bg-white flex-shrink-0">
                         {documents.every((d) => newChange.appliesTo.includes(d.id)) ? 'Deseleccionar todos' : 'Seleccionar todos'}
                       </button>
                     </div>
@@ -1142,8 +1391,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           {group.docs.map((doc) => {
                             const selected = newChange.appliesTo.includes(doc.id);
                             return (
-                              <button key={doc.id} onClick={() => { setNewChange({ ...newChange, appliesTo: selected ? newChange.appliesTo.filter((id) => id !== doc.id) : [...newChange.appliesTo, doc.id] }); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-left transition-colors mb-1 ${selected ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
-                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>{selected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}</div>
+                              <button key={doc.id} onClick={() => { setNewChange({ ...newChange, appliesTo: selected ? newChange.appliesTo.filter((id) => id !== doc.id) : [...newChange.appliesTo, doc.id] }); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-left transition-colors mb-1 ${selected ? 'bg-red-50/50 border border-red-200 text-[#C41E3A]' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-[#C41E3A] border-[#C41E3A]' : 'border-gray-300'}`}>{selected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}</div>
                                 <span className="flex-1 truncate">{doc.name}</span>
                               </button>
                             );
@@ -1292,4 +1541,4 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       />
     </div>
   );
-}
+};
