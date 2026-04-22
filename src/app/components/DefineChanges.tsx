@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Change, Document, Step3Data, ResearcherChange, OperativeUnit } from '../types';
 import { baseDocuments } from '../data/documents';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -25,6 +25,7 @@ const mockOperativeUnits = [
 
 
 export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
+  const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -211,6 +212,84 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     onChangesUpdate(changes.filter((change) => change.id !== id));
   };
 
+  const startInlineEdit = (change: Change, docId: string) => {
+    setInlineEditId(change.id);
+    setInlineEditDocId(docId);
+    setInlineEditData({
+      field: change.field,
+      pageNumber: change.pageNumber || '',
+      oldValue: change.oldValue,
+      newValue: change.newValue,
+      justification: change.justification,
+    });
+  };
+
+  useEffect(() => {
+    if (!inlineEditId || !inlineEditDocId) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (inlineEditRowRef.current?.contains(target)) return;
+      setInlineEditId(null);
+      setInlineEditDocId(null);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [inlineEditDocId, inlineEditId]);
+
+  const buildChangeForDoc = (
+    source: Change,
+    docId: string,
+    overrides: Partial<Change> = {},
+  ): Change => ({
+    ...source,
+    ...overrides,
+    id: overrides.id ?? Date.now().toString(),
+    appliesTo: [docId],
+    isGlobal: false,
+  });
+
+  const updateChangeForSingleDocument = (
+    source: Change,
+    docId: string,
+    overrides: Partial<Change>,
+  ) => {
+    const appliesToDoc =
+      source.isGlobal || source.appliesTo.includes(docId);
+    if (!appliesToDoc) return;
+
+    const remainingDocIds = source.isGlobal
+      ? selectedDocuments.filter((id) => id !== docId)
+      : source.appliesTo.filter((id) => id !== docId);
+
+    const updatedForDoc = buildChangeForDoc(source, docId, overrides);
+
+    if (source.isGlobal || source.appliesTo.length > 1) {
+      const nextChanges = changes.flatMap((change) => {
+        if (change.id !== source.id) return [change];
+        if (remainingDocIds.length === 0) return [updatedForDoc];
+        return [
+          {
+            ...change,
+            appliesTo: remainingDocIds,
+            isGlobal: false,
+          },
+          updatedForDoc,
+        ];
+      });
+      onChangesUpdate(nextChanges);
+      return;
+    }
+
+    onChangesUpdate(
+      changes.map((change) =>
+        change.id === source.id ? updatedForDoc : change,
+      ),
+    );
+  };
+
   const handleInlineAdd = () => {
     if (!inlineAddData.field || !inlineAddData.newValue) return;
     const appliesTo = inlineAddData.isGlobal ? selectedDocuments : inlineAddData.appliesTo;
@@ -249,6 +328,26 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const handleSaveEdit = () => {
     const field = newChange.field;
     if (!field || !newChange.newValue || !editingId) return;
+
+    const editingChange = changes.find((c) => c.id === editingId);
+    if (!editingChange) return;
+
+    if (editingDocId) {
+      updateChangeForSingleDocument(editingChange, editingDocId, {
+        field,
+        oldValue: newChange.oldValue,
+        newValue: newChange.newValue,
+        justification: newChange.justification,
+        pageNumber: newChange.pageNumber,
+      });
+      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
+      setSearchDocument('');
+      setModalStep(1);
+      setEditingId(null);
+      setEditingDocId(null);
+      setShowAddChange(false);
+      return;
+    }
 
     const appliesTo = editingDocId
       ? [editingDocId]
@@ -1013,7 +1112,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                 paginatedChanges.map((change, idx) => {
                                   const isInline = inlineEditId === change.id && inlineEditDocId === doc.id;
                                   return (
-                                  <tr key={change.id} className={isInline ? 'bg-red-50/50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <tr
+                                    key={change.id}
+                                    ref={isInline ? inlineEditRowRef : null}
+                                    onDoubleClick={() => {
+                                      if (!isInline) startInlineEdit(change, doc.id);
+                                    }}
+                                    className={`${isInline ? 'bg-red-50/50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${!isInline ? 'cursor-pointer' : ''}`}
+                                  >
                                     <td className="px-2 py-2">
                                       {isInline ? (
                                         <div className="flex flex-col gap-1">
@@ -1052,11 +1158,13 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                             <button
                                               onClick={() => {
                                                 if (!inlineEditData.field || !inlineEditData.newValue) return;
-                                                onChangesUpdate(changes.map((c) =>
-                                                  c.id === change.id
-                                                    ? { ...c, field: inlineEditData.field, pageNumber: inlineEditData.pageNumber, oldValue: inlineEditData.oldValue, newValue: inlineEditData.newValue, justification: inlineEditData.justification }
-                                                    : c
-                                                ));
+                                                updateChangeForSingleDocument(change, doc.id, {
+                                                  field: inlineEditData.field,
+                                                  pageNumber: inlineEditData.pageNumber,
+                                                  oldValue: inlineEditData.oldValue,
+                                                  newValue: inlineEditData.newValue,
+                                                  justification: inlineEditData.justification,
+                                                });
                                                 setInlineEditId(null);
                                                 setInlineEditDocId(null);
                                               }}
@@ -1076,7 +1184,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                         ) : (
                                           <>
                                             <button
-                                              onClick={() => { setInlineEditId(change.id); setInlineEditDocId(doc.id); setInlineEditData({ field: change.field, pageNumber: change.pageNumber || '', oldValue: change.oldValue, newValue: change.newValue, justification: change.justification }); }}
+                                              onClick={() => startInlineEdit(change, doc.id)}
                                               className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
                                               title="Editar"
                                             >
