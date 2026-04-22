@@ -14,6 +14,101 @@ interface DefineChangesProps {
   onBack: () => void;
 }
 
+interface ParsedPasteRow {
+  rowNumber: number;
+  field: string;
+  pageNumber: string;
+  oldValue: string;
+  newValue: string;
+  justification: string;
+  isValid: boolean;
+  error?: string;
+}
+
+const PASTE_HEADER_ALIASES = [
+  'campo',
+  'pagina',
+  'página',
+  'version anterior',
+  'versión anterior',
+  'version nueva',
+  'versión nueva',
+  'justificacion',
+  'justificación',
+];
+
+const normalizePasteCell = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+
+  const rows = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.split('\t').map((cell) => cell.trim()))
+    .filter((cells) => cells.some((cell) => cell.length > 0));
+
+  if (rows.length === 0) return [];
+
+  const firstRow = rows[0].map(normalizePasteCell);
+  const looksLikeHeader =
+    firstRow.length >= 4 &&
+    firstRow.every((cell) => PASTE_HEADER_ALIASES.includes(cell));
+
+  const dataRows = looksLikeHeader ? rows.slice(1) : rows;
+
+  return dataRows.map((cells, index) => {
+    const rowNumber = index + 1 + (looksLikeHeader ? 1 : 0);
+
+    if (cells.length < 4 || cells.length > 5) {
+      return {
+        rowNumber,
+        field: cells[0] ?? '',
+        pageNumber: cells[1] ?? '',
+        oldValue: '',
+        newValue: cells[2] ?? '',
+        justification: cells[3] ?? '',
+        isValid: false,
+        error: 'La fila debe tener 4 o 5 columnas.',
+      };
+    }
+
+    const [field, pageNumber, third, fourth, fifth] = cells;
+    const hasOldValue = cells.length === 5;
+    const oldValue = hasOldValue ? third : '';
+    const newValue = hasOldValue ? fourth : third;
+    const justification = hasOldValue ? fifth ?? '' : fourth ?? '';
+
+    if (!field || !pageNumber || !newValue || !justification) {
+      return {
+        rowNumber,
+        field: field ?? '',
+        pageNumber: pageNumber ?? '',
+        oldValue,
+        newValue,
+        justification,
+        isValid: false,
+        error: 'Faltan campos obligatorios: Campo, Página, Versión nueva o Justificación.',
+      };
+    }
+
+    return {
+      rowNumber,
+      field,
+      pageNumber,
+      oldValue,
+      newValue,
+      justification,
+      isValid: true,
+    };
+  });
+};
+
 
 const mockOperativeUnits = [
   'Cardiología', 'Endocrinología', 'Gastroenterología', 'Hematología',
@@ -95,6 +190,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [unitSearch, setUnitSearch] = useState('');
   const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
   const [selectedUnitName, setSelectedUnitName] = useState('');
+  const [pasteTargetDocId, setPasteTargetDocId] = useState<string | null>(null);
+  const [pasteRaw, setPasteRaw] = useState('');
   // external modal
   const [extUnitName, setExtUnitName] = useState('');
   const [extHasCarta, setExtHasCarta] = useState<'SI' | 'NO'>('SI');
@@ -111,6 +208,16 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     setExtHasCarta('SI');
     setUnitFile(null);
     setIsDraggingUnit(false);
+  };
+
+  const openPasteModal = (docId: string) => {
+    setPasteTargetDocId(docId);
+    setPasteRaw('');
+  };
+
+  const closePasteModal = () => {
+    setPasteTargetDocId(null);
+    setPasteRaw('');
   };
 
   const handleConfirmUnit = () => {
@@ -205,6 +312,25 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     });
     setModalStep(1);
     setShowAddChange(false);
+  };
+
+  const handleImportPastedChanges = (docId: string, rows: ParsedPasteRow[]) => {
+    const validRows = rows.filter((row) => row.isValid);
+    if (validRows.length === 0 || validRows.length !== rows.length) return;
+
+    const nextChanges = validRows.map((row) => ({
+      id: `${Date.now()}-${row.rowNumber}-${Math.random().toString(36).slice(2, 8)}`,
+      field: row.field,
+      oldValue: row.oldValue,
+      newValue: row.newValue,
+      justification: row.justification,
+      pageNumber: row.pageNumber,
+      appliesTo: [docId],
+      isGlobal: false,
+    }));
+
+    onChangesUpdate([...changes, ...nextChanges]);
+    closePasteModal();
   };
 
   const handleRemoveChange = (id: string) => {
@@ -1101,22 +1227,33 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             <p className="text-sm font-medium text-gray-800 m-0">{doc.name}</p>
                             <p className="text-xs text-gray-500 m-0 mt-0.5">({getDocCategory(doc)})</p>
                           </div>
-                          <button
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditingDocId(null);
-                              setSubmitAttempted(false);
-                              setSearchDocument('');
-                              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
-                              setShowAddChange(true);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium flex-shrink-0"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Agregar cambio
-                          </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => openPasteModal(doc.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors text-xs font-medium"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-10 4h6m5 6H6a2 2 0 01-2-2V7a2 2 0 012-2h1m10 0h1a2 2 0 012 2v12a2 2 0 01-2 2z" />
+                              </svg>
+                              Pegar Excel
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditingDocId(null);
+                                setSubmitAttempted(false);
+                                setSearchDocument('');
+                                setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
+                                setShowAddChange(true);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Agregar cambio
+                            </button>
+                          </div>
                         </div>
 
                         {/* Tabla */}
@@ -1546,6 +1683,151 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   <button onClick={closeModal} className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium">Cancelar</button>
                   <button onClick={handleSubmit} className="flex-1 px-5 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-semibold">{editingId ? 'Guardar cambios' : 'Agregar cambio'}</button>
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal: Agregar unidad operativa */}
+      {pasteTargetDocId && (() => {
+        const targetDoc = documents.find((doc) => doc.id === pasteTargetDocId);
+        const parsedRows = parseExcelPaste(pasteRaw);
+        const validRows = parsedRows.filter((row) => row.isValid);
+        const invalidRows = parsedRows.filter((row) => !row.isValid);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={closePasteModal} />
+            <div className="relative bg-white rounded shadow-2xl w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-base m-0">Pegar cambios desde Excel</h4>
+                  <p className="text-xs text-gray-500 mt-0.5 m-0">
+                    Documento destino: <span className="font-medium text-gray-700">{targetDoc?.name ?? 'Documento no encontrado'}</span>
+                  </p>
+                </div>
+                <button onClick={closePasteModal} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-5">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <div className="text-xs text-blue-900">
+                        <p className="m-0 font-semibold">Formato esperado al pegar desde Excel</p>
+                        <p className="m-0 mt-1">Columnas: `Campo`, `Página`, `Versión anterior`, `Versión nueva`, `Justificación`.</p>
+                        <p className="m-0 mt-1">También se acepta 4 columnas si omites `Versión anterior`.</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Área de pegado</label>
+                      <textarea
+                        autoFocus
+                        value={pasteRaw}
+                        onChange={(e) => setPasteRaw(e.target.value)}
+                        placeholder={'Pega aquí las filas copiadas desde Excel con Ctrl+V'}
+                        rows={12}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                        <p className="text-[11px] uppercase tracking-wide text-gray-500 m-0">Filas detectadas</p>
+                        <p className="text-lg font-semibold text-gray-900 m-0 mt-1">{parsedRows.length}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                        <p className="text-[11px] uppercase tracking-wide text-green-700 m-0">Válidas</p>
+                        <p className="text-lg font-semibold text-gray-900 m-0 mt-1">{validRows.length}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                        <p className="text-[11px] uppercase tracking-wide text-red-700 m-0">Con error</p>
+                        <p className="text-lg font-semibold text-gray-900 m-0 mt-1">{invalidRows.length}</p>
+                      </div>
+                    </div>
+
+                    {invalidRows.length > 0 && (
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                        <p className="text-sm font-medium text-gray-700 m-0">Hay filas que no se pueden importar</p>
+                        <ul className="mt-2 mb-0 pl-4 text-xs text-gray-600">
+                          {invalidRows.slice(0, 5).map((row) => (
+                            <li key={row.rowNumber}>Fila {row.rowNumber}: {row.error}</li>
+                          ))}
+                        </ul>
+                        {invalidRows.length > 5 && <p className="text-xs text-gray-500 m-0 mt-2">Se muestran las primeras 5 filas con error.</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2 gap-3">
+                    <h5 className="text-sm font-semibold text-gray-800 m-0">Vista previa</h5>
+                    <p className="text-xs text-gray-500 m-0">Cada fila válida se creará como un cambio específico para este documento.</p>
+                  </div>
+                  <div className="border border-gray-200 rounded overflow-hidden">
+                    <div className="overflow-x-auto max-h-72">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr className="border-b border-gray-200">
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Fila</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Campo</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Página</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión anterior</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión nueva</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Justificación</th>
+                            <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {parsedRows.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="px-3 py-6 text-center text-gray-400 italic">Pega una tabla desde Excel para ver la vista previa.</td>
+                            </tr>
+                          ) : (
+                            parsedRows.map((row) => (
+                              <tr key={row.rowNumber} className="bg-white">
+                                <td className="px-3 py-2 text-gray-500">{row.rowNumber}</td>
+                                <td className="px-3 py-2 text-gray-800">{row.field || '—'}</td>
+                                <td className="px-3 py-2 text-gray-700">{row.pageNumber || '—'}</td>
+                                <td className="px-3 py-2 text-gray-500">{row.oldValue || '—'}</td>
+                                <td className="px-3 py-2 text-gray-700">{row.newValue || '—'}</td>
+                                <td className="px-3 py-2 text-gray-700">{row.justification || '—'}</td>
+                                <td className="px-3 py-2 text-gray-500">
+                                  {row.isValid ? (
+                                    <span>OK</span>
+                                  ) : (
+                                    <span>{row.error}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 px-6 py-4 border-t border-gray-200">
+                <button onClick={closePasteModal} className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium">
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleImportPastedChanges(pasteTargetDocId, parsedRows)}
+                  disabled={!targetDoc || parsedRows.length === 0 || invalidRows.length > 0}
+                  className="flex-1 px-5 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+                >
+                  Importar {validRows.length > 0 ? `${validRows.length} cambio(s)` : 'cambios'}
+                </button>
               </div>
             </div>
           </div>
