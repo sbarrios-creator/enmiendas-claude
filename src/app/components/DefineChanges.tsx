@@ -224,6 +224,29 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     });
   };
 
+  const closeInlineEdit = () => {
+    setInlineEditId(null);
+    setInlineEditDocId(null);
+  };
+
+  const saveInlineEdit = () => {
+    if (!inlineEditId || !inlineEditDocId) return false;
+    if (!inlineEditData.field || !inlineEditData.newValue || !inlineEditData.justification || !inlineEditData.pageNumber) return false;
+
+    const activeChange = changes.find((change) => change.id === inlineEditId);
+    if (!activeChange) return false;
+
+    updateChangeForSingleDocument(activeChange, inlineEditDocId, {
+      field: inlineEditData.field,
+      pageNumber: inlineEditData.pageNumber,
+      oldValue: inlineEditData.oldValue,
+      newValue: inlineEditData.newValue,
+      justification: inlineEditData.justification,
+    });
+    closeInlineEdit();
+    return true;
+  };
+
   useEffect(() => {
     if (!inlineEditId || !inlineEditDocId) return;
 
@@ -231,13 +254,20 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       const target = event.target as Node | null;
       if (!target) return;
       if (inlineEditRowRef.current?.contains(target)) return;
-      setInlineEditId(null);
-      setInlineEditDocId(null);
+      saveInlineEdit();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeInlineEdit();
     };
 
     document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [inlineEditDocId, inlineEditId]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [changes, inlineEditData, inlineEditDocId, inlineEditId]);
 
   const buildChangeForDoc = (
     source: Change,
@@ -1156,25 +1186,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                         {isInline ? (
                                           <>
                                             <button
-                                              onClick={() => {
-                                                if (!inlineEditData.field || !inlineEditData.newValue) return;
-                                                updateChangeForSingleDocument(change, doc.id, {
-                                                  field: inlineEditData.field,
-                                                  pageNumber: inlineEditData.pageNumber,
-                                                  oldValue: inlineEditData.oldValue,
-                                                  newValue: inlineEditData.newValue,
-                                                  justification: inlineEditData.justification,
-                                                });
-                                                setInlineEditId(null);
-                                                setInlineEditDocId(null);
-                                              }}
+                                              onClick={saveInlineEdit}
                                               className="w-6 h-6 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                               title="Guardar"
                                             >
                                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                             </button>
                                             <button
-                                              onClick={() => { setInlineEditId(null); setInlineEditDocId(null); }}
+                                              onClick={closeInlineEdit}
                                               className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
                                               title="Cancelar"
                                             >
