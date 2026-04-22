@@ -34,7 +34,6 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [inlineEditData, setInlineEditData] = useState<{ field: string; pageNumber: string; oldValue: string; newValue: string; justification: string }>({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' });
   const [inlineAddDocId, setInlineAddDocId] = useState<string | null>(null);
   const [inlineAddData, setInlineAddData] = useState({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: true, appliesTo: [] as string[] });
-  const [inlinePickerSearch, setInlinePickerSearch] = useState('');
   const [confirm, setConfirm] = useState<{
     isOpen: boolean; title: string; message: string;
     confirmLabel?: string; variant?: 'danger' | 'warning' | 'primary';
@@ -906,8 +905,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: true, appliesTo: selectedDocuments });
-                      setInlineAddDocId('__global__');
+                      setEditingId(null);
+                      setEditingDocId(null);
+                      setSubmitAttempted(false);
+                      setSearchDocument('');
+                      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
+                      setShowAddChange(true);
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
                   >
@@ -1100,8 +1103,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           </div>
                           <button
                             onClick={() => {
-                              setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: false, appliesTo: [doc.id] });
-                              setInlineAddDocId(doc.id);
+                              setEditingId(null);
+                              setEditingDocId(null);
+                              setSubmitAttempted(false);
+                              setSearchDocument('');
+                              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
+                              setShowAddChange(true);
                             }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium flex-shrink-0"
                           >
@@ -1203,7 +1210,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                         ) : (
                                           <>
                                             <button
-                                              onClick={() => startInlineEdit(change, doc.id)}
+                                              onClick={() => handleEditChange(change, doc.id)}
                                               className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
                                               title="Editar"
                                             >
