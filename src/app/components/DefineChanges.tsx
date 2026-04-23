@@ -27,8 +27,12 @@ interface ParsedPasteRow {
 
 const PASTE_HEADER_ALIASES = [
   'campo',
+  'cambio',
   'pagina',
   'página',
+  'n.pagina',
+  'n pagina',
+  'npagina',
   'version anterior',
   'versión anterior',
   'version nueva',
@@ -40,25 +44,115 @@ const PASTE_HEADER_ALIASES = [
 const normalizePasteCell = (value: string) =>
   value
     .toLowerCase()
+    .replace(/^\uFEFF/, '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
+const parseDelimitedLine = (line: string, delimiter: string) => {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  cells.push(current.trim());
+  return cells;
+};
+
+const detectDelimiter = (lines: string[]) => {
+  const candidates = ['\t', ';', ','];
+  let bestDelimiter = '\t';
+  let bestScore = -1;
+
+  candidates.forEach((candidate) => {
+    const score = lines
+      .slice(0, 5)
+      .reduce((total, line) => total + parseDelimitedLine(line, candidate).length, 0);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestDelimiter = candidate;
+    }
+  });
+
+  return bestDelimiter;
+};
+
+const trimOuterEmptyCells = (cells: string[]) => {
+  let start = 0;
+  let end = cells.length;
+
+  while (start < end && cells[start].trim() === '') start += 1;
+  while (end > start && cells[end - 1].trim() === '') end -= 1;
+
+  return cells.slice(start, end);
+};
+
+const countHeaderMatches = (cells: string[]) =>
+  cells
+    .map(normalizePasteCell)
+    .filter((cell) => PASTE_HEADER_ALIASES.includes(cell)).length;
+
+const looksLikeHeaderRow = (cells: string[], nextRow?: string[]) => {
+  if (cells.length < 4 || cells.length > 5) return false;
+
+  const normalized = cells.map(normalizePasteCell);
+  const aliasMatches = countHeaderMatches(cells);
+  if (aliasMatches >= Math.min(2, cells.length)) return true;
+
+  const hasOnlyShortLabels = cells.every((cell) => cell.length > 0 && cell.length <= 40);
+  const hasFewDigits = normalized.every((cell) => !/\d{2,}/.test(cell));
+  const nextRowHasExpectedWidth = !!nextRow && nextRow.length >= 4 && nextRow.length <= 5;
+
+  if (!hasOnlyShortLabels || !hasFewDigits || !nextRowHasExpectedWidth) return false;
+
+  const currentJoined = normalized.join(' ');
+  const nextJoined = nextRow.map(normalizePasteCell).join(' ');
+
+  return currentJoined !== nextJoined;
+};
+
 const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
-  const trimmed = raw.trim();
+  const trimmed = raw.replace(/^\uFEFF/, '').trim();
   if (!trimmed) return [];
 
-  const rows = trimmed
+  const lines = trimmed
     .split(/\r?\n/)
-    .map((line) => line.split('\t').map((cell) => cell.trim()))
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) return [];
+
+  const delimiter = detectDelimiter(lines);
+  const rows = lines
+    .map((line) => trimOuterEmptyCells(parseDelimitedLine(line, delimiter)))
     .filter((cells) => cells.some((cell) => cell.length > 0));
 
   if (rows.length === 0) return [];
 
-  const firstRow = rows[0].map(normalizePasteCell);
-  const looksLikeHeader =
-    firstRow.length >= 4 &&
-    firstRow.every((cell) => PASTE_HEADER_ALIASES.includes(cell));
+  const looksLikeHeader = looksLikeHeaderRow(rows[0], rows[1]);
 
   const dataRows = looksLikeHeader ? rows.slice(1) : rows;
 
@@ -121,6 +215,7 @@ const mockOperativeUnits = [
 
 export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -191,7 +286,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
   const [selectedUnitName, setSelectedUnitName] = useState('');
   const [pasteTargetDocId, setPasteTargetDocId] = useState<string | null>(null);
-  const [pasteRaw, setPasteRaw] = useState('');
+  const [pasteRaw] = useState('');
   // external modal
   const [extUnitName, setExtUnitName] = useState('');
   const [extHasCarta, setExtHasCarta] = useState<'SI' | 'NO'>('SI');
@@ -210,14 +305,74 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     setIsDraggingUnit(false);
   };
 
-  const openPasteModal = (docId: string) => {
+  const handleOpenCsvPicker = (docId: string) => {
     setPasteTargetDocId(docId);
-    setPasteRaw('');
+    if (csvInputRef.current) {
+      csvInputRef.current.value = '';
+      csvInputRef.current.click();
+    }
   };
 
   const closePasteModal = () => {
     setPasteTargetDocId(null);
-    setPasteRaw('');
+  };
+
+  const handleCsvSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!pasteTargetDocId) {
+      openConfirm({
+        title: 'No se pudo importar el CSV',
+        message: 'Seleccione primero el documento destino e intente nuevamente.',
+        confirmLabel: 'Entendido',
+        variant: 'warning',
+        onConfirm: closeConfirm,
+      });
+      return;
+    }
+
+    try {
+      const raw = await file.text();
+      const parsedRows = parseExcelPaste(raw);
+      const validRows = parsedRows.filter((row) => row.isValid);
+      const invalidRows = parsedRows.filter((row) => !row.isValid);
+
+      if (validRows.length === 0) {
+        openConfirm({
+          title: 'CSV sin filas procesables',
+          message: 'No se encontraron filas válidas para importar. Verifique el delimitador y el contenido del archivo.',
+          confirmLabel: 'Entendido',
+          variant: 'warning',
+          onConfirm: closeConfirm,
+        });
+        return;
+      }
+
+      handleImportPastedChanges(pasteTargetDocId, parsedRows);
+
+      openConfirm({
+        title: 'Importación completada',
+        message:
+          invalidRows.length > 0
+            ? `Se agregaron ${validRows.length} cambio(s) desde ${file.name}. ${invalidRows.length} fila(s) no se pudieron procesar.`
+            : `Se agregaron ${validRows.length} cambio(s) desde ${file.name}.`,
+        confirmLabel: 'Entendido',
+        variant: invalidRows.length > 0 ? 'warning' : 'primary',
+        onConfirm: closeConfirm,
+      });
+    } catch {
+      openConfirm({
+        title: 'No se pudo leer el archivo',
+        message: 'Hubo un problema al procesar el CSV seleccionado. Intente con otro archivo.',
+        confirmLabel: 'Entendido',
+        variant: 'warning',
+        onConfirm: closeConfirm,
+      });
+    } finally {
+      setPasteTargetDocId(null);
+      event.target.value = '';
+    }
   };
 
   const handleConfirmUnit = () => {
@@ -316,7 +471,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
   const handleImportPastedChanges = (docId: string, rows: ParsedPasteRow[]) => {
     const validRows = rows.filter((row) => row.isValid);
-    if (validRows.length === 0 || validRows.length !== rows.length) return;
+    if (validRows.length === 0) return;
 
     const nextChanges = validRows.map((row) => ({
       id: `${Date.now()}-${row.rowNumber}-${Math.random().toString(36).slice(2, 8)}`,
@@ -330,7 +485,6 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     }));
 
     onChangesUpdate([...changes, ...nextChanges]);
-    closePasteModal();
   };
 
   const handleRemoveChange = (id: string) => {
@@ -599,6 +753,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
   return (
     <div>
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={handleCsvSelected}
+      />
+
       <div className="mb-6">
         <h2 className="text-base font-semibold text-gray-900 mb-2">Redacción de cambio</h2>
         <p className="text-sm text-gray-600">
@@ -1229,13 +1391,13 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
-                              onClick={() => openPasteModal(doc.id)}
+                              onClick={() => handleOpenCsvPicker(doc.id)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors text-xs font-medium"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-10 4h6m5 6H6a2 2 0 01-2-2V7a2 2 0 012-2h1m10 0h1a2 2 0 012 2v12a2 2 0 01-2 2z" />
                               </svg>
-                              Pegar Excel
+                              Importar CSV
                             </button>
                             <button
                               onClick={() => {
@@ -1690,7 +1852,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       })()}
 
       {/* Modal: Agregar unidad operativa */}
-      {pasteTargetDocId && (() => {
+      {false && pasteTargetDocId && (() => {
         const targetDoc = documents.find((doc) => doc.id === pasteTargetDocId);
         const parsedRows = parseExcelPaste(pasteRaw);
         const validRows = parsedRows.filter((row) => row.isValid);
@@ -1702,7 +1864,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             <div className="relative bg-white rounded shadow-2xl w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-base m-0">Pegar cambios desde Excel</h4>
+                  <h4 className="font-semibold text-gray-900 text-base m-0">Importar cambios desde CSV</h4>
                   <p className="text-xs text-gray-500 mt-0.5 m-0">
                     Documento destino: <span className="font-medium text-gray-700">{targetDoc?.name ?? 'Documento no encontrado'}</span>
                   </p>
@@ -1718,7 +1880,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded">
                       <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <div className="text-xs text-blue-900">
-                        <p className="m-0 font-semibold">Formato esperado al pegar desde Excel</p>
+                        <p className="m-0 font-semibold">Archivo cargado y procesado internamente</p>
                         <p className="m-0 mt-1">Columnas: `Campo`, `Página`, `Versión anterior`, `Versión nueva`, `Justificación`.</p>
                         <p className="m-0 mt-1">También se acepta 4 columnas si omites `Versión anterior`.</p>
                       </div>
