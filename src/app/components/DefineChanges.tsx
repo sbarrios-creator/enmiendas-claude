@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import type { Change, Document, Step3Data, ResearcherChange, OperativeUnit } from '../types';
 import { baseDocuments } from '../data/documents';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -25,7 +26,7 @@ interface ParsedPasteRow {
   error?: string;
 }
 
-const PASTE_HEADER_ALIASES = [
+const LEGACY_PASTE_HEADER_ALIASES = [
   'campo',
   'cambio',
   'pagina',
@@ -40,6 +41,16 @@ const PASTE_HEADER_ALIASES = [
   'justificacion',
   'justificación',
 ];
+
+const HEADER_ALIASES = {
+  field: ['campo', 'cambio', 'campo modificado', 'campo a modificar'],
+  pageNumber: ['pagina', 'página', 'n.pagina', 'n pagina', 'npagina', 'nro pagina', 'nro. pagina', 'numero de pagina', 'numero pagina'],
+  oldValue: ['version anterior', 'versión anterior', 'valor anterior', 'texto anterior', 'valor actual', 'texto actual', 'version actual', 'contenido actual', 'texto vigente', 'valor vigente', 'anterior'],
+  newValue: ['version nueva', 'versión nueva', 'valor nuevo', 'texto nuevo', 'nuevo texto'],
+  justification: ['justificacion', 'justificación', 'sustento', 'motivo', 'observacion', 'observación'],
+} as const;
+
+const PASTE_HEADER_ALIASES = Object.values(HEADER_ALIASES).flat();
 
 const normalizePasteCell = (value: string) =>
   value
@@ -115,8 +126,43 @@ const countHeaderMatches = (cells: string[]) =>
     .map(normalizePasteCell)
     .filter((cell) => PASTE_HEADER_ALIASES.includes(cell)).length;
 
+const headerMatchesAlias = (cell: string, alias: string) => {
+  const normalizedCell = normalizePasteCell(cell);
+  const normalizedAlias = normalizePasteCell(alias);
+  return (
+    normalizedCell === normalizedAlias ||
+    normalizedCell.includes(normalizedAlias) ||
+    normalizedAlias.includes(normalizedCell)
+  );
+};
+
+const findHeaderIndex = (
+  headerCells: string[],
+  aliases: readonly string[],
+) => headerCells.findIndex((cell) => aliases.some((alias) => headerMatchesAlias(cell, alias)));
+
+const extractRowByHeader = (
+  headerCells: string[],
+  cells: string[],
+) => {
+  const fieldIndex = findHeaderIndex(headerCells, HEADER_ALIASES.field);
+  const pageIndex = findHeaderIndex(headerCells, HEADER_ALIASES.pageNumber);
+  const oldValueIndex = findHeaderIndex(headerCells, HEADER_ALIASES.oldValue);
+  const newValueIndex = findHeaderIndex(headerCells, HEADER_ALIASES.newValue);
+  const justificationIndex = findHeaderIndex(headerCells, HEADER_ALIASES.justification);
+
+  return {
+    field: fieldIndex >= 0 ? cells[fieldIndex] ?? '' : '',
+    pageNumber: pageIndex >= 0 ? cells[pageIndex] ?? '' : '',
+    oldValue: oldValueIndex >= 0 ? cells[oldValueIndex] ?? '' : '',
+    newValue: newValueIndex >= 0 ? cells[newValueIndex] ?? '' : '',
+    justification: justificationIndex >= 0 ? cells[justificationIndex] ?? '' : '',
+    hasRequiredHeaders: fieldIndex >= 0 && pageIndex >= 0 && newValueIndex >= 0 && justificationIndex >= 0,
+  };
+};
+
 const looksLikeHeaderRow = (cells: string[], nextRow?: string[]) => {
-  if (cells.length < 4 || cells.length > 5) return false;
+  if (cells.length < 4) return false;
 
   const normalized = cells.map(normalizePasteCell);
   const aliasMatches = countHeaderMatches(cells);
@@ -124,7 +170,7 @@ const looksLikeHeaderRow = (cells: string[], nextRow?: string[]) => {
 
   const hasOnlyShortLabels = cells.every((cell) => cell.length > 0 && cell.length <= 40);
   const hasFewDigits = normalized.every((cell) => !/\d{2,}/.test(cell));
-  const nextRowHasExpectedWidth = !!nextRow && nextRow.length >= 4 && nextRow.length <= 5;
+  const nextRowHasExpectedWidth = !!nextRow && nextRow.length >= 4;
 
   if (!hasOnlyShortLabels || !hasFewDigits || !nextRowHasExpectedWidth) return false;
 
@@ -134,49 +180,82 @@ const looksLikeHeaderRow = (cells: string[], nextRow?: string[]) => {
   return currentJoined !== nextJoined;
 };
 
-const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
-  const trimmed = raw.replace(/^\uFEFF/, '').trim();
-  if (!trimmed) return [];
+const normalizeSpreadsheetCell = (value: unknown) => {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+};
 
-  const lines = trimmed
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  if (lines.length === 0) return [];
-
-  const delimiter = detectDelimiter(lines);
-  const rows = lines
-    .map((line) => trimOuterEmptyCells(parseDelimitedLine(line, delimiter)))
+const parseSpreadsheetRows = (rows: unknown[][]): ParsedPasteRow[] => {
+  const normalizedRows = rows
+    .map((row) => trimOuterEmptyCells((row ?? []).map(normalizeSpreadsheetCell)))
     .filter((cells) => cells.some((cell) => cell.length > 0));
 
-  if (rows.length === 0) return [];
+  if (normalizedRows.length === 0) return [];
 
-  const looksLikeHeader = looksLikeHeaderRow(rows[0], rows[1]);
+  const looksLikeHeader = looksLikeHeaderRow(normalizedRows[0], normalizedRows[1]);
+  const headerCells = looksLikeHeader ? normalizedRows[0] : null;
 
-  const dataRows = looksLikeHeader ? rows.slice(1) : rows;
+  const dataRows = looksLikeHeader ? normalizedRows.slice(1) : normalizedRows;
 
   return dataRows.map((cells, index) => {
     const rowNumber = index + 1 + (looksLikeHeader ? 1 : 0);
+    let field = '';
+    let pageNumber = '';
+    let oldValue = '';
+    let newValue = '';
+    let justification = '';
 
-    if (cells.length < 4 || cells.length > 5) {
-      return {
-        rowNumber,
-        field: cells[0] ?? '',
-        pageNumber: cells[1] ?? '',
-        oldValue: '',
-        newValue: cells[2] ?? '',
-        justification: cells[3] ?? '',
-        isValid: false,
-        error: 'La fila debe tener 4 o 5 columnas.',
-      };
+    if (headerCells) {
+      const extracted = extractRowByHeader(headerCells, cells);
+
+      if (!extracted.hasRequiredHeaders) {
+        return {
+          rowNumber,
+          field: '',
+          pageNumber: '',
+          oldValue: '',
+          newValue: '',
+          justification: '',
+          isValid: false,
+          error: 'No se encontraron los encabezados requeridos en el Excel.',
+        };
+      }
+
+      field = extracted.field;
+      pageNumber = extracted.pageNumber;
+      oldValue = extracted.oldValue;
+      newValue = extracted.newValue;
+      justification = extracted.justification;
+    } else {
+      if (cells.length < 4) {
+        return {
+          rowNumber,
+          field: cells[0] ?? '',
+          pageNumber: cells[1] ?? '',
+          oldValue: '',
+          newValue: cells[2] ?? '',
+          justification: cells[3] ?? '',
+          isValid: false,
+          error: 'La fila debe tener al menos 4 columnas.',
+        };
+      }
+
+      const [first, second, third, fourth, fifth] = cells;
+
+      if (cells.length === 4) {
+        pageNumber = first ?? '';
+        oldValue = second ?? '';
+        newValue = third ?? '';
+        justification = fourth ?? '';
+        field = pageNumber ? `Cambio importado (página ${pageNumber})` : 'Cambio importado';
+      } else {
+        field = first ?? '';
+        pageNumber = second ?? '';
+        oldValue = third ?? '';
+        newValue = fourth ?? '';
+        justification = fifth ?? '';
+      }
     }
-
-    const [field, pageNumber, third, fourth, fifth] = cells;
-    const hasOldValue = cells.length === 5;
-    const oldValue = hasOldValue ? third : '';
-    const newValue = hasOldValue ? fourth : third;
-    const justification = hasOldValue ? fifth ?? '' : fourth ?? '';
 
     if (!field || !pageNumber || !newValue || !justification) {
       return {
@@ -201,6 +280,25 @@ const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
       isValid: true,
     };
   });
+};
+
+const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
+  const trimmed = raw.replace(/^\uFEFF/, '').trim();
+  if (!trimmed) return [];
+
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) return [];
+
+  const delimiter = detectDelimiter(lines);
+  const rows = lines
+    .map((line) => trimOuterEmptyCells(parseDelimitedLine(line, delimiter)))
+    .filter((cells) => cells.some((cell) => cell.length > 0));
+
+  return parseSpreadsheetRows(rows);
 };
 
 
@@ -321,9 +419,12 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const fileName = file.name.toLowerCase();
+    const isExcelFile = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
     if (!pasteTargetDocId) {
       openConfirm({
-        title: 'No se pudo importar el CSV',
+        title: 'No se pudo importar el Excel',
         message: 'Seleccione primero el documento destino e intente nuevamente.',
         confirmLabel: 'Entendido',
         variant: 'warning',
@@ -332,9 +433,27 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       return;
     }
 
+    if (!isExcelFile) {
+      openConfirm({
+        title: 'Formato no permitido',
+        message: 'El boton Importar Excel solo acepta archivos .xlsx o .xls.',
+        confirmLabel: 'Entendido',
+        variant: 'warning',
+        onConfirm: closeConfirm,
+      });
+      event.target.value = '';
+      return;
+    }
+
     try {
-      const raw = await file.text();
-      const parsedRows = parseExcelPaste(raw);
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
+      const rows = firstSheet
+        ? (XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' }) as unknown[][])
+        : [];
+      const parsedRows = parseSpreadsheetRows(rows);
       const validRows = parsedRows.filter((row) => row.isValid);
       const invalidRows = parsedRows.filter((row) => !row.isValid);
 
@@ -364,7 +483,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     } catch {
       openConfirm({
         title: 'No se pudo leer el archivo',
-        message: 'Hubo un problema al procesar el CSV seleccionado. Intente con otro archivo.',
+        message: 'Hubo un problema al procesar el archivo seleccionado. Use exclusivamente archivos .xlsx o .xls.',
         confirmLabel: 'Entendido',
         variant: 'warning',
         onConfirm: closeConfirm,
@@ -756,7 +875,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       <input
         ref={csvInputRef}
         type="file"
-        accept=".csv,text/csv"
+        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
         className="hidden"
         onChange={handleCsvSelected}
       />
@@ -1397,7 +1516,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-10 4h6m5 6H6a2 2 0 01-2-2V7a2 2 0 012-2h1m10 0h1a2 2 0 012 2v12a2 2 0 01-2 2z" />
                               </svg>
-                              Importar CSV
+                              Importar Excel
                             </button>
                             <button
                               onClick={() => {
@@ -1881,8 +2000,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <div className="text-xs text-blue-900">
                         <p className="m-0 font-semibold">Archivo cargado y procesado internamente</p>
-                        <p className="m-0 mt-1">Columnas: `Campo`, `Página`, `Versión anterior`, `Versión nueva`, `Justificación`.</p>
-                        <p className="m-0 mt-1">También se acepta 4 columnas si omites `Versión anterior`.</p>
+                        <p className="m-0 mt-1">Con encabezados: `Campo`, `Página`, `Versión anterior`, `Versión nueva`, `Justificación`.</p>
+                        <p className="m-0 mt-1">Sin encabezados también se acepta 4 columnas en este orden: `Página`, `Versión anterior`, `Versión nueva`, `Justificación`.</p>
                       </div>
                     </div>
 
