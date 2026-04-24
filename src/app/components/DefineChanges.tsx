@@ -1401,12 +1401,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             </button>
                             <button
                               onClick={() => {
-                                setEditingId(null);
-                                setEditingDocId(null);
-                                setSubmitAttempted(false);
-                                setSearchDocument('');
-                                setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
-                                setShowAddChange(true);
+                                setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: false, appliesTo: [doc.id] });
+                                setInlineAddDocId(doc.id);
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
                             >
@@ -1562,7 +1558,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               )}
                               {/* Fila de alcance (Global / Específico) */}
                               {inlineAddDocId === doc.id && (
-                                <tr className="bg-red-50/30">
+                                <tr className="bg-red-50/30 hidden">
                                   <td colSpan={5} className="px-3 py-2 border-t border-red-100">
                                     <div className="flex items-start gap-3">
                                       <span className="text-[10px] text-gray-500 font-medium mt-1 shrink-0">Alcance:</span>
