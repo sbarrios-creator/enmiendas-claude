@@ -36,7 +36,7 @@ export function WizardSteps({ currentStep }: WizardStepsProps) {
               <p className={`m-0 ${step.number === currentStep ? 'text-[#C41E3A]' : 'text-gray-700'}`}>
                 {step.title}
               </p>
-              <p className="text-sm text-gray-500 m-0">{step.description}</p>
+              {/*<p className="text-sm text-gray-500 m-0">{step.description}</p>*/}
             </div>
           </div>
           {index < steps.length - 1 && (

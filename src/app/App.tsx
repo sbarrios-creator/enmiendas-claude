@@ -74,16 +74,16 @@ export default function App() {
                 Salir
               </button>
             </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 border border-amber-300 rounded">
+           {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 border border-amber-300 rounded">
               <span className="text-amber-800">Observaciones</span>
               <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-sm">0</span>
-            </div>
+            </div>*/}
           </div>
 
           <WizardSteps currentStep={currentStep} />
         </div>
 
-        <div className={currentStep === 1 ? 'max-w-screen-2xl mx-auto px-6 pb-6 w-full' : 'w-full px-6 pb-6'}>
+        <div className="max-w-screen-2xl mx-auto px-6 pb-6 w-full">
           <div className={`bg-white shadow-sm border border-gray-200 mt-6 rounded-lg p-8`}>
             {currentStep === 1 && (
               <SelectDocuments

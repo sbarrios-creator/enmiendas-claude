@@ -47,7 +47,7 @@ export function SelectDocuments({
   });
 
   // ✅ Estado para el tab activo
-  const [activeTab, setActiveTab] = useState<string>("Todos");
+  const [activeTab, setActiveTab] = useState<string>("Presupuesto del estudio");
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -178,7 +178,7 @@ export function SelectDocuments({
 
   // ✅ Secciones filtradas según el tab activo
   const visibleSections =
-    activeTab === "Todos"
+    activeTab === "Resumen"
       ? sections.filter((s) => s.documents.length > 0)
       : sections.filter(
           (s) => s.title === activeTab && s.documents.length > 0,
@@ -189,77 +189,35 @@ export function SelectDocuments({
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 m-0">
-            Documentos aprobados y vigentes de la investigación
-          </h3>
-          <button
-            onClick={handleSelectAll}
-            className="flex items-center gap-2 px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>
-              {documents.every((doc) =>
-                selectedDocuments.includes(doc.id),
-              )
-                ? "Deseleccionar todos"
-                : "Seleccionar todos"}
-            </span>
-          </button>
-        </div>
-        <p className="text-sm text-gray-600 m-0">
-          A continuación, se enlistan los documentos aprobados y
-          vigentes de su investigación. Seleccione los
-          documentos que desea enmendar. Tenga en cuenta que si
-          su enmienda incluye cambios en el presupuesto o
-          instrumento(s), debe seleccionar también el proyecto
-          de investigación.
-        </p>
-      </div>
-
-      {/* Info box */}
-      <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded">
-        <p className="text-sm text-gray-700 m-0">
-          En caso tenga dudas o problemas con el uso de la
-          plataforma SIDISI, puede comunicarse al correo{" "}
-          <a
-            href="mailto:sidisi@oficinas-upch.pe"
-            className="text-[#C41E3A] hover:underline"
-          >
-            sidisi@oficinas-upch.pe
-          </a>
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-900 m-0">
+          Documentos aprobados y vigentes de la investigación
+        </h3>
+        <button
+          onClick={handleSelectAll}
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{documents.every((doc) => selectedDocuments.includes(doc.id)) ? "Deseleccionar todos" : "Seleccionar todos"}</span>
+        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-3">
+      <div className="flex flex-wrap gap-0 mb-4 border-b border-gray-200">
         <button
-          onClick={() => setActiveTab("Todos")}
-          className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[13px] ${
-            activeTab === "Todos"
-              ? "border-[#C41E3A] text-[#C41E3A] bg-white"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          onClick={() => setActiveTab("Resumen")}
+          className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+            activeTab === "Resumen"
+              ? "border-rose-400 text-rose-600 bg-white"
+              : "border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
-          Todos
-          {totalSelected > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
-              {totalSelected}
-            </span>
-          )}
+          Resumen
+          <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${totalSelected > 0 ? 'bg-rose-50 text-rose-500' : 'bg-gray-100 text-gray-400'}`}>
+            {totalSelected}/{documents.length}
+          </span>
         </button>
         {sections
           .filter((s) => s.documents.length > 0)
@@ -271,15 +229,15 @@ export function SelectDocuments({
               <button
                 key={section.title}
                 onClick={() => setActiveTab(section.title)}
-                className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[13px] ${
+                className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
                   activeTab === section.title
-                    ? "border-[#C41E3A] text-[#C41E3A] bg-white"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-rose-400 text-rose-600 bg-white"
+                    : "border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300"
                 }`}
               >
                 {section.title}
                 {sectionSelected > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                  <span className="ml-2 px-1.5 py-0.5 bg-rose-50 text-rose-500 rounded text-xs font-semibold">
                     {sectionSelected}
                   </span>
                 )}
@@ -288,9 +246,52 @@ export function SelectDocuments({
           })}
       </div>
 
+      {/* Tab "Todos": resumen por categoría */}
+      {activeTab === "Resumen" && (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {sections.filter((s) => s.documents.length > 0).map((section) => {
+            const selected = section.documents.filter((d) => selectedDocuments.includes(d.id));
+            const total = section.documents.length;
+            const allSel = selected.length === total;
+            return (
+              <div
+                key={section.title}
+                className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-rose-300 hover:bg-rose-50/30 transition-colors"
+                onClick={() => setActiveTab(section.title)}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">{section.title}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${selected.length > 0 ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-400'}`}>
+                    {selected.length}/{total}
+                  </span>
+                </div>
+                {selected.length > 0 ? (
+                  <ul className="space-y-0.5">
+                    {selected.slice(0, 3).map((d) => (
+                      <li key={d.id} className="text-xs text-gray-500 flex items-center gap-1 truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                        {d.name}
+                      </li>
+                    ))}
+                    {selected.length > 3 && (
+                      <li className="text-xs text-rose-500 font-medium">+{selected.length - 3} más</li>
+                    )}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-400 italic m-0">Sin selección — clic para explorar</p>
+                )}
+                {allSel && selected.length > 0 && (
+                  <p className="text-xs text-rose-500 font-medium mt-1 m-0">✓ Todos seleccionados</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Document Sections filtradas por tab */}
-      <div className="space-y-6">
-        {visibleSections.map((section) => {
+      <div className="space-y-4">
+        {activeTab !== "Resumen" && visibleSections.map((section) => {
           const isNuevos =
             section.title === "Documentos Nuevos";
           const showSearch = section.documents.length > 10;
@@ -409,20 +410,19 @@ export function SelectDocuments({
                   }
                 >
                   <table className="w-full">
-                    <thead className="bg-gray-900 sticky top-0 z-10">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         {!isNuevos && (
-                          <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide w-32">
-                            REEMPLAZAR
+                          <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold uppercase tracking-wide w-10">
                           </th>
                         )}
-                        <th className="px-4 py-3 text-left text-white text-xs font-medium uppercase tracking-wide">
+                        <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold uppercase tracking-wide">
                           ARCHIVO
                         </th>
-                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-28">
+                        <th className="px-3 py-2 text-center text-gray-500 text-xs font-semibold uppercase tracking-wide w-20">
                           VERSIÓN
                         </th>
-                        <th className="px-4 py-3 text-center text-white text-xs font-medium uppercase tracking-wide w-40">
+                        <th className="px-3 py-2 text-center text-gray-500 text-xs font-semibold uppercase tracking-wide w-20">
                           ACCIONES
                         </th>
                       </tr>
@@ -434,85 +434,43 @@ export function SelectDocuments({
                         return (
                           <tr
                             key={doc.id}
-                            className={`${index % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-gray-100 transition-colors`}
+                            onClick={() => !isNuevos && handleToggleDocument(doc.id)}
+                            className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} ${!isNuevos ? "hover:bg-rose-50/40 cursor-pointer" : ""} transition-colors`}
                           >
                             {!isNuevos && (
-                              <td className="px-4 py-3 border-t border-gray-200">
+                              <td className="px-3 py-1.5 border-t border-gray-100">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={() =>
-                                    handleToggleDocument(doc.id)
-                                  }
-                                  className="w-4 h-4 text-[#C41E3A] rounded cursor-pointer"
+                                  onChange={() => handleToggleDocument(doc.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
                                 />
                               </td>
                             )}
-                            <td className="px-4 py-3 border-t border-gray-200">
-                              <span className="text-gray-700 text-sm">
+                            <td className="px-3 py-1.5 border-t border-gray-100">
+                              <span className={`text-sm ${isSelected ? "text-gray-900 font-medium" : "text-gray-600"}`}>
                                 {doc.name}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center border-t border-gray-200">
-                              <span className="text-gray-700 text-sm">
-                                {doc.version}
-                              </span>
+                            <td className="px-3 py-1.5 text-center border-t border-gray-100">
+                              <span className="text-gray-500 text-xs">{doc.version}</span>
                             </td>
-                            <td className="px-4 py-3 text-center border-t border-gray-200">
-                              <div className="flex gap-2 justify-center">
+                            <td className="px-3 py-1.5 text-center border-t border-gray-100">
+                              <div className="flex gap-1.5 justify-center">
                                 <button
-                                  onClick={() =>
-                                    openConfirm({
-                                      title:
-                                        "Eliminar documento",
-                                      message: `¿Desea eliminar "${doc.name}"? Esta acción no se puede deshacer.`,
-                                      confirmLabel: "Eliminar",
-                                      variant: "danger",
-                                      onConfirm: () => {
-                                        onNewDocumentsChange(
-                                          newDocuments.filter(
-                                            (d) =>
-                                              d.id !== doc.id,
-                                          ),
-                                        );
-                                        closeConfirm();
-                                      },
-                                    })
-                                  }
+                                  onClick={(e) => { e.stopPropagation(); openConfirm({ title: "Eliminar documento", message: `¿Desea eliminar "${doc.name}"? Esta acción no se puede deshacer.`, confirmLabel: "Eliminar", variant: "danger", onConfirm: () => { onNewDocumentsChange(newDocuments.filter((d) => d.id !== doc.id)); closeConfirm(); } }); }}
                                   className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
                                   title="Eliminar"
                                 >
-                                  <svg
-                                    className="w-3 h-3"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
                                 <button
-                                  className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                                   title="Descargar"
                                 >
-                                  <svg
-                                    className="w-3 h-3"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                    />
-                                  </svg>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 </button>
                               </div>
                             </td>
@@ -532,54 +490,38 @@ export function SelectDocuments({
             </div>
           );
         })}
-      </div>
+        </div>
 
       {/* Selection Summary */}
       {selectedDocuments.length > 0 && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+              <svg className="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-blue-900">
-                <span className="font-medium">
-                  {selectedDocuments.length}
-                </span>{" "}
-                {selectedDocuments.length === 1
-                  ? "documento seleccionado"
-                  : "documentos seleccionados"}{" "}
-                para enmendar
+              <span className="text-sm text-gray-900 font-medium">
+                {selectedDocuments.length} {selectedDocuments.length === 1 ? "documento seleccionado" : "documentos seleccionados"}
               </span>
             </div>
             <button
-              onClick={() =>
-                openConfirm({
-                  title: "Limpiar selección",
-                  message:
-                    "¿Desea deseleccionar todos los documentos?",
-                  confirmLabel: "Limpiar",
-                  variant: "warning",
-                  onConfirm: () => {
-                    onSelectDocuments([]);
-                    closeConfirm();
-                  },
-                })
-              }
-              className="text-sm text-blue-700 hover:text-blue-900 underline"
+              onClick={() => openConfirm({ title: "Limpiar selección", message: "¿Desea deseleccionar todos los documentos?", confirmLabel: "Limpiar", variant: "warning", onConfirm: () => { onSelectDocuments([]); closeConfirm(); } })}
+              className="text-xs text-rose-500 hover:text-rose-700 underline"
             >
               Limpiar selección
             </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sections.filter((s) => s.documents.some((d) => selectedDocuments.includes(d.id))).map((section) => {
+              const count = section.documents.filter((d) => selectedDocuments.includes(d.id)).length;
+              const total = section.documents.length;
+              return (
+                <span key={section.title} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-rose-200 rounded text-xs text-gray-600">
+                  <span className="font-medium text-rose-600">{count}/{total}</span>
+                  {section.title}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}

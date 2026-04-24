@@ -331,6 +331,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
   const [searchDocument, setSearchDocument] = useState('');
   const [docPages, setDocPages] = useState<Record<string, number>>({});
+  const [openCards, setOpenCards] = useState({ card1: true, card2: true, card3: true, card4: true });
+  const toggleCard = (card: keyof typeof openCards) => setOpenCards((p) => ({ ...p, [card]: !p[card] }));
   const [docPickerSearch, setDocPickerSearch] = useState('');
   // ✅ CAMBIADO: categoryFilter ahora usa "Todos" como valor por defecto
   const [categoryFilter, setCategoryFilter] = useState('Todos');
@@ -891,38 +893,33 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       <div className="mb-6 space-y-4">
         {/* Card 1: Título y Resumen */}
         <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <div
+            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
+            onClick={() => toggleCard('card1')}
+          >
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-gray-900 m-0">Título y Resumen</h3>
-                <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará el título o resumen del estudio?</p>
+              <div className="flex items-center gap-3 flex-1">
+                <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card1 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 m-0">Título y Resumen</h3>
+                  {!openCards.card1 && (
+                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesTitleOrSummary === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesTitleOrSummary === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
+                      {modifiesTitleOrSummary ?? 'Sin responder'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setModifiesTitleOrSummary('NO')}
-                  className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                    modifiesTitleOrSummary === 'NO'
-                      ? 'bg-[#C41E3A] text-white'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  NO
-                </button>
-                <button
-                  onClick={() => setModifiesTitleOrSummary('SI')}
-                  className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                    modifiesTitleOrSummary === 'SI'
-                      ? 'bg-[#C41E3A] text-white'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  SÍ
-                </button>
-              </div>
+              {openCards.card1 && (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará el título o resumen del estudio?</p>
+                  <button onClick={() => setModifiesTitleOrSummary('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesTitleOrSummary === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
+                  <button onClick={() => setModifiesTitleOrSummary('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesTitleOrSummary === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
+                </div>
+              )}
             </div>
           </div>
 
-          {modifiesTitleOrSummary === 'SI' && (
+          {openCards.card1 && modifiesTitleOrSummary === 'SI' && (
             <div className="p-4 space-y-4">
               <div>
                 <label className="block mb-2 text-sm font-semibold text-gray-700">Nuevo título</label>
@@ -950,38 +947,33 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
         {/* Card 2: Unidades Operativas */}
         <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900 m-0">Unidades Operativas</h3>
-              <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará las unidades operativas del estudio?</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setModifiesOperativeUnits('NO')}
-                className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                  modifiesOperativeUnits === 'NO'
-                    ? 'bg-[#C41E3A] text-white'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                NO
-              </button>
-              <button
-                onClick={() => setModifiesOperativeUnits('SI')}
-                className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                  modifiesOperativeUnits === 'SI'
-                    ? 'bg-[#C41E3A] text-white'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                SÍ
-              </button>
+          <div
+            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
+            onClick={() => toggleCard('card2')}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1">
+                <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card2 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 m-0">Unidades Operativas</h3>
+                  {!openCards.card2 && (
+                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesOperativeUnits === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesOperativeUnits === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
+                      {modifiesOperativeUnits ?? 'Sin responder'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {openCards.card2 && (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará las unidades operativas del estudio?</p>
+                  <button onClick={() => setModifiesOperativeUnits('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesOperativeUnits === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
+                  <button onClick={() => setModifiesOperativeUnits('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesOperativeUnits === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {modifiesOperativeUnits === 'SI' && (
+        {openCards.card2 && modifiesOperativeUnits === 'SI' && (
           <div className="p-4 space-y-5">
             <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
               <p className="text-sm text-[#C41E3A] m-0">
@@ -1136,38 +1128,33 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
         {/* Card 3: Investigadores */}
         <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <div
+            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
+            onClick={() => toggleCard('card3')}
+          >
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900 m-0">Equipo de Investigación</h3>
-              <p className="text-sm text-gray-600 m-0 mt-1">¿Modificará investigadores, tesistas, asesores o coasesores?</p>
+            <div className="flex items-center gap-3 flex-1">
+              <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card3 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-gray-900 m-0">Equipo de Investigación</h3>
+                {!openCards.card3 && (
+                  <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesResearchers === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesResearchers === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
+                    {modifiesResearchers ?? 'Sin responder'}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setModifiesResearchers('NO')}
-                className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                  modifiesResearchers === 'NO'
-                    ? 'bg-[#C41E3A] text-white'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                NO
-              </button>
-              <button
-                onClick={() => setModifiesResearchers('SI')}
-                className={`px-6 py-2 rounded text-sm font-medium transition-all ${
-                  modifiesResearchers === 'SI'
-                    ? 'bg-[#C41E3A] text-white'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                SÍ
-              </button>
-            </div>
+            {openCards.card3 && (
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará investigadores, tesistas, asesores o coasesores?</p>
+                <button onClick={() => setModifiesResearchers('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesResearchers === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
+                <button onClick={() => setModifiesResearchers('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesResearchers === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
+              </div>
+            )}
           </div>
         </div>
 
-        {modifiesResearchers === 'SI' && (
+        {openCards.card3 && modifiesResearchers === 'SI' && (
           <div className="p-4 space-y-4">
             <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
               <p className="text-sm text-[#C41E3A] m-0">
@@ -1294,12 +1281,24 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
         {/* Card 4: Otros Cambios en Documentos */}
         <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="bg-[#C41E3A] px-4 py-3">
-            <h3 className="text-base font-normal text-white m-0">Otros Cambios en Documentos</h3>
-            <p className="text-sm text-white/80 m-0 mt-1">Seleccione un instrumento y defina el campo que desea modificar</p>
+          <div
+            className="bg-[#C41E3A] px-4 py-3 cursor-pointer select-none"
+            onClick={() => toggleCard('card4')}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg className={`w-4 h-4 text-white/70 transition-transform shrink-0 ${openCards.card4 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <div>
+                  <h3 className="text-base font-normal text-white m-0">Otros Cambios en Documentos</h3>
+                  {!openCards.card4 && changes.length > 0 && (
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded">{changes.length} cambio{changes.length !== 1 ? 's' : ''} registrado{changes.length !== 1 ? 's' : ''}</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="p-4 space-y-5">
+          {openCards.card4 && <div className="p-4 space-y-5">
             <div>
               {/* Header con botones Agregar y Exportar */}
               <div className="flex items-center justify-between mb-4 gap-3">
@@ -1795,7 +1794,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 </div>
               )}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 
