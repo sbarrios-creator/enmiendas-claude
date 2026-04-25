@@ -205,17 +205,23 @@ export function SelectDocuments({
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-0 mb-4 border-b border-gray-200">
+      <div className="flex flex-wrap gap-1 mb-4">
         <button
           onClick={() => setActiveTab("Resumen")}
-          className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
             activeTab === "Resumen"
-              ? "border-rose-400 text-rose-600 bg-white"
-              : "border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300"
+              ? "bg-[#C41E3A] text-white"
+              : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
           Resumen
-          <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${totalSelected > 0 ? 'bg-rose-50 text-rose-500' : 'bg-gray-100 text-gray-400'}`}>
+          <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${
+            activeTab === "Resumen"
+              ? "bg-white/20 text-white"
+              : totalSelected > 0
+                ? "bg-[#C41E3A]/10 text-[#C41E3A]"
+                : "bg-gray-100 text-gray-400"
+          }`}>
             {totalSelected}/{documents.length}
           </span>
         </button>
@@ -225,19 +231,24 @@ export function SelectDocuments({
             const sectionSelected = section.documents.filter(
               (d) => selectedDocuments.includes(d.id),
             ).length;
+            const isActive = activeTab === section.title;
             return (
               <button
                 key={section.title}
                 onClick={() => setActiveTab(section.title)}
-                className={`px-4 py-2 rounded-t text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
-                  activeTab === section.title
-                    ? "border-rose-400 text-rose-600 bg-white"
-                    : "border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300"
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-[#C41E3A] text-white"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {section.title}
                 {sectionSelected > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-rose-50 text-rose-500 rounded text-xs font-semibold">
+                  <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-[#C41E3A]/10 text-[#C41E3A]"
+                  }`}>
                     {sectionSelected}
                   </span>
                 )}
@@ -256,12 +267,12 @@ export function SelectDocuments({
             return (
               <div
                 key={section.title}
-                className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-rose-300 hover:bg-rose-50/30 transition-colors"
+                className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#C41E3A]/30 hover:bg-[#C41E3A]/5 transition-colors"
                 onClick={() => setActiveTab(section.title)}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">{section.title}</span>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${selected.length > 0 ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${selected.length > 0 ? 'bg-[#C41E3A]/10 text-[#C41E3A]' : 'bg-gray-100 text-gray-400'}`}>
                     {selected.length}/{total}
                   </span>
                 </div>
@@ -269,19 +280,19 @@ export function SelectDocuments({
                   <ul className="space-y-0.5">
                     {selected.slice(0, 3).map((d) => (
                       <li key={d.id} className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#C41E3A] shrink-0" />
                         {d.name}
                       </li>
                     ))}
                     {selected.length > 3 && (
-                      <li className="text-xs text-rose-500 font-medium">+{selected.length - 3} más</li>
+                      <li className="text-xs text-[#C41E3A] font-medium">+{selected.length - 3} más</li>
                     )}
                   </ul>
                 ) : (
                   <p className="text-xs text-gray-400 italic m-0">Sin selección — clic para explorar</p>
                 )}
                 {allSel && selected.length > 0 && (
-                  <p className="text-xs text-rose-500 font-medium mt-1 m-0">✓ Todos seleccionados</p>
+                  <p className="text-xs text-[#C41E3A] font-medium mt-1 m-0">✓ Todos seleccionados</p>
                 )}
               </div>
             );
@@ -323,7 +334,7 @@ export function SelectDocuments({
               className="border border-gray-300 rounded overflow-hidden mb-6"
             >
               {/* Section Header */}
-              <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between gap-4">
+              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between gap-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   {!isNuevos && (
                     <input
@@ -338,7 +349,7 @@ export function SelectDocuments({
                       onChange={() =>
                         handleToggleSection(section.documents)
                       }
-                      className="w-4 h-4 accent-white cursor-pointer shrink-0"
+                      className="w-4 h-4 accent-[#C41E3A] cursor-pointer shrink-0"
                       title={
                         allSectionSelected
                           ? "Deseleccionar todos"
@@ -346,14 +357,14 @@ export function SelectDocuments({
                       }
                     />
                   )}
-                  <h4 className="m-0 text-white text-base font-normal">
+                  <h4 className="m-0 text-[#C41E3A] text-base font-semibold">
                     {section.title}
                   </h4>
                 </div>
                 {isNuevos && (
                   <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#C41E3A] rounded hover:bg-gray-100 transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium"
                   >
                     <svg
                       className="w-4 h-4"
@@ -383,7 +394,7 @@ export function SelectDocuments({
                           [section.title]: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-1.5 pl-9 text-sm border border-gray-300 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white"
+                      className="w-full px-4 py-1.5 pl-9 text-sm border border-[#C41E3A]/20 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A]/30"
                     />
                     <svg
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -413,16 +424,16 @@ export function SelectDocuments({
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         {!isNuevos && (
-                          <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold uppercase tracking-wide w-10">
+                          <th className="px-3 py-1 text-left text-gray-400 text-xs font-medium uppercase tracking-wide w-10">
                           </th>
                         )}
-                        <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold uppercase tracking-wide">
+                        <th className="px-3 py-1 text-left text-gray-400 text-xs font-medium uppercase tracking-wide">
                           ARCHIVO
                         </th>
-                        <th className="px-3 py-2 text-center text-gray-500 text-xs font-semibold uppercase tracking-wide w-20">
+                        <th className="px-3 py-1 text-center text-gray-400 text-xs font-medium uppercase tracking-wide w-20">
                           VERSIÓN
                         </th>
-                        <th className="px-3 py-2 text-center text-gray-500 text-xs font-semibold uppercase tracking-wide w-20">
+                        <th className="px-3 py-1 text-center text-gray-400 text-xs font-medium uppercase tracking-wide w-20">
                           ACCIONES
                         </th>
                       </tr>
@@ -435,7 +446,7 @@ export function SelectDocuments({
                           <tr
                             key={doc.id}
                             onClick={() => !isNuevos && handleToggleDocument(doc.id)}
-                            className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} ${!isNuevos ? "hover:bg-rose-50/40 cursor-pointer" : ""} transition-colors`}
+                            className={`bg-white ${!isNuevos ? "hover:bg-[#C41E3A]/5 cursor-pointer" : ""} transition-colors`}
                           >
                             {!isNuevos && (
                               <td className="px-3 py-1.5 border-t border-gray-100">
@@ -444,7 +455,7 @@ export function SelectDocuments({
                                   checked={isSelected}
                                   onChange={() => handleToggleDocument(doc.id)}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
+                                  className="w-4 h-4 accent-[#C41E3A] rounded cursor-pointer"
                                 />
                               </td>
                             )}
@@ -494,10 +505,10 @@ export function SelectDocuments({
 
       {/* Selection Summary */}
       {selectedDocuments.length > 0 && (
-        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+        <div className="mt-4 p-3 bg-[#C41E3A]/5 border border-[#C41E3A]/20 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#C41E3A] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm text-gray-900 font-medium">
@@ -506,7 +517,7 @@ export function SelectDocuments({
             </div>
             <button
               onClick={() => openConfirm({ title: "Limpiar selección", message: "¿Desea deseleccionar todos los documentos?", confirmLabel: "Limpiar", variant: "warning", onConfirm: () => { onSelectDocuments([]); closeConfirm(); } })}
-              className="text-xs text-rose-500 hover:text-rose-700 underline"
+              className="text-xs text-[#C41E3A] hover:text-[#A01828] underline"
             >
               Limpiar selección
             </button>
@@ -516,8 +527,8 @@ export function SelectDocuments({
               const count = section.documents.filter((d) => selectedDocuments.includes(d.id)).length;
               const total = section.documents.length;
               return (
-                <span key={section.title} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-rose-200 rounded text-xs text-gray-600">
-                  <span className="font-medium text-rose-600">{count}/{total}</span>
+                <span key={section.title} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-[#C41E3A]/20 rounded text-xs text-gray-600">
+                  <span className="font-medium text-[#C41E3A]">{count}/{total}</span>
                   {section.title}
                 </span>
               );

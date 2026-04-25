@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import * as mammoth from 'mammoth';
 import type { Change, Document, Step3Data, ResearcherChange, OperativeUnit } from '../types';
 import { baseDocuments } from '../data/documents';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -24,6 +25,17 @@ interface ParsedPasteRow {
   justification: string;
   isValid: boolean;
   error?: string;
+}
+
+interface ParsedWordRow {
+  rowNumber: number;
+  tableTitle: string;
+  documentName: string;
+  changeNumber: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  justification: string;
 }
 
 const LEGACY_PASTE_HEADER_ALIASES = [
@@ -301,6 +313,123 @@ const parseExcelPaste = (raw: string): ParsedPasteRow[] => {
   return parseSpreadsheetRows(rows);
 };
 
+const cleanWordCellText = (value: string) =>
+  value
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+const getWordCellLines = (cell: Element) => {
+  const paragraphLines = Array.from(cell.querySelectorAll('p'))
+    .map((paragraph) => (paragraph.textContent ?? '').trim())
+    .filter(Boolean);
+
+  if (paragraphLines.length > 0) {
+    return cleanWordCellText(paragraphLines.join('\n'));
+  }
+
+  return cleanWordCellText(cell.textContent ?? '');
+};
+
+const extractWordFieldDetails = (lines: string[]) => {
+  const documentLineIndex = lines.findIndex((line) => /^documento\s*:/i.test(line));
+  const changeLineIndex = lines.findIndex((line) => /^cambio\s*n/i.test(line));
+
+  let documentName = '';
+  if (documentLineIndex >= 0) {
+    const currentLine = lines[documentLineIndex];
+    const inlineValue = currentLine.replace(/^documento\s*:/i, '').trim();
+    if (inlineValue) {
+      documentName = inlineValue;
+    } else if (lines[documentLineIndex + 1] && (changeLineIndex < 0 || documentLineIndex + 1 < changeLineIndex)) {
+      documentName = lines[documentLineIndex + 1].trim();
+    }
+  }
+
+  let changeNumber = '';
+  if (changeLineIndex >= 0) {
+    const match = lines[changeLineIndex].match(/cambio\s*n[^0-9]*([0-9]+)/i);
+    changeNumber = match?.[1] ?? '';
+  }
+
+  const excludedIndexes = new Set<number>();
+  if (documentLineIndex >= 0) {
+    excludedIndexes.add(documentLineIndex);
+    if (!lines[documentLineIndex].replace(/^documento\s*:/i, '').trim() && lines[documentLineIndex + 1]) {
+      excludedIndexes.add(documentLineIndex + 1);
+    }
+  }
+  if (changeLineIndex >= 0) {
+    excludedIndexes.add(changeLineIndex);
+  }
+
+  const field = lines
+    .filter((_, index) => !excludedIndexes.has(index))
+    .join(' ')
+    .trim();
+
+  return {
+    documentName,
+    changeNumber,
+    field,
+  };
+};
+
+const parseWordTableHtml = (html: string): ParsedWordRow[] => {
+  if (!html.trim()) return [];
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const tables = Array.from(doc.querySelectorAll('table'));
+
+  return tables.flatMap((table, tableIndex) => {
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const tableTitle = getWordCellLines(rows[0]?.querySelector('th, td') ?? table)[0] ?? `Tabla ${tableIndex + 1}`;
+
+    return rows
+      .map((row, index) => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        if (cells.length < 4) return null;
+
+        const normalizedCells = cells.map((cell) => getWordCellLines(cell));
+        const joinedRow = normalizedCells.flat().join(' ').toLowerCase();
+
+        if (
+          joinedRow.includes('cambio a realizar') &&
+          joinedRow.includes('version anterior') &&
+          joinedRow.includes('version nueva') &&
+          joinedRow.includes('justificacion')
+        ) {
+          return null;
+        }
+
+        const [fieldCellLines, oldValueLines, newValueLines, justificationLines] = normalizedCells;
+        const { documentName, changeNumber, field } = extractWordFieldDetails(fieldCellLines);
+        const oldValue = oldValueLines.join(' ').trim();
+        const newValue = newValueLines.join(' ').trim();
+        const justification = justificationLines.join(' ').trim();
+
+        if (!field && !documentName && !oldValue && !newValue && !justification) {
+          return null;
+        }
+
+        return {
+          rowNumber: index + 1,
+          tableTitle,
+          documentName,
+          changeNumber,
+          field,
+          oldValue,
+          newValue,
+          justification,
+        };
+      })
+      .filter((row): row is ParsedWordRow => row !== null);
+  });
+};
+
 
 const mockOperativeUnits = [
   'Cardiología', 'Endocrinología', 'Gastroenterología', 'Hematología',
@@ -314,6 +443,7 @@ const mockOperativeUnits = [
 export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
   const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const wordInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -415,6 +545,65 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
   const closePasteModal = () => {
     setPasteTargetDocId(null);
+  };
+
+  const handleOpenWordPicker = () => {
+    if (wordInputRef.current) {
+      wordInputRef.current.value = '';
+      wordInputRef.current.click();
+    }
+  };
+
+  const handleWordSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isWordFile = fileName.endsWith('.docx');
+
+    if (!isWordFile) {
+      openConfirm({
+        title: 'Formato no permitido',
+        message: 'El boton Word solo acepta archivos .docx.',
+        confirmLabel: 'Entendido',
+        variant: 'warning',
+        onConfirm: closeConfirm,
+      });
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      const parsedRows = parseWordTableHtml(result.value);
+
+      console.log('Word import result:', {
+        fileName: file.name,
+        html: result.value,
+        messages: result.messages,
+        parsedRows,
+      });
+
+      openConfirm({
+        title: 'Word procesado',
+        message: `Se procesó ${file.name}. Revise la consola para ver la información extraída.`,
+        confirmLabel: 'Entendido',
+        variant: 'primary',
+        onConfirm: closeConfirm,
+      });
+    } catch (error) {
+      console.error('Error processing Word file:', error);
+      openConfirm({
+        title: 'No se pudo leer el archivo',
+        message: 'Hubo un problema al procesar el archivo Word seleccionado.',
+        confirmLabel: 'Entendido',
+        variant: 'warning',
+        onConfirm: closeConfirm,
+      });
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const handleCsvSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -881,6 +1070,13 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         className="hidden"
         onChange={handleCsvSelected}
       />
+      <input
+        ref={wordInputRef}
+        type="file"
+        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        className="hidden"
+        onChange={handleWordSelected}
+      />
 
       <div className="mb-6">
         <h2 className="text-base font-semibold text-gray-900 mb-2">Redacción de cambio</h2>
@@ -1309,6 +1505,15 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleOpenWordPicker}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0l-3 3m3-3l3 3M17 8v12m0 0l-3-3m3 3l3-3M3 12h18" />
+                    </svg>
+                    Word
+                  </button>
                   <button
                     onClick={() => {
                       setEditingId(null);
