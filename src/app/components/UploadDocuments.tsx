@@ -112,19 +112,19 @@ export function UploadDocuments({
   return (
     <div>
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900 m-0">Subir documentos modificados</h3>
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900 m-0">Subir documentos modificados</h3>
         <span className="text-sm text-gray-500">
           <span className="font-semibold text-[#C41E3A]">{completedCount}</span>/{documents.length} documentos completos
         </span>
       </div>
 
-      <p className="text-xs text-gray-400 mb-4 m-0">
+      <p className="text-xs text-gray-400 mb-3 m-0">
         Por cada documento cargue 2 versiones: con control de cambios activos y con cambios aceptados. Máx. 200 MB.
       </p>
 
       {/* Filtros */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3">
         <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'all' ? 'bg-[#C41E3A] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
           Todos ({documents.length})
         </button>
@@ -137,7 +137,7 @@ export function UploadDocuments({
       </div>
 
       {/* Tabla */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-gray-200 rounded-sm overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -159,7 +159,7 @@ export function UploadDocuments({
               return (
                 <Fragment key={category}>
                   <tr
-                    className="bg-gray-50 border-t border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="bg-gray-50 border-t border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => toggleCategory(category)}
                   >
                     <td colSpan={4} className="px-3 py-2 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide">
@@ -201,7 +201,7 @@ export function UploadDocuments({
                     const isComplete = status.controlChanges && status.finalVersion;
 
                     return (
-                      <tr key={doc.id} className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
+                      <tr key={doc.id} className="border-t border-gray-200 hover:bg-gray-50/60 transition-colors">
                         <td className="px-3 py-2 text-sm text-gray-700">{doc.name}</td>
 
                         {/* Control de cambios */}
@@ -214,7 +214,8 @@ export function UploadDocuments({
                               <span className="text-xs text-gray-700 truncate max-w-[160px]" title={docFiles.controlChanges.name}>{docFiles.controlChanges.name}</span>
                               <button
                                 onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.controlChanges?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'controlChanges'); closeConfirm(); } })}
-                                className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                                aria-label="Eliminar control de cambios"
+                                className="w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -242,7 +243,8 @@ export function UploadDocuments({
                               <span className="text-xs text-gray-700 truncate max-w-[160px]" title={docFiles.finalVersion.name}>{docFiles.finalVersion.name}</span>
                               <button
                                 onClick={() => openConfirm({ title: 'Eliminar archivo', message: `¿Desea eliminar "${docFiles.finalVersion?.name}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleFileRemove(doc.id, 'finalVersion'); closeConfirm(); } })}
-                                className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                                aria-label="Eliminar versión final"
+                                className="w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -295,7 +297,7 @@ export function UploadDocuments({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-between gap-4 mt-6">
+      <div className="flex justify-between gap-4 mt-4">
         <button onClick={onBack} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium">
           Volver
         </button>

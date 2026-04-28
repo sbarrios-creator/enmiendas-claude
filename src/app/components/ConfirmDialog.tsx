@@ -65,13 +65,13 @@ export function ConfirmDialog({
         <div className="px-5 pb-5 flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium ${variantClasses[variant]}`}
+            className={`flex-1 px-4 py-2 text-white rounded-sm transition-colors text-sm font-medium ${variantClasses[variant]}`}
           >
             {confirmLabel}
           </button>

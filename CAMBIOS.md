@@ -37,7 +37,7 @@
 - El placeholder muestra "Seleccione un campo..." con color gris diferenciado del texto seleccionado.
 
 #### Alcance del cambio con recuadro agrupador
-- Los dos radio buttons ("Todos los docs." / "Específicos") están envueltos en un contenedor `bg-gray-50 border border-gray-200 rounded-lg p-3` que los agrupa visualmente con más padding interior.
+- Los dos radio buttons ("Todos los docs." / "Específicos") están envueltos en un contenedor `bg-gray-50 border border-gray-200 rounded-sm p-3` que los agrupa visualmente con más padding interior.
 
 #### Selector de documentos específicos
 - Contador `X / Y` en la misma línea que el título "Seleccione los documentos" como badge; cambia a rojo cuando hay error de validación.

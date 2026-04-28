@@ -84,7 +84,7 @@ export default function App() {
         </div>
 
         <div className="max-w-screen-2xl mx-auto px-6 pb-6 w-full">
-          <div className={`bg-white shadow-sm border border-gray-200 mt-6 rounded-lg p-8`}>
+          <div className={`bg-white shadow-sm border border-gray-200 mt-6 rounded-sm ${currentStep === 3 ? 'p-4' : 'p-8'}`}>
             {currentStep === 1 && (
               <SelectDocuments
                 selectedDocuments={selectedDocuments}
@@ -112,6 +112,7 @@ export default function App() {
                 newDocuments={newDocuments}
                 changes={changes}
                 onChangesUpdate={setChanges}
+                onSelectedDocumentsUpdate={setSelectedDocuments}
                 step3Data={step3Data}
                 onStep3DataChange={setStep3Data}
                 onNext={handleNext}

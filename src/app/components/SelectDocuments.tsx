@@ -189,8 +189,8 @@ export function SelectDocuments({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900 m-0">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900 m-0">
           Documentos aprobados y vigentes de la investigación
         </h3>
         <button
@@ -205,10 +205,10 @@ export function SelectDocuments({
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 mb-4">
+      <div className="flex flex-wrap gap-1 mb-3">
         <button
           onClick={() => setActiveTab("Resumen")}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
             activeTab === "Resumen"
               ? "bg-[#C41E3A] text-white"
               : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
@@ -236,7 +236,7 @@ export function SelectDocuments({
               <button
                 key={section.title}
                 onClick={() => setActiveTab(section.title)}
-                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-[#C41E3A] text-white"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
@@ -259,7 +259,7 @@ export function SelectDocuments({
 
       {/* Tab "Todos": resumen por categoría */}
       {activeTab === "Resumen" && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {sections.filter((s) => s.documents.length > 0).map((section) => {
             const selected = section.documents.filter((d) => selectedDocuments.includes(d.id));
             const total = section.documents.length;
@@ -267,11 +267,11 @@ export function SelectDocuments({
             return (
               <div
                 key={section.title}
-                className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#C41E3A]/30 hover:bg-[#C41E3A]/5 transition-colors"
+                className="border border-gray-200 rounded-sm p-2.5 cursor-pointer hover:border-[#C41E3A]/30 hover:bg-[#C41E3A]/5 transition-colors"
                 onClick={() => setActiveTab(section.title)}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">{section.title}</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-gray-700">{section.title}</span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${selected.length > 0 ? 'bg-[#C41E3A]/10 text-[#C41E3A]' : 'bg-gray-100 text-gray-400'}`}>
                     {selected.length}/{total}
                   </span>
@@ -292,7 +292,12 @@ export function SelectDocuments({
                   <p className="text-xs text-gray-400 italic m-0">Sin selección — clic para explorar</p>
                 )}
                 {allSel && selected.length > 0 && (
-                  <p className="text-xs text-[#C41E3A] font-medium mt-1 m-0">✓ Todos seleccionados</p>
+                  <p className="text-xs text-[#C41E3A] font-medium mt-1 m-0 flex items-center gap-1">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Todos seleccionados
+                  </p>
                 )}
               </div>
             );
@@ -301,7 +306,7 @@ export function SelectDocuments({
       )}
 
       {/* Document Sections filtradas por tab */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {activeTab !== "Resumen" && visibleSections.map((section) => {
           const isNuevos =
             section.title === "Documentos Nuevos";
@@ -331,10 +336,10 @@ export function SelectDocuments({
           return (
             <div
               key={section.title}
-              className="border border-gray-300 rounded overflow-hidden mb-6"
+              className="border border-gray-200 rounded-sm overflow-hidden"
             >
               {/* Section Header */}
-              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between gap-4 border-b border-gray-200">
+              <div className="bg-gray-50 px-3 py-2 flex items-center justify-between gap-3 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   {!isNuevos && (
                     <input
@@ -357,7 +362,7 @@ export function SelectDocuments({
                       }
                     />
                   )}
-                  <h4 className="m-0 text-[#C41E3A] text-base font-semibold">
+                  <h4 className="m-0 text-[#C41E3A] text-sm font-semibold">
                     {section.title}
                   </h4>
                 </div>
@@ -449,7 +454,7 @@ export function SelectDocuments({
                             className={`bg-white ${!isNuevos ? "hover:bg-[#C41E3A]/5 cursor-pointer" : ""} transition-colors`}
                           >
                             {!isNuevos && (
-                              <td className="px-3 py-1.5 border-t border-gray-100">
+                              <td className="px-3 py-1.5 border-t border-gray-200">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
@@ -459,29 +464,29 @@ export function SelectDocuments({
                                 />
                               </td>
                             )}
-                            <td className="px-3 py-1.5 border-t border-gray-100">
+                            <td className="px-3 py-1.5 border-t border-gray-200">
                               <span className={`text-sm ${isSelected ? "text-gray-900 font-medium" : "text-gray-600"}`}>
                                 {doc.name}
                               </span>
                             </td>
-                            <td className="px-3 py-1.5 text-center border-t border-gray-100">
+                            <td className="px-3 py-1.5 text-center border-t border-gray-200">
                               <span className="text-gray-500 text-xs">{doc.version}</span>
                             </td>
-                            <td className="px-3 py-1.5 text-center border-t border-gray-100">
+                            <td className="px-3 py-1.5 text-center border-t border-gray-200">
                               <div className="flex gap-1.5 justify-center">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openConfirm({ title: "Eliminar documento", message: `¿Desea eliminar "${doc.name}"? Esta acción no se puede deshacer.`, confirmLabel: "Eliminar", variant: "danger", onConfirm: () => { onNewDocumentsChange(newDocuments.filter((d) => d.id !== doc.id)); closeConfirm(); } }); }}
-                                  className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-                                  title="Eliminar"
+                                  className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                  aria-label="Eliminar"
                                 >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
                                 <button
                                   onClick={(e) => e.stopPropagation()}
-                                  className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                                  title="Descargar"
+                                  className="w-7 h-7 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                                  aria-label="Descargar"
                                 >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 </button>
                               </div>
                             </td>
@@ -503,9 +508,9 @@ export function SelectDocuments({
         })}
         </div>
 
-      {/* Selection Summary */}
+      {/* Selection Summary 
       {selectedDocuments.length > 0 && (
-        <div className="mt-4 p-3 bg-[#C41E3A]/5 border border-[#C41E3A]/20 rounded-lg">
+        <div className="mt-3 p-2.5 bg-[#C41E3A]/5 border border-[#C41E3A]/20 rounded-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-[#C41E3A] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -535,10 +540,10 @@ export function SelectDocuments({
             })}
           </div>
         </div>
-      )}
+      )}*/}
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="flex justify-end gap-4 mt-4">
         <button
           onClick={onNext}
           disabled={selectedDocuments.length === 0}
@@ -568,13 +573,14 @@ export function SelectDocuments({
             className="absolute inset-0 bg-black/50"
             onClick={handleModalClose}
           />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="relative bg-white rounded-sm shadow-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h4 className="font-semibold text-gray-900 text-base m-0">
                 Agregar Documento
               </h4>
               <button
                 onClick={handleModalClose}
+                aria-label="Cerrar"
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg
@@ -625,7 +631,7 @@ export function SelectDocuments({
                   Archivo
                 </label>
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#C41E3A] transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-gray-300 rounded-sm p-6 text-center hover:border-[#C41E3A] transition-colors cursor-pointer"
                   onClick={() =>
                     document
                       .getElementById("modal-file-input")

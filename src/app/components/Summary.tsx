@@ -377,8 +377,8 @@ export function Summary({
 
   return (
     <div>
-      <div className="mb-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">
           Resumen de enmiendas
         </h3>
         <p className="text-sm text-gray-600 m-0">
@@ -387,15 +387,15 @@ export function Summary({
       </div>
 
       {/* Step 3 Responses */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#C41E3A] px-4 py-3">
-          <h3 className="text-white text-base font-normal m-0">
+      <div className="mb-4 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-3 py-2">
+          <h3 className="text-white text-sm font-normal m-0">
             Cambios declarados
           </h3>
         </div>
         <div className="p-4 space-y-3">
           {/* Título y Resumen */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-sm overflow-hidden">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <span className="font-medium text-gray-800">
                 Título y Resumen
@@ -440,7 +440,7 @@ export function Summary({
           </div>
 
           {/* Unidades Operativas */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-sm overflow-hidden">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <span className="font-medium text-gray-800">
                 Unidades Operativas
@@ -482,7 +482,7 @@ export function Summary({
           </div>
 
           {/* Equipo de Investigación */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-sm overflow-hidden">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <span className="font-medium text-gray-800">
                 Equipo de Investigación
@@ -526,7 +526,7 @@ export function Summary({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-200">
                       {step3Data.researchers.map((r) => (
                         <tr
                           key={r.id}
@@ -575,9 +575,9 @@ export function Summary({
       </div>
 
       {/* Changes Summary */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#C41E3A] px-4 py-3 flex items-center justify-between">
-          <h3 className="text-white text-base font-normal m-0">
+      <div className="mb-4 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-3 py-2 flex items-center justify-between">
+          <h3 className="text-white text-sm font-normal m-0">
             Cambios a aplicar en otros Documentos
           </h3>
           <div className="flex items-center gap-2">
@@ -594,18 +594,18 @@ export function Summary({
         </div>
         <div className="p-4">
           {changes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-sm border border-gray-200 text-sm">
               No se registraron cambios en documentos
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Tabs por categoría + buscador */}
               {availableCategories.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <div className="flex flex-wrap gap-0 border-b border-gray-200">
                     <button
                       onClick={() => setCategoryFilter("Todos")}
-                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
                         categoryFilter === "Todos"
                           ? "border-[#C41E3A] text-[#C41E3A]"
                           : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -624,7 +624,7 @@ export function Summary({
                         <button
                           key={cat}
                           onClick={() => setCategoryFilter(cat)}
-                          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
                             categoryFilter === cat
                               ? "border-[#C41E3A] text-[#C41E3A]"
                               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -653,7 +653,7 @@ export function Summary({
                 </div>
               )}
 
-              <div className="max-h-[600px] overflow-y-auto pr-1 space-y-5">
+              <div className="max-h-[600px] overflow-y-auto pr-1 space-y-4">
               {changesByCategory.map(({ category, groups }) => (
                 <div key={category}>
                   {categoryFilter === "Todos" && (
@@ -667,7 +667,7 @@ export function Summary({
                     {groups.map(({ doc, items }) => (
                       <div
                         key={doc.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden"
+                        className="border border-gray-200 rounded-sm overflow-hidden"
                       >
                         {/* Acordeón header — siempre visible */}
                         <button
@@ -808,7 +808,7 @@ export function Summary({
                               ) : (
                                 <>
                                   {/* Vista lista: buscador + tabla */}
-                                  <div className="px-4 py-2 bg-white border-b border-gray-100">
+                                  <div className="px-4 py-2 bg-white border-b border-gray-200">
                                     <div className="relative">
                                       <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -824,11 +824,11 @@ export function Summary({
                                   </div>
                                   <div className="grid grid-cols-[1.4fr_1fr_1fr_1.4fr] bg-[#C41E3A]/5">
                                     <div className="px-4 py-2 text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide">Campo - N° Pág</div>
-                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">V. Anterior</div>
-                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">V. Nueva</div>
-                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-100">Justificación</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-200">V. Anterior</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-200">V. Nueva</div>
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wide border-l border-gray-200">Justificación</div>
                                   </div>
-                                  <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                                  <div className="divide-y divide-gray-200 max-h-48 overflow-y-auto">
                                     {filtered.length === 0 ? (
                                       <p className="px-4 py-4 text-xs text-gray-400 italic text-center">Sin resultados</p>
                                     ) : filtered.map((c) => (
@@ -837,17 +837,17 @@ export function Summary({
                                           <span className="text-xs font-medium text-gray-800 leading-snug">{c.field || "—"}</span>
                                           {c.pageNumber && <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {c.pageNumber}</span>}
                                         </div>
-                                        <div className="px-3 py-2.5 border-l border-gray-100">
+                                        <div className="px-3 py-2.5 border-l border-gray-200">
                                           {c.oldValue ? (
                                             <span className="inline-block px-1.5 py-0.5 bg-red-50 border border-red-200 rounded text-red-700 line-through text-[11px]">{c.oldValue}</span>
                                           ) : (
                                             <span className="text-gray-300 italic text-[11px]">—</span>
                                           )}
                                         </div>
-                                        <div className="px-3 py-2.5 border-l border-gray-100">
+                                        <div className="px-3 py-2.5 border-l border-gray-200">
                                           <span className="inline-block px-1.5 py-0.5 bg-green-50 border border-green-200 rounded text-green-700 font-medium text-[11px]">{c.newValue}</span>
                                         </div>
-                                        <div className="px-3 py-2.5 border-l border-gray-100 text-[11px] text-gray-500 leading-snug">
+                                        <div className="px-3 py-2.5 border-l border-gray-200 text-[11px] text-gray-500 leading-snug">
                                           {c.justification || <span className="text-gray-300 italic">—</span>}
                                         </div>
                                       </div>
@@ -902,7 +902,7 @@ export function Summary({
       </div>
 
       {stats.review > 0 && (
-        <div className="mb-6 border-l-4 border-amber-400 bg-amber-50 p-4 rounded">
+        <div className="mb-4 border-l-4 border-amber-400 bg-amber-50 p-4 rounded">
           <div className="flex items-start gap-3">
             <svg
               className="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
@@ -931,9 +931,9 @@ export function Summary({
       )}
 
       {/* Documentos Nuevos */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#C41E3A] px-4 py-3">
-          <h3 className="text-white text-base font-normal m-0">
+      <div className="mb-4 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-3 py-2">
+          <h3 className="text-white text-sm font-normal m-0">
             Documentos Nuevos
           </h3>
         </div>
@@ -954,7 +954,7 @@ export function Summary({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {newDocuments.length === 0 &&
                 newDocs.length === 0 &&
                 !showAddDoc ? (
@@ -1211,7 +1211,7 @@ export function Summary({
       </div>
 
       {/* Comentarios adicionales */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mb-6 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-[#C41E3A] px-4 py-3 flex items-center gap-2">
           <h3 className="text-white text-base font-normal m-0">
             Comentarios adicionales

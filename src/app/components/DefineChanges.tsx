@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
 import type { Change, Document, Step3Data, ResearcherChange, OperativeUnit } from '../types';
@@ -10,6 +10,7 @@ interface DefineChangesProps {
   newDocuments: Document[];
   changes: Change[];
   onChangesUpdate: (changes: Change[]) => void;
+  onSelectedDocumentsUpdate: (ids: string[]) => void;
   step3Data: Step3Data;
   onStep3DataChange: (data: Step3Data) => void;
   onNext: () => void;
@@ -440,9 +441,8 @@ const mockOperativeUnits = [
 ];
 
 
-export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
+export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, onSelectedDocumentsUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
-  const csvInputRef = useRef<HTMLInputElement | null>(null);
   const wordInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -461,11 +461,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const closeConfirm = () => setConfirm((c) => ({ ...c, isOpen: false }));
   const [searchDocument, setSearchDocument] = useState('');
   const [docPages, setDocPages] = useState<Record<string, number>>({});
+  const [docListSearch, setDocListSearch] = useState('');
+  const [docChangeSearch, setDocChangeSearch] = useState<Record<string, string>>({});
   const [openCards, setOpenCards] = useState({ card1: true, card2: true, card3: true, card4: true });
   const toggleCard = (card: keyof typeof openCards) => setOpenCards((p) => ({ ...p, [card]: !p[card] }));
   const [docPickerSearch, setDocPickerSearch] = useState('');
-  // ✅ CAMBIADO: categoryFilter ahora usa "Todos" como valor por defecto
-  const [categoryFilter, setCategoryFilter] = useState('Todos');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [resumeCollapsed, setResumeCollapsed] = useState<Record<string, boolean>>({});
+  const [openQuestionsSection, setOpenQuestionsSection] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
   const [showPreview, setShowPreview] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -477,6 +480,10 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  const [xlsEditCell, setXlsEditCell] = useState<{ id: string; col: string } | null>(null);
+  const [xlsNewDocRow, setXlsNewDocRow] = useState<Record<string, { field: string; pageNumber: string; oldValue: string; newValue: string; justification: string }>>({});
+  const [xlsModalDocId, setXlsModalDocId] = useState<string | null>(null);
+  const [xlsModalEditCell, setXlsModalEditCell] = useState<{ id: string; col: string } | null>(null);
   const [newChange, setNewChange] = useState({
     field: '',
     customField: '',
@@ -516,7 +523,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
   const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
   const [selectedUnitName, setSelectedUnitName] = useState('');
   const [pasteTargetDocId, setPasteTargetDocId] = useState<string | null>(null);
-  const [pasteRaw] = useState('');
+  const [pasteRaw, setPasteRaw] = useState('');
   // external modal
   const [extUnitName, setExtUnitName] = useState('');
   const [extHasCarta, setExtHasCarta] = useState<'SI' | 'NO'>('SI');
@@ -535,16 +542,26 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     setIsDraggingUnit(false);
   };
 
-  const handleOpenCsvPicker = (docId: string) => {
-    setPasteTargetDocId(docId);
-    if (csvInputRef.current) {
-      csvInputRef.current.value = '';
-      csvInputRef.current.click();
-    }
-  };
+  const closePasteModal = () => { setPasteTargetDocId(null); };
 
-  const closePasteModal = () => {
-    setPasteTargetDocId(null);
+  const updateChange = (id: string, updates: Partial<Change>) =>
+    onChangesUpdate(changes.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+  const getXlsNewDocRow = (docId: string) =>
+    xlsNewDocRow[docId] ?? { field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' };
+  const commitXlsDocRow = (docId: string) => {
+    const row = getXlsNewDocRow(docId);
+    if (!row.field.trim() || !row.newValue.trim()) return;
+    onChangesUpdate([...changes, {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      field: row.field.trim(),
+      oldValue: row.oldValue.trim(),
+      newValue: row.newValue.trim(),
+      justification: row.justification.trim(),
+      pageNumber: row.pageNumber.trim(),
+      appliesTo: [docId],
+      isGlobal: false,
+    }]);
+    setXlsNewDocRow((p) => ({ ...p, [docId]: { field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' } }));
   };
 
   const handleOpenWordPicker = () => {
@@ -558,13 +575,10 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const fileName = file.name.toLowerCase();
-    const isWordFile = fileName.endsWith('.docx');
-
-    if (!isWordFile) {
+    if (!file.name.toLowerCase().endsWith('.docx')) {
       openConfirm({
         title: 'Formato no permitido',
-        message: 'El boton Word solo acepta archivos .docx.',
+        message: 'El botón Word solo acepta archivos .docx.',
         confirmLabel: 'Entendido',
         variant: 'warning',
         onConfirm: closeConfirm,
@@ -573,27 +587,82 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       return;
     }
 
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
     try {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.convertToHtml({ arrayBuffer });
       const parsedRows = parseWordTableHtml(result.value);
 
-      console.log('Word import result:', {
-        fileName: file.name,
-        html: result.value,
-        messages: result.messages,
-        parsedRows,
-      });
+      if (parsedRows.length === 0) {
+        openConfirm({
+          title: 'Sin cambios detectados',
+          message: 'No se encontraron filas de cambios en el archivo Word.',
+          confirmLabel: 'Entendido',
+          variant: 'warning',
+          onConfirm: closeConfirm,
+        });
+        return;
+      }
+
+      const allDocs = [
+        ...baseDocuments.filter((d) => selectedDocuments.includes(d.id)),
+        ...newDocuments,
+        ...baseDocuments.filter((d) => !selectedDocuments.includes(d.id)),
+      ];
+
+      const newChanges: Change[] = [];
+      const autoAddedNames: string[] = [];
+      const unmatchedNames: string[] = [];
+      const newSelectedIds = new Set(selectedDocuments);
+
+      for (const row of parsedRows) {
+        const matched = allDocs.find((d) => normalize(d.name) === normalize(row.documentName));
+
+        if (!matched) {
+          if (!unmatchedNames.includes(row.documentName)) unmatchedNames.push(row.documentName);
+          continue;
+        }
+
+        if (!newSelectedIds.has(matched.id)) {
+          newSelectedIds.add(matched.id);
+          autoAddedNames.push(matched.name);
+        }
+
+        newChanges.push({
+          id: `${Date.now()}-${row.rowNumber}-${Math.random().toString(36).slice(2, 8)}`,
+          field: row.field,
+          oldValue: row.oldValue,
+          newValue: row.newValue,
+          justification: row.justification,
+          pageNumber: '',
+          appliesTo: [matched.id],
+          isGlobal: false,
+        });
+      }
+
+      if (newChanges.length > 0) {
+        onChangesUpdate([...changes, ...newChanges]);
+      }
+
+      if (autoAddedNames.length > 0) {
+        onSelectedDocumentsUpdate([...newSelectedIds]);
+      }
+
+      const lines: string[] = [];
+      if (newChanges.length > 0) lines.push(`Se importaron ${newChanges.length} cambio(s).`);
+      if (autoAddedNames.length > 0) lines.push(`Se agregaron al Paso 1: ${autoAddedNames.join(', ')}.`);
+      if (unmatchedNames.length > 0) lines.push(`No se reconocieron: ${unmatchedNames.join(', ')}.`);
 
       openConfirm({
-        title: 'Word procesado',
-        message: `Se procesó ${file.name}. Revise la consola para ver la información extraída.`,
+        title: newChanges.length > 0 ? 'Importación completada' : 'Sin coincidencias',
+        message: lines.join(' '),
         confirmLabel: 'Entendido',
-        variant: 'primary',
+        variant: unmatchedNames.length > 0 ? 'warning' : 'primary',
         onConfirm: closeConfirm,
       });
-    } catch (error) {
-      console.error('Error processing Word file:', error);
+    } catch {
       openConfirm({
         title: 'No se pudo leer el archivo',
         message: 'Hubo un problema al procesar el archivo Word seleccionado.',
@@ -602,85 +671,6 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         onConfirm: closeConfirm,
       });
     } finally {
-      event.target.value = '';
-    }
-  };
-
-  const handleCsvSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const fileName = file.name.toLowerCase();
-    const isExcelFile = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-
-    if (!pasteTargetDocId) {
-      openConfirm({
-        title: 'No se pudo importar el Excel',
-        message: 'Seleccione primero el documento destino e intente nuevamente.',
-        confirmLabel: 'Entendido',
-        variant: 'warning',
-        onConfirm: closeConfirm,
-      });
-      return;
-    }
-
-    if (!isExcelFile) {
-      openConfirm({
-        title: 'Formato no permitido',
-        message: 'El boton Importar Excel solo acepta archivos .xlsx o .xls.',
-        confirmLabel: 'Entendido',
-        variant: 'warning',
-        onConfirm: closeConfirm,
-      });
-      event.target.value = '';
-      return;
-    }
-
-    try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
-      const rows = firstSheet
-        ? (XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' }) as unknown[][])
-        : [];
-      const parsedRows = parseSpreadsheetRows(rows);
-      const validRows = parsedRows.filter((row) => row.isValid);
-      const invalidRows = parsedRows.filter((row) => !row.isValid);
-
-      if (validRows.length === 0) {
-        openConfirm({
-          title: 'CSV sin filas procesables',
-          message: 'No se encontraron filas válidas para importar. Verifique el delimitador y el contenido del archivo.',
-          confirmLabel: 'Entendido',
-          variant: 'warning',
-          onConfirm: closeConfirm,
-        });
-        return;
-      }
-
-      handleImportPastedChanges(pasteTargetDocId, parsedRows);
-
-      openConfirm({
-        title: 'Importación completada',
-        message:
-          invalidRows.length > 0
-            ? `Se agregaron ${validRows.length} cambio(s) desde ${file.name}. ${invalidRows.length} fila(s) no se pudieron procesar.`
-            : `Se agregaron ${validRows.length} cambio(s) desde ${file.name}.`,
-        confirmLabel: 'Entendido',
-        variant: invalidRows.length > 0 ? 'warning' : 'primary',
-        onConfirm: closeConfirm,
-      });
-    } catch {
-      openConfirm({
-        title: 'No se pudo leer el archivo',
-        message: 'Hubo un problema al procesar el archivo seleccionado. Use exclusivamente archivos .xlsx o .xls.',
-        confirmLabel: 'Entendido',
-        variant: 'warning',
-        onConfirm: closeConfirm,
-      });
-    } finally {
-      setPasteTargetDocId(null);
       event.target.value = '';
     }
   };
@@ -1056,20 +1046,18 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     documents.some(d => getDocCategory(d) === cat)
   );
 
-  // ✅ Documentos filtrados según tab activo
-  const filteredDocuments = categoryFilter === 'Todos'
+  const effectiveFilter = categoryFilter === 'Todos' || availableCategories.includes(categoryFilter)
+    ? categoryFilter
+    : (availableCategories[0] ?? '');
+  const filteredDocuments = effectiveFilter === 'Todos' || !effectiveFilter
     ? documents
-    : documents.filter(doc => getDocCategory(doc) === categoryFilter);
+    : documents.filter(doc => getDocCategory(doc) === effectiveFilter);
+  const visibleDocs = docListSearch.trim()
+    ? filteredDocuments.filter(doc => doc.name.toLowerCase().includes(docListSearch.toLowerCase()))
+    : filteredDocuments;
 
   return (
     <div>
-      <input
-        ref={csvInputRef}
-        type="file"
-        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-        className="hidden"
-        onChange={handleCsvSelected}
-      />
       <input
         ref={wordInputRef}
         type="file"
@@ -1078,99 +1066,124 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         onChange={handleWordSelected}
       />
 
-      <div className="mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-2">Redacción de cambio</h2>
-        <p className="text-sm text-gray-600">
-          Complete las secciones según los cambios que desee realizar en su enmienda
-        </p>
-      </div>
+      {/* Questions Section - Collapsible global */}
+      <div className="mb-3 border border-gray-200 rounded-sm overflow-hidden">
+        {/* Header global */}
+        <div
+          className="px-4 py-2 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+          onClick={() => setOpenQuestionsSection((v) => !v)}
+        >
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openQuestionsSection ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <p className="text-sm text-gray-700 m-0">
+              ¿Vas a modificar el <span className="font-semibold text-gray-900">Título</span>, <span className="font-semibold text-gray-900">Unidades Operativas</span> o el <span className="font-semibold text-gray-900">Equipo de Investigación</span>?
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setOpenQuestionsSection(true)}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${openQuestionsSection ? 'bg-[#C41E3A] text-white hover:bg-[#A01828]' : 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-50'}`}
+            >
+              Sí
+            </button>
+            <button
+              onClick={() => setOpenQuestionsSection(false)}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${!openQuestionsSection ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-50'}`}
+            >
+              No
+            </button>
+          </div>
+        </div>
 
-      {/* Questions Section - Card Layout */}
-      <div className="mb-6 space-y-4">
+        {openQuestionsSection && (
+          <div className="border-t border-gray-200 p-3 space-y-2">
         {/* Card 1: Título y Resumen */}
-        <div className="border border-gray-300 rounded overflow-hidden">
+        <div className="border border-gray-200 rounded-sm overflow-hidden">
           <div
-            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
-            onClick={() => toggleCard('card1')}
+            className="px-4 py-2 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+            onClick={() => { if (modifiesTitleOrSummary === 'SI') toggleCard('card1'); }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {modifiesTitleOrSummary === 'SI' && (
                 <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card1 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900 m-0">Título y Resumen</h3>
-                  {!openCards.card1 && (
-                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesTitleOrSummary === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesTitleOrSummary === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
-                      {modifiesTitleOrSummary ?? 'Sin responder'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {openCards.card1 && (
-                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará el título o resumen del estudio?</p>
-                  <button onClick={() => setModifiesTitleOrSummary('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesTitleOrSummary === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
-                  <button onClick={() => setModifiesTitleOrSummary('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesTitleOrSummary === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
-                </div>
+              )}
+              <p className="text-sm text-gray-700 m-0">
+                ¿Vas a modificar el <span className="font-semibold text-gray-900">Título y Resumen</span>?
+              </p>
+              {modifiesTitleOrSummary === 'SI' && (
+                <span className="px-2 py-0.5 bg-[#C41E3A]/10 text-[#C41E3A] text-xs font-semibold rounded shrink-0">Sí</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {modifiesTitleOrSummary !== 'SI' ? (
+                <button
+                  onClick={() => { setModifiesTitleOrSummary('SI'); setOpenCards((p) => ({ ...p, card1: true })); }}
+                  className="px-4 py-1.5 bg-[#C41E3A] text-white rounded text-sm font-medium hover:bg-[#A01828] transition-colors"
+                >
+                  Sí
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setModifiesTitleOrSummary(null); setOpenCards((p) => ({ ...p, card1: false })); }}
+                  className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  No modificar
+                </button>
               )}
             </div>
           </div>
-
           {openCards.card1 && modifiesTitleOrSummary === 'SI' && (
-            <div className="p-4 space-y-4">
+            <div className="border-t border-gray-200 p-4 space-y-4">
               <div>
                 <label className="block mb-2 text-sm font-semibold text-gray-700">Nuevo título</label>
-                <input
-                  type="text"
-                  value={titleSummaryData.title}
-                  onChange={(e) => setTitleSummaryData({ ...titleSummaryData, title: e.target.value })}
-                  placeholder="Ingrese el nuevo título del estudio"
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                />
+                <input type="text" value={titleSummaryData.title} onChange={(e) => setTitleSummaryData({ ...titleSummaryData, title: e.target.value })} placeholder="Ingrese el nuevo título del estudio" className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent" />
               </div>
               <div>
                 <label className="block mb-2 text-sm font-semibold text-gray-700">Nuevo resumen</label>
-                <textarea
-                  value={titleSummaryData.summary}
-                  onChange={(e) => setTitleSummaryData({ ...titleSummaryData, summary: e.target.value })}
-                  placeholder="Ingrese el nuevo resumen del estudio"
-                  rows={4}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent"
-                />
+                <textarea value={titleSummaryData.summary} onChange={(e) => setTitleSummaryData({ ...titleSummaryData, summary: e.target.value })} placeholder="Ingrese el nuevo resumen del estudio" rows={4} className="w-full px-4 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent" />
               </div>
             </div>
           )}
         </div>
 
         {/* Card 2: Unidades Operativas */}
-        <div className="border border-gray-300 rounded overflow-hidden">
+        <div className="border border-gray-200 rounded-sm overflow-hidden">
           <div
-            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
-            onClick={() => toggleCard('card2')}
+            className="px-4 py-2 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+            onClick={() => { if (modifiesOperativeUnits === 'SI') toggleCard('card2'); }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {modifiesOperativeUnits === 'SI' && (
                 <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card2 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900 m-0">Unidades Operativas</h3>
-                  {!openCards.card2 && (
-                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesOperativeUnits === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesOperativeUnits === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
-                      {modifiesOperativeUnits ?? 'Sin responder'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {openCards.card2 && (
-                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará las unidades operativas del estudio?</p>
-                  <button onClick={() => setModifiesOperativeUnits('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesOperativeUnits === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
-                  <button onClick={() => setModifiesOperativeUnits('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesOperativeUnits === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
-                </div>
+              )}
+              <p className="text-sm text-gray-700 m-0">
+                ¿Vas a modificar las <span className="font-semibold text-gray-900">Unidades Operativas</span>?
+              </p>
+              {modifiesOperativeUnits === 'SI' && (
+                <span className="px-2 py-0.5 bg-[#C41E3A]/10 text-[#C41E3A] text-xs font-semibold rounded shrink-0">Sí</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {modifiesOperativeUnits !== 'SI' ? (
+                <button
+                  onClick={() => { setModifiesOperativeUnits('SI'); setOpenCards((p) => ({ ...p, card2: true })); }}
+                  className="px-4 py-1.5 bg-[#C41E3A] text-white rounded text-sm font-medium hover:bg-[#A01828] transition-colors"
+                >
+                  Sí
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setModifiesOperativeUnits(null); setOpenCards((p) => ({ ...p, card2: false })); }}
+                  className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  No modificar
+                </button>
               )}
             </div>
           </div>
 
         {openCards.card2 && modifiesOperativeUnits === 'SI' && (
-          <div className="p-4 space-y-5">
+          <div className="border-t border-gray-200 p-4 space-y-5">
             <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
               <p className="text-sm text-[#C41E3A] m-0">
                 <strong>Instrucciones:</strong> Agregue las unidades operativas que serán modificadas. Puede registrar unidades internas (dentro de la institución) y unidades externas (fuera de la institución) de forma independiente. Cada unidad requiere adjuntar la carta de declaración del jefe de unidad.
@@ -1191,16 +1204,16 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   Agregar
                 </button>
               </div>
-              <div className="border border-gray-300 rounded overflow-hidden">
+              <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Unidad</th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Carta de declaración</th>
-                      <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Acciones</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody className="divide-y divide-gray-200 bg-white">
                     {operativeUnitsData.internalUnits.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-400 italic">
@@ -1323,35 +1336,43 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       </div>
 
         {/* Card 3: Investigadores */}
-        <div className="border border-gray-300 rounded overflow-hidden">
+        <div className="border border-gray-200 rounded-sm overflow-hidden">
           <div
-            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer select-none"
-            onClick={() => toggleCard('card3')}
+            className="px-4 py-2 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+            onClick={() => { if (modifiesResearchers === 'SI') toggleCard('card3'); }}
           >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card3 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-gray-900 m-0">Equipo de Investigación</h3>
-                {!openCards.card3 && (
-                  <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${modifiesResearchers === 'SI' ? 'bg-[#C41E3A] text-white' : modifiesResearchers === 'NO' ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>
-                    {modifiesResearchers ?? 'Sin responder'}
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {modifiesResearchers === 'SI' && (
+                <svg className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${openCards.card3 ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              )}
+              <p className="text-sm text-gray-700 m-0">
+                ¿Vas a modificar el <span className="font-semibold text-gray-900">Equipo de Investigación</span>?
+              </p>
+              {modifiesResearchers === 'SI' && (
+                <span className="px-2 py-0.5 bg-[#C41E3A]/10 text-[#C41E3A] text-xs font-semibold rounded shrink-0">Sí</span>
+              )}
             </div>
-            {openCards.card3 && (
-              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                <p className="text-sm text-gray-600 m-0 mr-3 self-center">¿Modificará investigadores, tesistas, asesores o coasesores?</p>
-                <button onClick={() => setModifiesResearchers('NO')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesResearchers === 'NO' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>NO</button>
-                <button onClick={() => setModifiesResearchers('SI')} className={`px-6 py-2 rounded text-sm font-medium transition-all ${modifiesResearchers === 'SI' ? 'bg-[#C41E3A] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>SÍ</button>
-              </div>
-            )}
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {modifiesResearchers !== 'SI' ? (
+                <button
+                  onClick={() => { setModifiesResearchers('SI'); setOpenCards((p) => ({ ...p, card3: true })); }}
+                  className="px-4 py-1.5 bg-[#C41E3A] text-white rounded text-sm font-medium hover:bg-[#A01828] transition-colors"
+                >
+                  Sí
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setModifiesResearchers(null); setOpenCards((p) => ({ ...p, card3: false })); }}
+                  className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  No modificar
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
         {openCards.card3 && modifiesResearchers === 'SI' && (
-          <div className="p-4 space-y-4">
+          <div className="border-t border-gray-200 p-4 space-y-4">
             <div className="bg-red-50/50 border-l-4 border-red-200 p-4 rounded-r">
               <p className="text-sm text-[#C41E3A] m-0">
                 <strong>Nota:</strong> Agregue cada modificación haciendo clic en el botón "+ Agregar".
@@ -1360,7 +1381,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
             {researchers.length > 0 && (
               <div>
-                <div className="border border-gray-300 rounded overflow-hidden">
+                <div className="border border-gray-200 rounded-sm overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-[#C41E3A]">
@@ -1368,7 +1389,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol actual</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol propuesto</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Tipo</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider w-24">Acciones</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider w-10">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1473,10 +1494,13 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
             )}
           </div>
         )}
+        </div>
+        </div>
+      )}
       </div>
 
-        {/* Card 4: Otros Cambios en Documentos */}
-        <div className="border border-gray-300 rounded overflow-hidden">
+      {/* Card 4: Otros Cambios en Documentos */}
+      <div className="border border-gray-200 rounded-sm overflow-hidden">
           <div
             className="bg-[#C41E3A] px-4 py-3 cursor-pointer select-none"
             onClick={() => toggleCard('card4')}
@@ -1491,82 +1515,70 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   )}
                 </div>
               </div>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={handleOpenWordPicker}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-white border border-white/30 rounded hover:bg-white/20 transition-colors text-xs font-semibold whitespace-nowrap"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0l-3 3m3-3l3 3M17 8v12m0 0l-3-3m3 3l3-3M3 12h18" />
+                  </svg>
+                  Word
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditingDocId(null);
+                    setSubmitAttempted(false);
+                    setSearchDocument('');
+                    setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
+                    setShowAddChange(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#C41E3A] rounded hover:bg-gray-100 transition-colors text-xs font-semibold whitespace-nowrap"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar
+                </button>
+              </div>
             </div>
           </div>
 
-          {openCards.card4 && <div className="p-4 space-y-5">
+          {openCards.card4 && <div className="p-3 space-y-4">
             <div>
-              {/* Header con botones Agregar y Exportar */}
-              <div className="flex items-center justify-between mb-4 gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <h4 className="text-sm font-semibold text-gray-800 m-0 whitespace-nowrap">Cambios registrados</h4>
-                  {changes.length > 0 && (
-                    <span className="px-1.5 py-0.5 bg-red-100 text-[#C41E3A] rounded text-xs font-semibold">{changes.length}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleOpenWordPicker}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0l-3 3m3-3l3 3M17 8v12m0 0l-3-3m3 3l3-3M3 12h18" />
-                    </svg>
-                    Word
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setEditingDocId(null);
-                      setSubmitAttempted(false);
-                      setSearchDocument('');
-                      setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [], isGlobal: true });
-                      setShowAddChange(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Agregar
-                  </button>
-                </div>
-              </div>
-
-              {/* ✅ TABS por categoría - ESTILO BORDE INFERIOR */}
+              {/* TABS por categoría */}
               {documents.length > 0 && availableCategories.length > 0 && (
-                <div className="flex flex-wrap gap-0 mb-4 border-b border-gray-200">
-                  {/* Tab Todos */}
+                <div className="flex overflow-x-auto flex-nowrap gap-0 mb-3 border-b border-gray-200 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <button
                     onClick={() => setCategoryFilter('Todos')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
-                      categoryFilter === 'Todos'
+                    className={`shrink-0 px-3 py-1.5 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                      effectiveFilter === 'Todos'
                         ? 'border-[#C41E3A] text-[#C41E3A]'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Todos
+                    Resumen
                     <span className="ml-1.5 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
-                      {documents.length}
+                      {changes.length}
                     </span>
                   </button>
-
-                  {/* Tab por categoría */}
                   {availableCategories.map(cat => {
-                    const count = documents.filter(d => getDocCategory(d) === cat).length;
+                    const catDocs = documents.filter(d => getDocCategory(d) === cat);
+                    const catChanges = changes.filter(c => catDocs.some(d => c.isGlobal || c.appliesTo.includes(d.id))).length;
                     return (
                       <button
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
-                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
-                          categoryFilter === cat
+                        className={`shrink-0 px-3 py-1.5 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+                          effectiveFilter === cat
                             ? 'border-[#C41E3A] text-[#C41E3A]'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}
                       >
                         {cat}
                         <span className="ml-1.5 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
-                          {count}
+                          {catChanges}
                         </span>
                       </button>
                     );
@@ -1576,7 +1588,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
               {/* Panel inline global */}
               {inlineAddDocId === '__global__' && (
-                <div className="border border-red-200 rounded bg-red-50/50 p-3 mb-4">
+                <div className="border border-red-200 rounded bg-red-50/50 p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-[#C41E3A]">Nuevo cambio</span>
                   </div>
@@ -1609,7 +1621,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     {!inlineAddData.isGlobal && (
                       <div className="flex items-start gap-3">
                         {/* Picker */}
-                        <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[320px]">
+                        <div className="border border-gray-200 rounded-sm overflow-hidden min-w-[320px]">
                           <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
                             <span className="text-xs font-semibold text-gray-600 tabular-nums">{inlineAddData.appliesTo.length} de {documents.length} seleccionados</span>
                           </div>
@@ -1627,7 +1639,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                     <span className="text-xs font-bold text-white uppercase tracking-wide flex-1">{group.category}</span>
                                   </div>
                                   {group.docs.map((d) => (
-                                    <label key={d.id} className="flex items-center gap-2.5 pl-8 pr-3 py-2 text-xs text-gray-700 hover:bg-[#C41E3A]/5 cursor-pointer border-t border-gray-100 select-none">
+                                    <label key={d.id} className="flex items-center gap-2.5 pl-8 pr-3 py-2 text-xs text-gray-700 hover:bg-[#C41E3A]/5 cursor-pointer border-t border-gray-200 select-none">
                                       <input type="checkbox" checked={inlineAddData.appliesTo.includes(d.id)} onChange={() => setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.includes(d.id) ? p.appliesTo.filter((id) => id !== d.id) : [...p.appliesTo, d.id] }))} className="accent-[#C41E3A] w-3.5 h-3.5 shrink-0" />
                                       <span className="truncate">{d.name}</span>
                                     </label>
@@ -1638,7 +1650,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                           </div>
                         </div>
                         {/* Resumen */}
-                        <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[200px] max-w-[240px]">
+                        <div className="border border-gray-200 rounded-sm overflow-hidden min-w-[200px] max-w-[240px]">
                           <div className="bg-[#C41E3A] px-3 py-2 flex items-center justify-between gap-2">
                             <span className="text-xs font-bold text-white uppercase tracking-wide">Seleccionados</span>
                             {inlineAddData.appliesTo.length > 0 && (
@@ -1655,7 +1667,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                   if (selected.length === 0) return null;
                                   const allInGroup = selected.length === group.docs.length;
                                   return (
-                                    <div key={group.category} className="border-b border-gray-100 last:border-b-0">
+                                    <div key={group.category} className="border-b border-gray-200 last:border-b-0">
                                       <div className="px-3 py-1.5 bg-[#C41E3A]/8 flex items-center justify-between gap-2">
                                         <span className="text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide truncate flex-1">{group.category}</span>
                                         <span className="text-[10px] font-semibold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: allInGroup ? '#C41E3A' : 'rgba(196,30,58,0.12)', color: allInGroup ? 'white' : '#C41E3A' }}>
@@ -1685,323 +1697,380 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                 </div>
               )}
 
+              {/* Vista Resumen */}
+              {effectiveFilter === 'Todos' && (
+                <div>
+                  {changes.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No hay cambios registrados.</p>
+                  ) : (() => {
+                    // Agrupar: categoría → documentos → cambios
+                    const categoryGroups: { category: string; docs: { doc: typeof documents[0]; items: typeof changes }[] }[] = [];
+                    for (const cat of CATEGORY_ORDER) {
+                      const catDocs = documents.filter((d) => getDocCategory(d) === cat);
+                      const docsWithChanges = catDocs
+                        .map((doc) => ({ doc, items: changes.filter((c) => !c.isGlobal && c.appliesTo.includes(doc.id)) }))
+                        .filter((x) => x.items.length > 0);
+                      if (docsWithChanges.length > 0) categoryGroups.push({ category: cat, docs: docsWithChanges });
+                    }
+                    const globalChanges = changes.filter((c) => c.isGlobal);
+
+                    const renderChangeRows = (items: typeof changes) =>
+                      items.map((change) => (
+                        <tr key={change.id} className="border-t border-gray-200 hover:bg-[#C41E3A]/5 transition-colors align-top">
+                          <td className="px-3 py-2 text-gray-800 font-medium break-words">{change.field}{change.pageNumber && <span className="block text-[10px] text-gray-400 font-normal">p. {change.pageNumber}</span>}</td>
+                          <td className="px-3 py-2 text-gray-500 break-words">{change.oldValue || '—'}</td>
+                          <td className="px-3 py-2 text-gray-700 break-words">{change.newValue}</td>
+                          <td className="px-3 py-2 text-gray-500 break-words">{change.justification || '—'}</td>
+                          <td className="px-3 py-2 text-center">
+                            <button onClick={() => handleRemoveChange(change.id)} aria-label="Eliminar cambio" className="w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-[#C41E3A] hover:bg-[#C41E3A]/5 transition-colors mx-auto">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+
+                    return (
+                      <div className="border border-gray-200 rounded-sm overflow-hidden">
+                        <div className="max-h-[500px] overflow-y-auto">
+                        <table className="w-full text-xs table-fixed">
+                          <colgroup>
+                            <col className="w-[22%]" /><col className="w-[22%]" /><col className="w-[22%]" /><col className="w-[28%]" /><col className="w-8" />
+                          </colgroup>
+                          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide text-[10px]">Campo - Pág</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide text-[10px]">V. Anterior</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide text-[10px]">V. Nueva</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide text-[10px]">Justificación</th>
+                              <th className="px-3 py-2 w-8"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Cambios globales */}
+                            {globalChanges.length > 0 && (
+                              <Fragment>
+                                <tr className="cursor-pointer" onClick={() => setResumeCollapsed((p) => ({ ...p, '__global__': !p['__global__'] }))}>
+                                  <td colSpan={5} className="sticky top-[32px] z-[5] px-3 py-2 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide bg-gray-50 border-t border-b border-gray-200 shadow-[0_1px_0_0_#e5e7eb]">
+                                    <div className="flex items-center gap-2">
+                                      <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${resumeCollapsed['__global__'] ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                      <span>Todos los documentos</span>
+                                      <span className="px-1.5 py-0.5 bg-[#C41E3A]/10 text-[#C41E3A] rounded text-[10px] font-semibold normal-case tracking-normal">{globalChanges.length} cambio{globalChanges.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {!resumeCollapsed['__global__'] && renderChangeRows(globalChanges)}
+                              </Fragment>
+                            )}
+                            {/* Por categoría → documento */}
+                            {categoryGroups.map(({ category, docs }) => {
+                              const catCollapsed = resumeCollapsed[category] !== false;
+                              const totalCat = docs.reduce((s, x) => s + x.items.length, 0);
+                              return (
+                                <Fragment key={category}>
+                                  <tr className="cursor-pointer" onClick={() => setResumeCollapsed((p) => ({ ...p, [category]: !catCollapsed }))}>
+                                    <td colSpan={5} className="sticky top-[32px] z-[5] px-3 py-2 text-xs font-semibold text-[#C41E3A] uppercase tracking-wide bg-gray-50 border-t border-b border-gray-200 shadow-[0_1px_0_0_#e5e7eb]">
+                                      <div className="flex items-center gap-2">
+                                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${catCollapsed ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                        <span>{category}</span>
+                                        <span className="px-1.5 py-0.5 bg-[#C41E3A]/10 text-[#C41E3A] rounded text-[10px] font-semibold normal-case tracking-normal">{totalCat} cambio{totalCat !== 1 ? 's' : ''}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {!catCollapsed && docs.map(({ doc, items }) => (
+                                    <Fragment key={doc.id}>
+                                      <tr>
+                                        <td colSpan={5} className="sticky top-[64px] z-[4] px-4 py-1.5 bg-gray-50/95 border-t border-gray-200 shadow-[0_1px_0_0_#f3f4f6]">
+                                          <div className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#C41E3A]/40 shrink-0" />
+                                            <span className="text-xs font-medium text-gray-700 break-words">{doc.name}</span>
+                                            <span className="text-[10px] text-gray-400">{items.length} cambio{items.length !== 1 ? 's' : ''}</span>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      {renderChangeRows(items)}
+                                    </Fragment>
+                                  ))}
+                                </Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
               {/* Cards por documento */}
-              {documents.length === 0 ? (
+              {effectiveFilter !== 'Todos' && (documents.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">No hay documentos seleccionados.</p>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto space-y-4 pr-1">
+                <div className="max-h-[600px] overflow-y-auto border border-gray-200 rounded-sm divide-y divide-gray-200">
                   {filteredDocuments.map((doc) => {
                     const docChanges = changes.filter(
                       (c) => c.isGlobal || c.appliesTo.includes(doc.id)
                     );
-                    const ITEMS_PER_PAGE = 5;
-                    const currentPage = docPages[doc.id] ?? 1;
-                    const totalPages = Math.max(1, Math.ceil(docChanges.length / ITEMS_PER_PAGE));
-                    const paginatedChanges = docChanges.slice(
-                      (currentPage - 1) * ITEMS_PER_PAGE,
-                      currentPage * ITEMS_PER_PAGE
-                    );
-                    const setPage = (page: number) =>
-                      setDocPages((prev) => ({ ...prev, [doc.id]: page }));
+
+                    const docSearch = docChangeSearch[doc.id] ?? '';
+                    const visibleChanges = docSearch.trim()
+                      ? docChanges.filter(c =>
+                          c.field.toLowerCase().includes(docSearch.toLowerCase()) ||
+                          c.newValue.toLowerCase().includes(docSearch.toLowerCase()) ||
+                          c.oldValue.toLowerCase().includes(docSearch.toLowerCase()) ||
+                          c.justification.toLowerCase().includes(docSearch.toLowerCase())
+                        )
+                      : docChanges;
 
                     return (
-                      <div key={doc.id} className="border border-gray-300 rounded overflow-hidden">
-                        {/* Card header */}
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium text-gray-800 m-0">{doc.name}</p>
-                            <p className="text-xs text-gray-500 m-0 mt-0.5">({getDocCategory(doc)})</p>
+                      <div key={doc.id}>
+                        {/* Card header: nombre + buscador + agregar en una sola fila */}
+                        <div className="bg-gray-50 px-2 py-1.5 border-b border-gray-200 flex items-center gap-2">
+                          <p className="text-xs font-medium text-gray-800 m-0 truncate min-w-0 flex-1">
+                            {doc.name}
+                            <span className="ml-1.5 text-gray-400 tabular-nums font-normal">{docChanges.length}</span>
+                          </p>
+                          <div className="relative shrink-0 w-52">
+                            <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                              type="text"
+                              placeholder="Buscar…"
+                              value={docSearch}
+                              onChange={(e) => setDocChangeSearch(p => ({ ...p, [doc.id]: e.target.value }))}
+                              className="w-full pl-6 pr-5 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white text-gray-700 placeholder-gray-400"
+                            />
+                            {docSearch && (
+                              <button
+                                onClick={() => setDocChangeSearch(p => ({ ...p, [doc.id]: '' }))}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              onClick={() => handleOpenCsvPicker(doc.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors text-xs font-medium"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-10 4h6m5 6H6a2 2 0 01-2-2V7a2 2 0 012-2h1m10 0h1a2 2 0 012 2v12a2 2 0 01-2 2z" />
-                              </svg>
-                              Importar Excel
-                            </button>
-                            <button
-                              onClick={() => {
-                                setInlineAddData({ field: '', pageNumber: '', oldValue: '', newValue: '', justification: '', isGlobal: false, appliesTo: [doc.id] });
-                                setInlineAddDocId(doc.id);
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                              </svg>
-                              Agregar cambio
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setXlsModalDocId(doc.id)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium shrink-0"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Agregar
+                          </button>
                         </div>
 
-                        {/* Tabla */}
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs table-fixed">
+                        {/* Excel table */}
+                        <div>
+                          <table className="w-full text-xs border-collapse table-fixed">
                             <colgroup>
-                              <col className="w-[22%]" />
-                              <col className="w-[18%]" />
-                              <col className="w-[18%]" />
-                              <col className="w-[26%]" />
-                              <col className="w-[16%]" />
+                              <col style={{width: '26%'}} />
+                              <col style={{width: '19%'}} />
+                              <col style={{width: '19%'}} />
+                              <col style={{width: '27%'}} />
+                              <col style={{width: '10px'}} />
                             </colgroup>
                             <thead>
-                              <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Cambio - N° Página</th>
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión Anterior</th>
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Versión Nueva</th>
-                                <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Justificación</th>
-                                <th className="px-3 py-2 text-center font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Acciones</th>
+                              <tr className="bg-gray-100 border-b border-gray-200 select-none">
+                                <th className="border-r border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-500 text-xs uppercase tracking-wide">Campo - Pág <span className="text-[#C41E3A]">*</span></th>
+                                <th className="border-r border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-500 text-xs uppercase tracking-wide">V. Anterior</th>
+                                <th className="border-r border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-500 text-xs uppercase tracking-wide">V. Nueva <span className="text-[#C41E3A]">*</span></th>
+                                <th className="border-r border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-500 text-xs uppercase tracking-wide">Justificación</th>
+                                <th className="px-1 py-1.5 text-center font-semibold text-gray-500 text-xs uppercase tracking-wide">Acciones</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
-                              {paginatedChanges.length === 0 ? (
+                            <tbody>
+                              {visibleChanges.length === 0 && (
                                 <tr>
-                                  <td colSpan={5} className="px-3 py-4 text-center text-gray-400 italic text-xs">
-                                    Sin cambios registrados para este documento.
+                                  <td colSpan={5} className="py-5 text-center text-xs text-gray-400 italic">
+                                    Sin cambios — usa "Agregar cambio" para empezar
                                   </td>
                                 </tr>
-                              ) : (
-                                paginatedChanges.map((change, idx) => {
-                                  const isInline = inlineEditId === change.id && inlineEditDocId === doc.id;
-                                  return (
-                                  <tr
-                                    key={change.id}
-                                    ref={isInline ? inlineEditRowRef : null}
-                                    onDoubleClick={() => {
-                                      if (!isInline) startInlineEdit(change, doc.id);
-                                    }}
-                                    className={`${isInline ? 'bg-red-50/50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${!isInline ? 'cursor-pointer' : ''}`}
-                                  >
-                                    <td className="px-2 py-2">
-                                      {isInline ? (
-                                        <div className="flex flex-col gap-1">
-                                          <input autoFocus type="text" value={inlineEditData.field} onChange={(e) => setInlineEditData({ ...inlineEditData, field: e.target.value })} placeholder="Cambio" className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white" />
-                                          <input type="text" value={inlineEditData.pageNumber} onChange={(e) => setInlineEditData({ ...inlineEditData, pageNumber: e.target.value })} placeholder="N° página" className="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white text-[#C41E3A]/80" />
-                                        </div>
-                                      ) : (
-                                        <div className="flex flex-col gap-0.5">
-                                          <span className="text-gray-800 font-medium block truncate" title={change.field}>{change.field || '—'}</span>
-                                          {change.pageNumber && <span className="text-[10px] text-[#C41E3A]/70 font-medium">Pág. {change.pageNumber}</span>}
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td className="px-2 py-2">
-                                      {isInline
-                                        ? <textarea rows={3} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
-                                        : <p className="truncate text-gray-500 line-through m-0" title={change.oldValue}>{change.oldValue || '—'}</p>
-                                      }
-                                    </td>
-                                    <td className="px-2 py-2">
-                                      {isInline
-                                        ? <textarea rows={3} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
-                                        : <p className="truncate text-green-700 font-semibold m-0" title={change.newValue}>{change.newValue || '—'}</p>
-                                      }
-                                    </td>
-                                    <td className="px-2 py-2">
-                                      {isInline
-                                        ? <textarea rows={3} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} className="w-full px-2 py-1 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
-                                        : <p className="truncate text-gray-500 m-0" title={change.justification}>{change.justification || '—'}</p>
-                                      }
-                                    </td>
-                                    <td className="px-2 py-1.5">
-                                      <div className="flex gap-1 justify-center">
-                                        {isInline ? (
-                                          <>
-                                            <button
-                                              onClick={saveInlineEdit}
-                                              className="w-6 h-6 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                                              title="Guardar"
-                                            >
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                                            </button>
-                                            <button
-                                              onClick={closeInlineEdit}
-                                              className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
-                                              title="Cancelar"
-                                            >
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <button
-                                              onClick={() => handleEditChange(change, doc.id)}
-                                              className="w-6 h-6 flex items-center justify-center bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors"
-                                              title="Editar"
-                                            >
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                            </button>
-                                            <button
-                                              onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
-                                              className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-                                              title="Eliminar"
-                                            >
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
-                                          </>
-                                        )}
+                              )}
+                              {visibleChanges.map((change, idx) => {
+                                const bg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50';
+                                const cellCls = `border-r border-b border-gray-200 px-2 py-1.5 align-middle cursor-pointer ${bg} hover:bg-[#C41E3A]/5 transition-colors`;
+                                return (
+                                  <tr key={change.id} onClick={() => { setXlsModalDocId(doc.id); setXlsModalEditCell({ id: change.id, col: 'field' }); }} className="group">
+                                    <td className={cellCls}>
+                                      <div className="flex gap-1 items-center min-w-0">
+                                        <span className="flex-1 min-w-0 truncate text-gray-800 font-medium">{change.field || <span className="text-gray-300 font-normal italic">—</span>}</span>
+                                        {change.pageNumber && <span className="text-gray-400 text-xs shrink-0">· {change.pageNumber}</span>}
                                       </div>
                                     </td>
-                                  </tr>
-                                  );
-                                })
-                              )}
-                              {/* Fila inline de agregar */}
-                              {inlineAddDocId === doc.id && (
-                                <tr className="bg-red-50/50 border-b-0">
-                                  <td className="px-2 py-2">
-                                    <div className="flex flex-col gap-1">
-                                      <input autoFocus type="text" placeholder="Campo *" value={inlineAddData.field} onChange={(e) => setInlineAddData((p) => ({ ...p, field: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white" />
-                                      <input type="text" placeholder="N° página" value={inlineAddData.pageNumber} onChange={(e) => setInlineAddData((p) => ({ ...p, pageNumber: e.target.value }))} className="w-full px-2 py-1 text-[10px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A]/50 bg-white text-[#C41E3A]/80" />
-                                    </div>
-                                  </td>
-                                  <td className="px-2 py-2">
-                                    <textarea rows={3} placeholder="Versión anterior" value={inlineAddData.oldValue} onChange={(e) => setInlineAddData((p) => ({ ...p, oldValue: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
-                                  </td>
-                                  <td className="px-2 py-2">
-                                    <textarea rows={3} placeholder="Versión nueva *" value={inlineAddData.newValue} onChange={(e) => setInlineAddData((p) => ({ ...p, newValue: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
-                                  </td>
-                                  <td className="px-2 py-2">
-                                    <textarea rows={3} placeholder="Justificación" value={inlineAddData.justification} onChange={(e) => setInlineAddData((p) => ({ ...p, justification: e.target.value }))} className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-transparent bg-white resize-none" />
-                                  </td>
-                                  <td className="px-2 py-1.5">
-                                    <div className="flex flex-col gap-1 items-center">
-                                      <button onClick={handleInlineAdd} className="w-6 h-6 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors" title="Guardar">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                                      </button>
-                                      <button onClick={() => setInlineAddDocId(null)} className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors" title="Cancelar">
+                                    <td className={cellCls}>
+                                      <span className="block truncate text-gray-400 line-through">{change.oldValue || <span className="no-underline text-gray-300 italic">—</span>}</span>
+                                    </td>
+                                    <td className={cellCls}>
+                                      <span className="block truncate text-green-700 font-medium">{change.newValue || <span className="text-gray-300 font-normal italic">—</span>}</span>
+                                    </td>
+                                    <td className={cellCls}>
+                                      <span className="block truncate text-gray-500">{change.justification || <span className="text-gray-300 italic">—</span>}</span>
+                                    </td>
+                                    <td className={`border-b border-gray-200 px-1 py-1 align-middle text-center ${bg}`} onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
+                                        className="w-7 h-7 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors opacity-30 group-hover:opacity-100"
+                                        aria-label="Eliminar cambio"
+                                      >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                       </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                              {/* Fila de alcance (Global / Específico) */}
-                              {inlineAddDocId === doc.id && (
-                                <tr className="bg-red-50/30 hidden">
-                                  <td colSpan={5} className="px-3 py-2 border-t border-red-100">
-                                    <div className="flex items-start gap-3">
-                                      <span className="text-[10px] text-gray-500 font-medium mt-1 shrink-0">Alcance:</span>
-                                      <button
-                                        onClick={() => setInlineAddData((p) => ({ ...p, isGlobal: !p.isGlobal, appliesTo: !p.isGlobal ? selectedDocuments : [doc.id] }))}
-                                        className={`px-2.5 py-0.5 text-[10px] rounded border font-medium transition-colors shrink-0 ${inlineAddData.isGlobal ? 'bg-[#C41E3A] text-white border-[#C41E3A]' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                                      >
-                                        {inlineAddData.isGlobal ? 'Global' : 'Específico'}
-                                      </button>
-                                      {!inlineAddData.isGlobal && (
-                                        <div className="flex items-start gap-3">
-                                          {/* Picker */}
-                                          <div className="border border-gray-200 rounded-lg overflow-hidden min-w-[320px]">
-                                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
-                                              <span className="text-xs font-semibold text-gray-600 tabular-nums">{inlineAddData.appliesTo.length} de {documents.length} seleccionados</span>
-                                            </div>
-                                            <div className="overflow-y-auto max-h-56">
-                                              {groupedAvailable(documents).map((group) => {
-                                                const allChecked = group.docs.every((d) => inlineAddData.appliesTo.includes(d.id));
-                                                const someChecked = group.docs.some((d) => inlineAddData.appliesTo.includes(d.id));
-                                                return (
-                                                  <div key={group.category}>
-                                                    <div className="px-3 py-2 bg-[#C41E3A] flex items-center gap-2.5 cursor-pointer select-none" onClick={() => { const ids = group.docs.map((d) => d.id); if (allChecked) { setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.filter((id) => !ids.includes(id)) })); } else { const toAdd = ids.filter((id) => !inlineAddData.appliesTo.includes(id)); setInlineAddData((p) => ({ ...p, appliesTo: [...p.appliesTo, ...toAdd] })); } }}>
-                                                      <span className="shrink-0 w-3.5 h-3.5 border-2 border-white rounded-sm flex items-center justify-center" style={{ backgroundColor: allChecked ? 'white' : someChecked ? 'rgba(255,255,255,0.5)' : 'transparent' }}>
-                                                        {allChecked && <svg className="w-2.5 h-2.5 text-[#C41E3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                        {!allChecked && someChecked && <span className="block w-1.5 h-0.5 bg-white rounded-full" />}
-                                                      </span>
-                                                      <span className="text-xs font-bold text-white uppercase tracking-wide flex-1">{group.category}</span>
-                                                    </div>
-                                                    {group.docs.map((d) => (
-                                                      <label key={d.id} className="flex items-center gap-2.5 pl-8 pr-3 py-2 text-xs text-gray-700 hover:bg-[#C41E3A]/5 cursor-pointer border-t border-gray-100 select-none">
-                                                        <input type="checkbox" checked={inlineAddData.appliesTo.includes(d.id)} onChange={() => setInlineAddData((p) => ({ ...p, appliesTo: p.appliesTo.includes(d.id) ? p.appliesTo.filter((id) => id !== d.id) : [...p.appliesTo, d.id] }))} className="accent-[#C41E3A] w-3.5 h-3.5 shrink-0" />
-                                                        <span className="truncate">{d.name}</span>
-                                                      </label>
-                                                    ))}
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                          {/* Resumen */}
-                                          <div className="hidden border border-gray-200 rounded-lg overflow-hidden min-w-[200px] max-w-[240px]">
-                                            <div className="bg-[#C41E3A] px-3 py-2 flex items-center justify-between gap-2">
-                                              <span className="text-xs font-bold text-white uppercase tracking-wide">Seleccionados</span>
-                                              {inlineAddData.appliesTo.length > 0 && (
-                                                <span className="bg-white/25 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums shrink-0">{inlineAddData.appliesTo.length}</span>
-                                              )}
-                                            </div>
-                                            <div className="overflow-y-auto max-h-56 bg-white">
-                                              {inlineAddData.appliesTo.length === 0 ? (
-                                                <p className="text-[10px] text-gray-400 italic px-3 py-3 m-0">Ningún documento seleccionado.</p>
-                                              ) : (
-                                                <div>
-                                                  {groupedAvailable(documents).map((group) => {
-                                                    const selected = group.docs.filter((d) => inlineAddData.appliesTo.includes(d.id));
-                                                    if (selected.length === 0) return null;
-                                                    const allInGroup = selected.length === group.docs.length;
-                                                    return (
-                                                      <div key={group.category} className="border-b border-gray-100 last:border-b-0">
-                                                        <div className="px-3 py-1.5 bg-[#C41E3A]/8 flex items-center justify-between gap-2">
-                                                          <span className="text-[10px] font-bold text-[#C41E3A] uppercase tracking-wide truncate flex-1">{group.category}</span>
-                                                          <span className="text-[10px] font-semibold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: allInGroup ? '#C41E3A' : 'rgba(196,30,58,0.12)', color: allInGroup ? 'white' : '#C41E3A' }}>
-                                                            {allInGroup ? `Todos (${selected.length})` : selected.length}
-                                                          </span>
-                                                        </div>
-                                                        {!allInGroup && (
-                                                          <ul className="p-0 m-0 list-none">
-                                                            {selected.map((doc) => (
-                                                              <li key={doc.id} className="flex items-start gap-2 pl-5 pr-3 py-1.5 border-t border-gray-50">
-                                                                <span className="mt-1.5 w-1 h-1 rounded-full bg-[#C41E3A]/50 shrink-0" />
-                                                                <span className="text-[10px] text-gray-600 leading-snug">{doc.name}</span>
-                                                              </li>
-                                                            ))}
-                                                          </ul>
-                                                        )}
-                                                      </div>
-                                                    );
-                                                  })}
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
-
-                        {/* Paginador */}
-                        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            {docChanges.length === 0
-                              ? '0 resultados'
-                              : `Mostrando ${(currentPage - 1) * ITEMS_PER_PAGE + 1}–${Math.min(currentPage * ITEMS_PER_PAGE, docChanges.length)} de ${docChanges.length} resultado${docChanges.length !== 1 ? 's' : ''}`}
-                          </span>
-                          {totalPages > 1 && (
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                              </button>
-                              <span className="text-xs text-gray-600 px-1">{currentPage} / {totalPages}</span>
-                              <button onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                              </button>
-                            </div>
-                          )}
+                        {/* Botón flotante agregar fila */}
+                        <div className="flex justify-center py-1.5">
+                          <button
+                            onClick={() => {
+                              const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                              onChangesUpdate([...changes, { id: newId, field: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false }]);
+                              setXlsEditCell({ id: newId, col: 'field' });
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-2 text-xs text-gray-400 hover:text-[#C41E3A] hover:bg-[#C41E3A]/5 rounded transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                            Agregar fila
+                          </button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
+              ))}
             </div>
           </div>}
         </div>
-      </div>
+
+      {/* Modal Excel por documento */}
+      {xlsModalDocId && (() => {
+        const modalDoc = documents.find((d) => d.id === xlsModalDocId);
+        const modalChanges = changes.filter((c) => c.isGlobal || c.appliesTo.includes(xlsModalDocId));
+        const isEdit = (id: string, col: string) => xlsModalEditCell?.id === id && xlsModalEditCell?.col === col;
+        const newRow = xlsNewDocRow[xlsModalDocId] ?? { field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' };
+        const setNewRow = (v: typeof newRow) => setXlsNewDocRow((p) => ({ ...p, [xlsModalDocId]: v }));
+        const commitRow = () => {
+          if (!newRow.field.trim() || !newRow.newValue.trim()) return;
+          const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          onChangesUpdate([...changes, { id: newId, field: newRow.field.trim(), oldValue: newRow.oldValue.trim(), newValue: newRow.newValue.trim(), justification: newRow.justification.trim(), pageNumber: newRow.pageNumber.trim(), appliesTo: [xlsModalDocId], isGlobal: false }]);
+          setXlsNewDocRow((p) => ({ ...p, [xlsModalDocId]: { field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' } }));
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => { setXlsModalDocId(null); setXlsModalEditCell(null); }} />
+            <div className="relative bg-white rounded-sm shadow-2xl w-full max-w-5xl mx-4 max-h-[85vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 flex-shrink-0">
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-sm m-0">{modalDoc?.name}</h4>
+                  <p className="text-xs text-gray-400 m-0 mt-0.5">{modalChanges.length} cambio{modalChanges.length !== 1 ? 's' : ''} · Click en celda para editar · Enter en nueva fila para agregar</p>
+                </div>
+                <button onClick={() => { setXlsModalDocId(null); setXlsModalEditCell(null); }} aria-label="Cerrar" className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              {/* Table */}
+              <div className="overflow-auto flex-1">
+                <table className="w-full text-sm border-collapse table-fixed">
+                  <colgroup>
+                    <col style={{width: '26%'}} />
+                    <col style={{width: '21%'}} />
+                    <col style={{width: '21%'}} />
+                    <col style={{width: '28%'}} />
+                    <col style={{width: '40px'}} />
+                  </colgroup>
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-gray-100 border-b border-gray-200">
+                      <th className="border-r border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 text-xs uppercase tracking-wide">Campo - Pág <span className="text-[#C41E3A]">*</span></th>
+                      <th className="border-r border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 text-xs uppercase tracking-wide">V. Anterior</th>
+                      <th className="border-r border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 text-xs uppercase tracking-wide">V. Nueva <span className="text-[#C41E3A]">*</span></th>
+                      <th className="border-r border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 text-xs uppercase tracking-wide">Justificación</th>
+                      <th className="px-2 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalChanges.map((change, idx) => {
+                      const bg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                      const editing = xlsModalEditCell?.id === change.id;
+                      const cell = (col: string) => {
+                        const active = isEdit(change.id, col);
+                        return `border-r border-b border-gray-200 px-3 transition-colors ${active ? 'py-2 align-top bg-[#C41E3A]/5 ring-2 ring-inset ring-[#C41E3A] z-10 relative' : `py-2.5 align-middle cursor-pointer ${bg} hover:bg-[#C41E3A]/5`}`;
+                      };
+                      return (
+                        <tr key={change.id} className={`group ${editing ? 'shadow-sm' : ''}`}>
+                          <td className={`border-r border-b border-gray-200 px-3 transition-colors ${isEdit(change.id, 'field') || isEdit(change.id, 'pageNumber') ? 'py-2 align-top bg-[#C41E3A]/5 ring-2 ring-inset ring-[#C41E3A] z-10 relative' : `py-2.5 align-middle cursor-pointer ${bg} hover:bg-[#C41E3A]/5`}`}>
+                            <div className="flex gap-1.5 items-start min-w-0">
+                              <div className="flex-1 min-w-0" onClick={() => setXlsModalEditCell({ id: change.id, col: 'field' })}>
+                                {isEdit(change.id, 'field')
+                                  ? <input autoFocus className="w-full bg-transparent focus:outline-none text-sm py-0.5" value={change.field} onChange={(e) => updateChange(change.id, { field: e.target.value })} onBlur={() => setXlsModalEditCell(null)} onKeyDown={(e) => { if (e.key === 'Tab') { e.preventDefault(); setXlsModalEditCell({ id: change.id, col: 'pageNumber' }); } }} />
+                                  : <span className="block truncate font-medium text-gray-800">{change.field || <span className="text-gray-300 italic font-normal">—</span>}</span>}
+                              </div>
+                              <span className="text-gray-300 text-[10px] shrink-0 mt-1">·</span>
+                              <div className="shrink-0 w-10" onClick={() => setXlsModalEditCell({ id: change.id, col: 'pageNumber' })}>
+                                {isEdit(change.id, 'pageNumber')
+                                  ? <input autoFocus className="w-full bg-transparent focus:outline-none text-sm py-0.5" value={change.pageNumber ?? ''} onChange={(e) => updateChange(change.id, { pageNumber: e.target.value })} onBlur={() => setXlsModalEditCell(null)} onKeyDown={(e) => { if (e.key === 'Tab') { e.preventDefault(); setXlsModalEditCell({ id: change.id, col: 'oldValue' }); } }} />
+                                  : <span className="block text-gray-400 text-xs cursor-pointer">{change.pageNumber || <span className="text-gray-300 italic">p.</span>}</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className={cell('oldValue')} onClick={() => setXlsModalEditCell({ id: change.id, col: 'oldValue' })}>
+                            {isEdit(change.id, 'oldValue')
+                              ? <textarea autoFocus rows={4} className="w-full bg-transparent focus:outline-none resize-y text-sm min-h-[80px]" value={change.oldValue} onChange={(e) => updateChange(change.id, { oldValue: e.target.value })} onBlur={() => setXlsModalEditCell(null)} />
+                              : <span className="block truncate text-gray-400 line-through">{change.oldValue || <span className="no-underline text-gray-300 italic">—</span>}</span>}
+                          </td>
+                          <td className={cell('newValue')} onClick={() => setXlsModalEditCell({ id: change.id, col: 'newValue' })}>
+                            {isEdit(change.id, 'newValue')
+                              ? <textarea autoFocus rows={4} className="w-full bg-transparent focus:outline-none resize-y text-sm min-h-[80px]" value={change.newValue} onChange={(e) => updateChange(change.id, { newValue: e.target.value })} onBlur={() => setXlsModalEditCell(null)} />
+                              : <span className="block truncate text-green-700 font-medium">{change.newValue || <span className="text-gray-300 italic font-normal">—</span>}</span>}
+                          </td>
+                          <td className={cell('justification')} onClick={() => setXlsModalEditCell({ id: change.id, col: 'justification' })}>
+                            {isEdit(change.id, 'justification')
+                              ? <textarea autoFocus rows={4} className="w-full bg-transparent focus:outline-none resize-y text-sm min-h-[80px]" value={change.justification} onChange={(e) => updateChange(change.id, { justification: e.target.value })} onBlur={() => setXlsModalEditCell(null)} />
+                              : <span className="block truncate text-gray-600">{change.justification || <span className="text-gray-300 italic">—</span>}</span>}
+                          </td>
+                          <td className={`border-b border-gray-200 px-1 align-middle text-center ${bg}`} onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Eliminar "${change.field}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })} className="w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:bg-red-100 hover:text-red-500 transition-colors opacity-30 group-hover:opacity-100" aria-label="Eliminar cambio">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Nueva fila */}
+                    <tr className="bg-[#C41E3A]/5 border-t-2 border-[#C41E3A]/20">
+                      <td className="border-r border-[#C41E3A]/10 px-3 py-2">
+                        <div className="flex gap-1.5 items-center min-w-0">
+                          <input placeholder="Campo *" value={newRow.field} className="flex-1 min-w-0 bg-transparent focus:outline-none text-sm placeholder-gray-300" onChange={(e) => setNewRow({ ...newRow, field: e.target.value })} />
+                          <span className="text-gray-300 text-[10px] shrink-0">·</span>
+                          <input placeholder="p." value={newRow.pageNumber} className="w-10 bg-transparent focus:outline-none text-sm placeholder-gray-300" onChange={(e) => setNewRow({ ...newRow, pageNumber: e.target.value })} />
+                        </div>
+                      </td>
+                      <td className="border-r border-[#C41E3A]/10 px-3 py-2"><input placeholder="V. anterior" value={newRow.oldValue} className="w-full bg-transparent focus:outline-none text-sm placeholder-gray-300" onChange={(e) => setNewRow({ ...newRow, oldValue: e.target.value })} /></td>
+                      <td className="border-r border-[#C41E3A]/10 px-3 py-2"><input placeholder="V. nueva *" value={newRow.newValue} className="w-full bg-transparent focus:outline-none text-sm placeholder-gray-300" onChange={(e) => setNewRow({ ...newRow, newValue: e.target.value })} /></td>
+                      <td className="border-r border-[#C41E3A]/10 px-3 py-2"><input placeholder="Justificación" value={newRow.justification} className="w-full bg-transparent focus:outline-none text-sm placeholder-gray-300" onChange={(e) => setNewRow({ ...newRow, justification: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') commitRow(); }} /></td>
+                      <td className="px-1 py-2 text-center">
+                        <button onClick={commitRow} disabled={!newRow.field.trim() || !newRow.newValue.trim()} className="w-6 h-6 flex items-center justify-center mx-auto bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-200 disabled:cursor-not-allowed transition-colors">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-gray-200 flex justify-end flex-shrink-0">
+                <button onClick={() => { setXlsModalDocId(null); setXlsModalEditCell(null); }} className="px-4 py-1.5 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-sm font-medium">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal: Agregar / Editar cambio */}
       {showAddChange && (() => {
@@ -2037,7 +2106,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                   <h4 className="font-semibold text-gray-900 text-base m-0">{editingId ? 'Editar cambio' : 'Nuevo cambio'}</h4>
                   <p className="text-xs text-gray-400 m-0 mt-0.5">Los campos con <span className="text-[#C41E3A]">*</span> son obligatorios</p>
                 </div>
-                <button onClick={closeModal} className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded">
+                <button onClick={closeModal} aria-label="Cerrar" className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -2170,8 +2239,8 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         );
       })()}
 
-      {/* Modal: Agregar unidad operativa */}
-      {false && pasteTargetDocId && (() => {
+      {/* Modal: dead code removed */}
+      {false && (() => {
         const targetDoc = documents.find((doc) => doc.id === pasteTargetDocId);
         const parsedRows = parseExcelPaste(pasteRaw);
         const validRows = parsedRows.filter((row) => row.isValid);
@@ -2253,7 +2322,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     <h5 className="text-sm font-semibold text-gray-800 m-0">Vista previa</h5>
                     <p className="text-xs text-gray-500 m-0">Cada fila válida se creará como un cambio específico para este documento.</p>
                   </div>
-                  <div className="border border-gray-200 rounded overflow-hidden">
+                  <div className="border border-gray-200 rounded-sm overflow-hidden">
                     <div className="overflow-x-auto max-h-72">
                       <table className="w-full text-xs">
                         <thead className="bg-gray-50 sticky top-0">
@@ -2267,7 +2336,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Estado</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-200">
                           {parsedRows.length === 0 ? (
                             <tr>
                               <td colSpan={7} className="px-3 py-6 text-center text-gray-400 italic">Pega una tabla desde Excel para ver la vista previa.</td>
@@ -2341,7 +2410,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                     </button>
                     {unitDropdownOpen && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
-                        <div className="p-2 border-b border-gray-100">
+                        <div className="p-2 border-b border-gray-200">
                           <div className="relative">
                             <input type="text" autoFocus placeholder="Buscar unidad..." value={unitSearch} onChange={(e) => setUnitSearch(e.target.value)} className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent" />
                             <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
