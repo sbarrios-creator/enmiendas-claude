@@ -6,9 +6,8 @@ interface WizardStepsProps {
 
 const steps = [
   { number: 1, title: 'Seleccionar Documentos' },
-  { number: 2, title: 'Subir Documentos' },
-  { number: 3, title: 'Redacción de Cambio' },
-  { number: 4, title: 'Resumen' },
+  { number: 2, title: 'Redacción de Cambio' },
+  { number: 3, title: 'Resumen' },
 ];
 
 export function WizardSteps({ currentStep }: WizardStepsProps) {

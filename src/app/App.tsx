@@ -3,7 +3,6 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { WizardSteps } from './components/WizardSteps';
 import { SelectDocuments } from './components/SelectDocuments';
-import { UploadDocuments } from './components/UploadDocuments';
 import { DefineChanges } from './components/DefineChanges';
 import { Summary } from './components/Summary';
 import type { Document, Change, UploadStatus, Step3Data } from './types';
@@ -24,7 +23,7 @@ export default function App() {
   });
 
   const handleNext = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+    if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -82,22 +81,13 @@ export default function App() {
                 onSelectDocuments={setSelectedDocuments}
                 newDocuments={newDocuments}
                 onNewDocumentsChange={setNewDocuments}
+                uploadStatuses={uploadStatuses}
+                onUploadStatusChange={setUploadStatuses}
                 onNext={handleNext}
               />
             )}
 
             {currentStep === 2 && (
-              <UploadDocuments
-                selectedDocuments={selectedDocuments}
-                newDocuments={newDocuments}
-                uploadStatuses={uploadStatuses}
-                onUploadStatusChange={setUploadStatuses}
-                onNext={handleNext}
-                onBack={handleBack}
-              />
-            )}
-
-            {currentStep === 3 && (
               <DefineChanges
                 selectedDocuments={selectedDocuments}
                 newDocuments={newDocuments}
@@ -111,7 +101,7 @@ export default function App() {
               />
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 3 && (
               <Summary
                 selectedDocuments={selectedDocuments}
                 newDocuments={newDocuments}

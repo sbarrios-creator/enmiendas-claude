@@ -514,6 +514,7 @@ const mockOperativeUnits = [
 
 export function DefineChanges({ selectedDocuments, newDocuments, changes, onChangesUpdate, onSelectedDocumentsUpdate, step3Data, onStep3DataChange, onNext, onBack }: DefineChangesProps) {
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
+  const newRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
   const wordInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddChange, setShowAddChange] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -553,6 +554,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
     });
   const [xlsEditCell, setXlsEditCell] = useState<{ id: string; col: string } | null>(null);
   const [xlsNewDocRow, setXlsNewDocRow] = useState<Record<string, { field: string; pageNumber: string; oldValue: string; newValue: string; justification: string }>>({});
+  const [focusedNewRowDocId, setFocusedNewRowDocId] = useState<string | null>(null);
+  const [inlineEditHeight, setInlineEditHeight] = useState<number | null>(null);
+  const [newRowHeights, setNewRowHeights] = useState<Record<string, number | null>>({});
   const [xlsModalDocId, setXlsModalDocId] = useState<string | null>(null);
   const [xlsModalEditCell, setXlsModalEditCell] = useState<{ id: string; col: string } | null>(null);
   const excelInputRef = useRef<HTMLInputElement | null>(null);
@@ -986,6 +990,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       newValue: change.newValue,
       justification: change.justification,
     });
+    setTimeout(() => {
+      inlineEditRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   };
 
   const closeInlineEdit = () => {
@@ -995,7 +1002,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
 
   const saveInlineEdit = () => {
     if (!inlineEditId || !inlineEditDocId) return false;
-    if (!inlineEditData.field || !inlineEditData.newValue || !inlineEditData.justification || !inlineEditData.pageNumber) return false;
+    if (!inlineEditData.field || !inlineEditData.newValue || !inlineEditData.justification) return false;
 
     const activeChange = changes.find((change) => change.id === inlineEditId);
     if (!activeChange) return false;
@@ -1018,7 +1025,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       const target = event.target as Node | null;
       if (!target) return;
       if (inlineEditRowRef.current?.contains(target)) return;
-      saveInlineEdit();
+      if (!saveInlineEdit()) closeInlineEdit();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1032,6 +1039,21 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [changes, inlineEditData, inlineEditDocId, inlineEditId]);
+
+  useEffect(() => {
+    if (!focusedNewRowDocId) return;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      const row = newRowRefs.current[focusedNewRowDocId];
+      if (row && row.contains(target)) return;
+      setFocusedNewRowDocId(null);
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [focusedNewRowDocId]);
 
   const buildChangeForDoc = (
     source: Change,
@@ -1750,9 +1772,9 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                       <input autoFocus type="text" placeholder="Campo *" value={inlineAddData.field} onChange={(e) => setInlineAddData((p) => ({ ...p, field: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white" />
                       <input type="text" placeholder="N° página" value={inlineAddData.pageNumber} onChange={(e) => setInlineAddData((p) => ({ ...p, pageNumber: e.target.value }))} className="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white text-[#C41E3A]/80" />
                     </div>
-                    <textarea rows={3} placeholder="Versión anterior" value={inlineAddData.oldValue} onChange={(e) => setInlineAddData((p) => ({ ...p, oldValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
-                    <textarea rows={3} placeholder="Versión nueva *" value={inlineAddData.newValue} onChange={(e) => setInlineAddData((p) => ({ ...p, newValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
-                    <textarea rows={3} placeholder="Justificación" value={inlineAddData.justification} onChange={(e) => setInlineAddData((p) => ({ ...p, justification: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-none" />
+                    <textarea rows={3} placeholder="Versión anterior" value={inlineAddData.oldValue} onChange={(e) => setInlineAddData((p) => ({ ...p, oldValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-y" />
+                    <textarea rows={3} placeholder="Versión nueva *" value={inlineAddData.newValue} onChange={(e) => setInlineAddData((p) => ({ ...p, newValue: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-y" />
+                    <textarea rows={3} placeholder="Justificación" value={inlineAddData.justification} onChange={(e) => setInlineAddData((p) => ({ ...p, justification: e.target.value }))} className="w-full px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] bg-white resize-y" />
                     <div className="flex flex-col gap-1">
                       <button onClick={handleInlineAdd} className="w-7 h-7 flex items-center justify-center bg-green-600 text-white rounded hover:bg-green-700 transition-colors" title="Guardar">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
@@ -2013,7 +2035,14 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                             )}
                           </div>
                           <button
-                            onClick={() => setXlsModalDocId(doc.id)}
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditingDocId(doc.id);
+                              setSubmitAttempted(false);
+                              setSearchDocument('');
+                              setNewChange({ field: '', customField: '', oldValue: '', newValue: '', justification: '', pageNumber: '', appliesTo: [doc.id], isGlobal: false });
+                              setShowAddChange(true);
+                            }}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] transition-colors text-xs font-medium shrink-0"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2027,11 +2056,11 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         <div className="max-h-80 overflow-y-auto">
                           <table className="w-full text-xs border-collapse table-fixed">
                             <colgroup>
-                              <col style={{width: '28%'}} />
+                              <col style={{width: '27%'}} />
                               <col style={{width: '20%'}} />
                               <col style={{width: '20%'}} />
-                              <col style={{width: '26%'}} />
-                              <col style={{width: '28px'}} />
+                              <col style={{width: '25%'}} />
+                              <col style={{width: '44px'}} />
                             </colgroup>
                             <thead className="sticky top-0 z-10">
                               <tr className="bg-gray-100 border-b border-gray-200 select-none">
@@ -2043,16 +2072,19 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                               </tr>
                             </thead>
                             <tbody>
-                              {visibleChanges.map((change) => {
+                              {visibleChanges.map((change, idx) => {
                                 const isEditing = inlineEditId === change.id && inlineEditDocId === doc.id;
-                                const readCls = 'border-r border-b border-gray-100 px-2 py-1 align-middle cursor-pointer bg-white hover:bg-[#C41E3A]/5 transition-colors overflow-hidden max-w-0';
+                                const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/70';
+                                const readCls = `border-r border-b border-gray-200 px-2 py-1.5 align-middle cursor-pointer ${rowBg} hover:bg-[#C41E3A]/5 transition-colors overflow-hidden max-w-0`;
                                 const editCls = 'border-r border-b border-[#C41E3A]/30 px-1.5 py-1.5 align-top bg-[#C41E3A]/5';
                                 if (isEditing) {
                                   return (
                                     <tr key={change.id} ref={inlineEditRowRef as React.RefObject<HTMLTableRowElement>} className="ring-1 ring-inset ring-[#C41E3A]/30">
                                       <td className={editCls}>
-                                        <textarea autoFocus rows={3}
+                                        <textarea autoFocus rows={14}
                                           value={[inlineEditData.field, inlineEditData.pageNumber ? `· p.${inlineEditData.pageNumber}` : ''].filter(Boolean).join(' ')}
+                                          style={inlineEditHeight ? { height: inlineEditHeight } : undefined}
+                                          onMouseUp={(e) => setInlineEditHeight((e.target as HTMLTextAreaElement).offsetHeight)}
                                           onChange={(e) => {
                                             const val = e.target.value;
                                             const m = val.match(/^([\s\S]*?)\s*·\s*p\.?\s*(\S*)$/);
@@ -2060,16 +2092,16 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                             else setInlineEditData({ ...inlineEditData, field: val, pageNumber: '' });
                                           }}
                                           placeholder="Campo · p.12"
-                                          className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-none" />
+                                          className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-y" />
                                       </td>
-                                      <td className={editCls}><textarea rows={4} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} placeholder="Versión anterior" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-none" /></td>
-                                      <td className={editCls}><textarea rows={4} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} placeholder="Versión nueva *" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-none" /></td>
-                                      <td className={editCls}><textarea rows={4} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} placeholder="Justificación" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-none" /></td>
+                                      <td className={editCls}><textarea rows={14} style={inlineEditHeight ? { height: inlineEditHeight } : undefined} onMouseUp={(e) => setInlineEditHeight((e.target as HTMLTextAreaElement).offsetHeight)} value={inlineEditData.oldValue} onChange={(e) => setInlineEditData({ ...inlineEditData, oldValue: e.target.value })} placeholder="Versión anterior" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-y" /></td>
+                                      <td className={editCls}><textarea rows={14} style={inlineEditHeight ? { height: inlineEditHeight } : undefined} onMouseUp={(e) => setInlineEditHeight((e.target as HTMLTextAreaElement).offsetHeight)} value={inlineEditData.newValue} onChange={(e) => setInlineEditData({ ...inlineEditData, newValue: e.target.value })} placeholder="Versión nueva *" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-y" /></td>
+                                      <td className={editCls}><textarea rows={14} style={inlineEditHeight ? { height: inlineEditHeight } : undefined} onMouseUp={(e) => setInlineEditHeight((e.target as HTMLTextAreaElement).offsetHeight)} value={inlineEditData.justification} onChange={(e) => setInlineEditData({ ...inlineEditData, justification: e.target.value })} placeholder="Justificación" className="w-full px-1.5 py-0.5 text-xs border border-[#C41E3A]/40 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] resize-y" /></td>
                                       <td className="border-b border-[#C41E3A]/30 px-0.5 py-1.5 align-top text-center bg-[#C41E3A]/5">
-                                        <button onClick={() => saveInlineEdit()} title="Guardar" className="w-5 h-5 flex items-center justify-center rounded bg-[#C41E3A] text-white hover:bg-[#A01828] transition-colors mx-auto mb-1">
+                                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => saveInlineEdit()} title="Guardar" className="w-5 h-5 flex items-center justify-center rounded bg-[#C41E3A] text-white hover:bg-[#A01828] transition-colors mx-auto mb-1">
                                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button onClick={() => closeInlineEdit()} title="Cancelar" className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors mx-auto">
+                                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => closeInlineEdit()} title="Cancelar" className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors mx-auto">
                                           <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                       </td>
@@ -2079,27 +2111,41 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                 return (
                                   <tr key={change.id} onClick={() => startInlineEdit(change, doc.id)} className="group cursor-pointer">
                                     <td className={readCls} title={[change.field, change.pageNumber ? `p.${change.pageNumber}` : ''].filter(Boolean).join(' · ')}>
-                                      <span className="truncate block text-gray-800 font-medium">
-                                        {change.field ? [change.field, change.pageNumber ? `· p.${change.pageNumber}` : ''].filter(Boolean).join(' ') : <span className="text-gray-300 font-normal italic">—</span>}
-                                      </span>
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="shrink-0 w-4 h-4 rounded-full bg-[#C41E3A]/10 text-[#C41E3A] text-[9px] font-bold flex items-center justify-center leading-none">{idx + 1}</span>
+                                        <span className="truncate block text-gray-800 font-medium">
+                                          {change.field ? [change.field, change.pageNumber ? `· p.${change.pageNumber}` : ''].filter(Boolean).join(' ') : <span className="text-gray-400 font-normal italic">—</span>}
+                                        </span>
+                                      </div>
                                     </td>
                                     <td className={readCls} title={change.oldValue}>
-                                      <span className="truncate block text-gray-400 line-through">{change.oldValue || <span className="no-underline not-italic text-gray-300">—</span>}</span>
+                                      <span className="truncate block text-gray-500 line-through">{change.oldValue || <span className="no-underline not-italic text-gray-300">—</span>}</span>
                                     </td>
                                     <td className={readCls} title={change.newValue}>
                                       <span className="truncate block text-green-700 font-medium">{change.newValue || <span className="text-gray-300 font-normal">—</span>}</span>
                                     </td>
                                     <td className={readCls} title={change.justification}>
-                                      <span className="truncate block text-gray-500">{change.justification || <span className="text-gray-300 italic">—</span>}</span>
+                                      <span className="truncate block text-gray-600">{change.justification || <span className="text-gray-300 italic">—</span>}</span>
                                     </td>
-                                    <td className="border-b border-gray-100 px-0.5 py-1 align-middle text-center bg-white" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } })}
-                                        className="w-4 h-4 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 mx-auto"
-                                        aria-label="Eliminar cambio"
-                                      >
-                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                      </button>
+                                    <td className={`border-b border-gray-200 px-0.5 py-1.5 align-middle ${rowBg}`} onClick={(e) => e.stopPropagation()}>
+                                      <div className="flex items-center justify-center gap-0.5">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); startInlineEdit(change, doc.id); }}
+                                          className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-[#C41E3A] hover:bg-[#C41E3A]/10 transition-colors"
+                                          title="Editar"
+                                          aria-label="Editar cambio"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); openConfirm({ title: 'Eliminar cambio', message: `¿Desea eliminar el cambio "${change.field}"?`, confirmLabel: 'Eliminar', variant: 'danger', onConfirm: () => { handleRemoveChange(change.id); closeConfirm(); } }); }}
+                                          className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                          title="Eliminar"
+                                          aria-label="Eliminar cambio"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -2114,27 +2160,40 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                                   onChangesUpdate([...changes, { id: newId, field: newRow.field.trim(), oldValue: newRow.oldValue.trim(), newValue: newRow.newValue.trim(), justification: newRow.justification.trim(), pageNumber: newRow.pageNumber.trim(), appliesTo: [doc.id], isGlobal: false }]);
                                   setXlsNewDocRow((p) => ({ ...p, [doc.id]: { field: '', pageNumber: '', oldValue: '', newValue: '', justification: '' } }));
                                 };
+                                const hasContent = newRow.field || newRow.oldValue || newRow.newValue || newRow.justification;
+                                const isExpanded = focusedNewRowDocId === doc.id || !!hasContent;
+                                const newRowRows = isExpanded ? 14 : 1;
+                                const newRowEditCls = `border-r border-gray-100 px-1 py-1 ${isExpanded ? 'align-top' : 'align-middle'}`;
+                                const newRowH = newRowHeights[doc.id] ?? null;
+                                const newRowStyle = (newRowH && isExpanded) ? { height: newRowH } : undefined;
+                                const syncNewRowHeight = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+                                  setNewRowHeights(p => ({ ...p, [doc.id]: (e.target as HTMLTextAreaElement).offsetHeight }));
+                                };
+                                const newRowCls = 'w-full px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] placeholder-gray-300 resize-y transition-all';
                                 return (
-                                  <tr className="bg-gray-50/40 border-t border-dashed border-gray-300">
-                                    <td className="px-1 py-1 border-r border-gray-100 align-middle">
-                                      <input
+                                  <tr ref={(el) => { newRowRefs.current[doc.id] = el; }} className="bg-gray-50/40 border-t border-dashed border-gray-300">
+                                    <td className={newRowEditCls}>
+                                      <textarea
+                                        rows={newRowRows}
+                                        style={newRowStyle}
                                         value={[newRow.field, newRow.pageNumber ? `· p.${newRow.pageNumber}` : ''].filter(Boolean).join(' ')}
+                                        onFocus={() => { setFocusedNewRowDocId(doc.id); setTimeout(() => { newRowRefs.current[doc.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 0); }}
+                                        onMouseUp={syncNewRowHeight}
                                         onChange={(e) => {
                                           const val = e.target.value;
                                           const m = val.match(/^([\s\S]*?)\s*·\s*p\.?\s*(\S*)$/);
                                           if (m) setNewRow({ ...newRow, field: m[1].trim(), pageNumber: m[2].trim() });
                                           else setNewRow({ ...newRow, field: val, pageNumber: '' });
                                         }}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
                                         placeholder="Campo · p."
-                                        className="w-full px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] placeholder-gray-300"
+                                        className={newRowCls}
                                       />
                                     </td>
-                                    <td className="px-1 py-1 border-r border-gray-100 align-middle"><input value={newRow.oldValue} onChange={(e) => setNewRow({ ...newRow, oldValue: e.target.value })} placeholder="V. anterior" className="w-full px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] placeholder-gray-300" /></td>
-                                    <td className="px-1 py-1 border-r border-gray-100 align-middle"><input value={newRow.newValue} onChange={(e) => setNewRow({ ...newRow, newValue: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }} placeholder="V. nueva *" className="w-full px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] placeholder-gray-300" /></td>
-                                    <td className="px-1 py-1 border-r border-gray-100 align-middle"><input value={newRow.justification} onChange={(e) => setNewRow({ ...newRow, justification: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }} placeholder="Justificación" className="w-full px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#C41E3A] placeholder-gray-300" /></td>
-                                    <td className="px-0.5 py-1 text-center align-middle">
-                                      <button onClick={commit} disabled={!newRow.field.trim() || !newRow.newValue.trim()} className="w-4 h-4 flex items-center justify-center rounded-full bg-[#C41E3A] text-white hover:bg-[#A01828] disabled:bg-gray-200 disabled:cursor-not-allowed transition-colors mx-auto" aria-label="Agregar fila">
+                                    <td className={newRowEditCls}><textarea rows={newRowRows} style={newRowStyle} onFocus={() => { setFocusedNewRowDocId(doc.id); setTimeout(() => { newRowRefs.current[doc.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 0); }} onMouseUp={syncNewRowHeight} value={newRow.oldValue} onChange={(e) => setNewRow({ ...newRow, oldValue: e.target.value })} placeholder="V. anterior" className={newRowCls} /></td>
+                                    <td className={newRowEditCls}><textarea rows={newRowRows} style={newRowStyle} onFocus={() => { setFocusedNewRowDocId(doc.id); setTimeout(() => { newRowRefs.current[doc.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 0); }} onMouseUp={syncNewRowHeight} value={newRow.newValue} onChange={(e) => setNewRow({ ...newRow, newValue: e.target.value })} placeholder="V. nueva *" className={newRowCls} /></td>
+                                    <td className={newRowEditCls}><textarea rows={newRowRows} style={newRowStyle} onFocus={() => { setFocusedNewRowDocId(doc.id); setTimeout(() => { newRowRefs.current[doc.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 0); }} onMouseUp={syncNewRowHeight} value={newRow.justification} onChange={(e) => setNewRow({ ...newRow, justification: e.target.value })} placeholder="Justificación" className={newRowCls} /></td>
+                                    <td className={`px-0.5 py-1 text-center ${isExpanded ? 'align-top pt-2' : 'align-middle'}`}>
+                                      <button onMouseDown={(e) => e.preventDefault()} onClick={commit} disabled={!newRow.field.trim() || !newRow.newValue.trim()} className="w-4 h-4 flex items-center justify-center rounded-full bg-[#C41E3A] text-white hover:bg-[#A01828] disabled:bg-gray-200 disabled:cursor-not-allowed transition-colors mx-auto" aria-label="Agregar fila">
                                         <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
                                       </button>
                                     </td>
@@ -2307,132 +2366,149 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
-            <div className="relative bg-white rounded shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                <div>
-                  <h4 className="font-semibold text-gray-900 text-base m-0">{editingId ? 'Editar cambio' : 'Nuevo cambio'}</h4>
-                  <p className="text-xs text-gray-400 m-0 mt-0.5">Los campos con <span className="text-[#C41E3A]">*</span> son obligatorios</p>
+            <div className="relative bg-white rounded shadow-2xl w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <h4 className="font-semibold text-gray-900 text-sm m-0">{editingId ? 'Editar cambio' : 'Nuevo cambio'}</h4>
+                  <span className="text-xs text-gray-400">Los campos con <span className="text-[#C41E3A]">*</span> son obligatorios</span>
                 </div>
                 <button onClick={closeModal} aria-label="Cerrar" className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
 
-              <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
-                <div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-36 flex-shrink-0 pt-2">
-                      <label className="text-sm font-semibold text-gray-700">Cambio a Realizar <span className="text-[#C41E3A]">*</span></label>
-                    </div>
-                    <input autoFocus type="text" value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
-                  </div>
-                  {err.field && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-36 flex-shrink-0">
-                      <label className="text-sm font-semibold text-gray-700">N° de página <span className="text-[#C41E3A]">*</span></label>
-                    </div>
-                    <input type="text" value={newChange.pageNumber} onChange={(e) => { setNewChange({ ...newChange, pageNumber: e.target.value }); setSubmitAttempted(false); }} placeholder="Ej: 5, 12-14, 20" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${err.pageNumber ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
-                  </div>
-                  {err.pageNumber ? <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p> : <p className="mt-1 text-xs text-gray-400 m-0">Indique la página o rango de páginas donde se realiza este cambio.</p>}
-                </div>
-
-                <div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-36 flex-shrink-0 pt-2">
-                      <label className="text-sm font-semibold text-gray-700">Versión Anterior</label>
-                      <span className="block px-1.5 py-0.5 bg-gray-100 text-gray-400 text-xs rounded font-normal mt-1">opcional</span>
-                    </div>
-                    <textarea rows={3} value={newChange.oldValue} onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })} placeholder="Ingrese el valor que se reemplazará" className="flex-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-white transition-colors resize-none" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-36 flex-shrink-0 pt-2">
-                      <label className="text-sm font-semibold text-gray-700">Versión Nueva <span className="text-[#C41E3A]">*</span></label>
-                    </div>
-                    <textarea rows={3} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-none ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
-                  </div>
-                  {err.newValue && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
-                </div>
-
-                <div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-36 flex-shrink-0 pt-2">
-                      <label className="text-sm font-semibold text-gray-700">Justificación <span className="text-[#C41E3A]">*</span></label>
-                      {newChange.justification && <span className="block text-xs text-gray-400 mt-1">{newChange.justification.length} car.</span>}
-                    </div>
-                    <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={3} className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
-                  </div>
-                  {err.justification && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
-                </div>
-
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio <span className="text-[#C41E3A]">*</span></label>
-                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-300 rounded">
-                    <button onClick={() => setNewChange({ ...newChange, isGlobal: true })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-[#C41E3A]" />}</div>
-                        <span>Todos los docs.</span>
+              <div className="flex-1 overflow-hidden grid grid-cols-[1fr_380px]">
+                {/* Left: formulario */}
+                <div className="overflow-y-auto px-6 py-5 space-y-5 border-r border-gray-200">
+                  <div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-36 flex-shrink-0 pt-2">
+                        <label className="text-sm font-semibold text-gray-700">Cambio a Realizar <span className="text-[#C41E3A]">*</span></label>
                       </div>
-                      <p className="text-xs text-gray-400 m-0 ml-6">Aplica a los {documents.length} docs.</p>
-                    </button>
-                    <button onClick={() => setNewChange({ ...newChange, isGlobal: false })} className={`px-4 py-3 rounded border-2 transition-all text-sm font-medium text-left ${!newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{!newChange.isGlobal && <div className="w-2 h-2 rounded-full bg-[#C41E3A]" />}</div>
-                        <span>Específicos</span>
+                      <textarea autoFocus rows={5} value={newChange.field} onChange={(e) => { setNewChange({ ...newChange, field: e.target.value }); setSubmitAttempted(false); }} placeholder="Describa el cambio a realizar..." className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-y ${err.field ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
+                    </div>
+                    {err.field && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
+                  </div>
+
+
+                  <div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-36 flex-shrink-0 pt-2">
+                        <label className="text-sm font-semibold text-gray-700">Versión Anterior</label>
+                        <span className="block px-1.5 py-0.5 bg-gray-100 text-gray-400 text-xs rounded font-normal mt-1">opcional</span>
                       </div>
-                      <p className="text-xs text-gray-400 m-0 ml-6">Selecciona cuáles</p>
-                    </button>
+                      <textarea rows={5} value={newChange.oldValue} onChange={(e) => setNewChange({ ...newChange, oldValue: e.target.value })} placeholder="Ingrese el valor que se reemplazará" className="flex-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded bg-gray-50 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-white transition-colors resize-y" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-36 flex-shrink-0 pt-2">
+                        <label className="text-sm font-semibold text-gray-700">Versión Nueva <span className="text-[#C41E3A]">*</span></label>
+                      </div>
+                      <textarea rows={5} value={newChange.newValue} onChange={(e) => { setNewChange({ ...newChange, newValue: e.target.value }); setSubmitAttempted(false); }} placeholder="Ingrese el nuevo valor o texto corregido" className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent transition-colors resize-y ${err.newValue ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
+                    </div>
+                    {err.newValue && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
+                  </div>
+
+                  <div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-36 flex-shrink-0 pt-2">
+                        <label className="text-sm font-semibold text-gray-700">Justificación <span className="text-[#C41E3A]">*</span></label>
+                        {newChange.justification && <span className="block text-xs text-gray-400 mt-1">{newChange.justification.length} car.</span>}
+                      </div>
+                      <textarea value={newChange.justification} onChange={(e) => setNewChange({ ...newChange, justification: e.target.value })} placeholder="Describa la razón técnica o científica de este cambio" rows={5} className={`flex-1 px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:border-transparent resize-y transition-colors ${err.justification ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#C41E3A]'}`} />
+                    </div>
+                    {err.justification && <p className="mt-1 text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Campo requerido</p>}
                   </div>
                 </div>
 
-                {!newChange.isGlobal && (
-                  <div className="border border-gray-300 rounded p-4 bg-gray-50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <p className="text-sm font-semibold text-gray-700 m-0">Seleccione los documentos</p>
-                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${err.appliesTo ? 'bg-red-100 text-[#C41E3A]' : 'bg-red-100 text-[#C41E3A]'}`}>{newChange.appliesTo.length} / {documents.length}</span>
-                      {err.appliesTo && <span className="text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Seleccione al menos uno</span>}
-                    </div>
-                    <div className="flex gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <input type="text" placeholder="Buscar documento..." value={searchDocument} onChange={(e) => setSearchDocument(e.target.value)} className="w-full px-4 py-2 pl-9 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent bg-white" />
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                      </div>
-                      <button onClick={() => { const allIds = documents.map((d) => d.id); const allSelected = allIds.every((id) => newChange.appliesTo.includes(id)); setNewChange({ ...newChange, appliesTo: allSelected ? [] : allIds }); }} className="px-3 py-2 text-xs font-semibold text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors whitespace-nowrap bg-white flex-shrink-0">
-                        {documents.every((d) => newChange.appliesTo.includes(d.id)) ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                {/* Right: alcance del cambio */}
+                <div className="overflow-hidden px-5 py-5 bg-gray-50/60 flex flex-col gap-3">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Alcance del cambio <span className="text-[#C41E3A]">*</span></label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => setNewChange({ ...newChange, isGlobal: true })} className={`px-3 py-2 rounded border-2 transition-all text-sm font-medium text-left ${newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{newChange.isGlobal && <div className="w-1.5 h-1.5 rounded-full bg-[#C41E3A]" />}</div>
+                          <span className="text-xs">Todos los docs.</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 m-0 ml-5 mt-0.5">Aplica a los {documents.length} docs.</p>
+                      </button>
+                      <button onClick={() => setNewChange({ ...newChange, isGlobal: false })} className={`px-3 py-2 rounded border-2 transition-all text-sm font-medium text-left ${!newChange.isGlobal ? 'border-[#C41E3A] bg-red-50 text-[#C41E3A]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${!newChange.isGlobal ? 'border-[#C41E3A]' : 'border-gray-300'}`}>{!newChange.isGlobal && <div className="w-1.5 h-1.5 rounded-full bg-[#C41E3A]" />}</div>
+                          <span className="text-xs">Específicos</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 m-0 ml-5 mt-0.5">Selecciona cuáles</p>
                       </button>
                     </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {groupedAvailable(documents.filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))).map((group) => (
-                        <div key={group.category}>
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide m-0">{group.category}</p>
-                            <div className="flex gap-2">
-                              <button type="button" onClick={() => { const toAdd = group.docs.map((d) => d.id).filter((id) => !newChange.appliesTo.includes(id)); setNewChange({ ...newChange, appliesTo: [...newChange.appliesTo, ...toAdd] }); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors"><svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>todos</button>
-                              <button type="button" onClick={() => { const toRemove = group.docs.map((d) => d.id); setNewChange({ ...newChange, appliesTo: newChange.appliesTo.filter((id) => !toRemove.includes(id)) }); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors"><svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" /></svg>todos</button>
-                            </div>
-                          </div>
-                          {group.docs.map((doc) => {
-                            const selected = newChange.appliesTo.includes(doc.id);
-                            return (
-                              <button key={doc.id} onClick={() => { setNewChange({ ...newChange, appliesTo: selected ? newChange.appliesTo.filter((id) => id !== doc.id) : [...newChange.appliesTo, doc.id] }); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-left transition-colors mb-1 ${selected ? 'bg-red-50/50 border border-red-200 text-[#C41E3A]' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
-                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-[#C41E3A] border-[#C41E3A]' : 'border-gray-300'}`}>{selected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}</div>
-                                <span className="flex-1 truncate">{doc.name}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ))}
-                      {searchDocument && documents.filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())).length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-3 m-0">No se encontraron documentos.</p>
-                      )}
-                    </div>
                   </div>
-                )}
+
+                  {!newChange.isGlobal && (
+                    <div className="flex-1 flex flex-col gap-2 min-h-0">
+                      <div className="flex items-center gap-1.5">
+                        <div className="relative flex-1">
+                          <input type="text" placeholder="Buscar..." value={searchDocument} onChange={(e) => setSearchDocument(e.target.value)} className="w-full px-2.5 py-1 pl-7 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-[#C41E3A] bg-white" />
+                          <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <span className="px-1.5 py-0.5 text-[11px] font-semibold rounded bg-red-100 text-[#C41E3A] shrink-0">{newChange.appliesTo.length}/{documents.length}</span>
+                        <button onClick={() => { const allIds = documents.map((d) => d.id); const allSelected = allIds.every((id) => newChange.appliesTo.includes(id)); setNewChange({ ...newChange, appliesTo: allSelected ? [] : allIds }); }} className="px-2 py-1 text-[11px] font-semibold text-[#C41E3A] border border-red-200 rounded hover:bg-red-50 transition-colors whitespace-nowrap bg-white shrink-0">
+                          {documents.every((d) => newChange.appliesTo.includes(d.id)) ? 'Desel.' : 'Todos'}
+                        </button>
+                      </div>
+                      {err.appliesTo && <p className="text-xs text-red-500 flex items-center gap-1 m-0"><svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>Seleccione al menos uno</p>}
+                      <div className="flex-1 overflow-y-auto border border-gray-200 rounded bg-white">
+                        {groupedAvailable(documents.filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase()))).map((group) => (
+                          group.docs.length > 0 && (
+                            <div key={group.category}>
+                              <div className="px-2.5 py-1 bg-[#C41E3A] flex items-center gap-2 sticky top-0">
+                                <input
+                                  type="checkbox"
+                                  className="w-3.5 h-3.5 cursor-pointer accent-white shrink-0"
+                                  checked={group.docs.every((d) => newChange.appliesTo.includes(d.id))}
+                                  ref={(el) => { if (el) el.indeterminate = group.docs.some((d) => newChange.appliesTo.includes(d.id)) && !group.docs.every((d) => newChange.appliesTo.includes(d.id)); }}
+                                  onChange={() => {
+                                    const allSelected = group.docs.every((d) => newChange.appliesTo.includes(d.id));
+                                    if (allSelected) {
+                                      const toRemove = group.docs.map((d) => d.id);
+                                      setNewChange({ ...newChange, appliesTo: newChange.appliesTo.filter((id) => !toRemove.includes(id)) });
+                                    } else {
+                                      const toAdd = group.docs.map((d) => d.id).filter((id) => !newChange.appliesTo.includes(id));
+                                      setNewChange({ ...newChange, appliesTo: [...newChange.appliesTo, ...toAdd] });
+                                    }
+                                  }}
+                                />
+                                <span className="text-[10px] font-semibold text-white uppercase tracking-wide">{group.category}</span>
+                              </div>
+                              {group.docs.map((doc) => {
+                                const selected = newChange.appliesTo.includes(doc.id);
+                                return (
+                                  <button key={doc.id} onClick={() => { setNewChange({ ...newChange, appliesTo: selected ? newChange.appliesTo.filter((id) => id !== doc.id) : [...newChange.appliesTo, doc.id] }); }} className={`w-full flex items-center gap-2 px-2.5 py-1 text-xs text-left transition-colors border-b border-gray-100 last:border-0 ${selected ? 'bg-red-50 text-[#C41E3A]' : 'text-gray-700 hover:bg-gray-50'}`}>
+                                    <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-[#C41E3A] border-[#C41E3A]' : 'border-gray-300'}`}>{selected && <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}</div>
+                                    <span className="flex-1 truncate">{doc.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )
+                        ))}
+                        {searchDocument && documents.filter((doc) => doc.name.toLowerCase().includes(searchDocument.toLowerCase())).length === 0 && (
+                          <p className="text-xs text-gray-400 text-center py-4 m-0">Sin resultados</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {newChange.isGlobal && (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center text-gray-400">
+                        <svg className="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <p className="text-xs m-0">Aplica a todos los<br/>{documents.length} documentos</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-gray-200 flex-shrink-0">
@@ -2489,7 +2565,7 @@ export function DefineChanges({ selectedDocuments, newDocuments, changes, onChan
                         onChange={(e) => setPasteRaw(e.target.value)}
                         placeholder={'Pega aquí las filas copiadas desde Excel con Ctrl+V'}
                         rows={12}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-none font-mono"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#C41E3A] focus:border-transparent resize-y font-mono"
                       />
                     </div>
                   </div>
