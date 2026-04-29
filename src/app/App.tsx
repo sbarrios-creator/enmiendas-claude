@@ -15,40 +15,35 @@ export default function App() {
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [changes, setChanges] = useState<Change[]>([]);
   const [step3Data, setStep3Data] = useState<Step3Data>({
-    modifiesTitleOrSummary: null,
+    modifiesTitleOrSummary: 'NO',
     titleSummaryData: { title: '', summary: '' },
-    modifiesOperativeUnits: null,
+    modifiesOperativeUnits: 'NO',
     operativeUnitsData: { internalUnits: [], externalUnits: [] },
-    modifiesResearchers: null,
+    modifiesResearchers: 'NO',
     researchers: [],
   });
 
   const handleNext = () => {
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
   const handleFinish = () => {
     alert('Enmiendas generadas exitosamente');
-    // Reset wizard
     setCurrentStep(1);
     setSelectedDocuments([]);
     setNewDocuments([]);
     setUploadStatuses({});
     setChanges([]);
     setStep3Data({
-      modifiesTitleOrSummary: null,
+      modifiesTitleOrSummary: 'NO',
       titleSummaryData: { title: '', summary: '' },
-      modifiesOperativeUnits: null,
+      modifiesOperativeUnits: 'NO',
       operativeUnitsData: { internalUnits: [], externalUnits: [] },
-      modifiesResearchers: null,
+      modifiesResearchers: 'NO',
       researchers: [],
     });
   };
@@ -58,8 +53,10 @@ export default function App() {
       <Header />
 
       <div className="flex-1 flex flex-col">
-        <div className="max-w-screen-2xl mx-auto px-6 pt-6 w-full">
-          <div className="mb-6">
+        <div className="max-w-screen-2xl mx-auto px-20 py-6 w-full flex flex-col gap-6">
+
+          {/* Breadcrumb + título + wizard */}
+          <div>
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
               <span>Asistente de registro de enmienda FI para proyectos que involucren seres humanos</span>
               <span>»</span>
@@ -74,17 +71,11 @@ export default function App() {
                 Salir
               </button>
             </div>
-           {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 border border-amber-300 rounded">
-              <span className="text-amber-800">Observaciones</span>
-              <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-sm">0</span>
-            </div>*/}
+            <WizardSteps currentStep={currentStep} />
           </div>
 
-          <WizardSteps currentStep={currentStep} />
-        </div>
-
-        <div className="max-w-screen-2xl mx-auto px-6 pb-6 w-full">
-          <div className={`bg-white shadow-sm border border-gray-200 mt-6 rounded-sm ${currentStep === 3 ? 'p-4' : 'p-8'}`}>
+          {/* Contenido del paso activo */}
+          <div className={`bg-white shadow-sm border border-gray-200 rounded-sm p-4`}>
             {currentStep === 1 && (
               <SelectDocuments
                 selectedDocuments={selectedDocuments}
@@ -132,6 +123,7 @@ export default function App() {
               />
             )}
           </div>
+
         </div>
       </div>
 

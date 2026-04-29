@@ -211,7 +211,7 @@ export function SelectDocuments({
           className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
             activeTab === "Resumen"
               ? "bg-[#C41E3A] text-white"
-              : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              : "border border-gray-300 text-gray-500 hover:bg-gray-50"
           }`}
         >
           Resumen
@@ -239,7 +239,7 @@ export function SelectDocuments({
                 className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-[#C41E3A] text-white"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    : "border border-gray-300 text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {section.title}
@@ -399,7 +399,7 @@ export function SelectDocuments({
                           [section.title]: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-1.5 pl-9 text-sm border border-[#C41E3A]/20 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A]/30"
+                      className="w-full px-4 py-1.5 pl-9 text-sm border border-[#C41E3A]/20 rounded bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A]/40 focus:border-[#C41E3A]"
                     />
                     <svg
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -547,22 +547,9 @@ export function SelectDocuments({
         <button
           onClick={onNext}
           disabled={selectedDocuments.length === 0}
-          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
+          className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
-          <span>Siguiente</span>
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          Siguiente →
         </button>
       </div>
 

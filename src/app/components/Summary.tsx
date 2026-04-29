@@ -381,7 +381,7 @@ export function Summary({
         <h3 className="text-sm font-semibold text-gray-900 mb-1">
           Resumen de enmiendas
         </h3>
-        <p className="text-sm text-gray-600 m-0">
+        <p className="text-sm text-gray-700 m-0">
           Revise el impacto de los cambios antes de confirmar
         </p>
       </div>
@@ -405,7 +405,7 @@ export function Summary({
                   step3Data.modifiesTitleOrSummary === "SI"
                     ? "bg-[#C41E3A] text-white"
                     : step3Data.modifiesTitleOrSummary === "NO"
-                      ? "bg-gray-200 text-gray-600"
+                      ? "bg-gray-100 text-gray-500"
                       : "bg-amber-100 text-amber-700"
                 }`}
               >
@@ -450,7 +450,7 @@ export function Summary({
                   step3Data.modifiesOperativeUnits === "SI"
                     ? "bg-[#C41E3A] text-white"
                     : step3Data.modifiesOperativeUnits === "NO"
-                      ? "bg-gray-200 text-gray-600"
+                      ? "bg-gray-100 text-gray-500"
                       : "bg-amber-100 text-amber-700"
                 }`}
               >
@@ -492,7 +492,7 @@ export function Summary({
                   step3Data.modifiesResearchers === "SI"
                     ? "bg-[#C41E3A] text-white"
                     : step3Data.modifiesResearchers === "NO"
-                      ? "bg-gray-200 text-gray-600"
+                      ? "bg-gray-100 text-gray-500"
                       : "bg-amber-100 text-amber-700"
                 }`}
               >
@@ -506,22 +506,22 @@ export function Summary({
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Nombre
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Correo
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Rol actual
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Rol propuesto
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Tipo
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                           Justificación
                         </th>
                       </tr>
@@ -535,13 +535,13 @@ export function Summary({
                           <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                             {r.name}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
+                          <td className="px-4 py-3 text-sm text-gray-700">
                             {r.email}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
+                          <td className="px-4 py-3 text-sm text-gray-700">
                             {r.currentRole || "—"}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
+                          <td className="px-4 py-3 text-sm text-gray-700">
                             {r.proposedRole || "—"}
                           </td>
                           <td className="px-4 py-3">
@@ -561,7 +561,7 @@ export function Summary({
                                   : "Modificar"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
+                          <td className="px-4 py-3 text-sm text-gray-700">
                             {r.justification}
                           </td>
                         </tr>
@@ -818,7 +818,7 @@ export function Summary({
                                         value={docSearch[doc.id] ?? ""}
                                         onChange={(e) => setDocSearch((prev) => ({ ...prev, [doc.id]: e.target.value }))}
                                         placeholder="Buscar por campo..."
-                                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C41E3A] focus:border-[#C41E3A]"
+                                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41E3A]/40 focus:border-[#C41E3A]"
                                       />
                                     </div>
                                   </div>
@@ -983,11 +983,11 @@ export function Summary({
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <button
-                              className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                              title="Ver"
+                              className="w-7 h-7 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                              aria-label="Ver"
                             >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -1007,11 +1007,11 @@ export function Summary({
                               </svg>
                             </button>
                             <button
-                              className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                              title="Descargar"
+                              className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              aria-label="Descargar"
                             >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -1043,11 +1043,11 @@ export function Summary({
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <button
-                              className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                              title="Ver"
+                              className="w-7 h-7 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                              aria-label="Ver"
                             >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -1067,11 +1067,11 @@ export function Summary({
                               </svg>
                             </button>
                             <button
-                              className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                              title="Descargar"
+                              className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              aria-label="Descargar"
                             >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -1097,11 +1097,11 @@ export function Summary({
                                   },
                                 })
                               }
-                              className="w-6 h-6 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-                              title="Eliminar"
+                              className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                              aria-label="Eliminar"
                             >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -1211,9 +1211,9 @@ export function Summary({
       </div>
 
       {/* Comentarios adicionales */}
-      <div className="mb-6 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#C41E3A] px-4 py-3 flex items-center gap-2">
-          <h3 className="text-white text-base font-normal m-0">
+      <div className="mb-4 bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#C41E3A] px-3 py-2 flex items-center gap-2">
+          <h3 className="text-white text-sm font-normal m-0">
             Comentarios adicionales
           </h3>
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20 text-white">

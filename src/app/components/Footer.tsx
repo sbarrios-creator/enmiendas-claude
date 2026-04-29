@@ -1,7 +1,7 @@
 export function Footer() {
   return (
-    <footer className="bg-gray-200 py-4 mt-8">
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+    <footer className="bg-gray-200 py-4 mt-auto">
+      <div className="max-w-screen-2xl mx-auto px-20 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[#C41E3A]">Comité Institucional de Ética en Investigación (CIEI)</span>
         </div>

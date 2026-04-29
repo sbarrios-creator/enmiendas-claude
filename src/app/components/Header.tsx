@@ -1,7 +1,7 @@
 export function Header() {
   return (
     <header className="bg-[#C41E3A] text-white shadow-md">
-      <div className="max-w-screen-2xl mx-auto w-full px-6 py-3 flex items-center justify-between">
+      <div className="max-w-screen-2xl mx-auto w-full px-20 py-3 flex items-center justify-between">
         {/* Logo — anclado a la izquierda */}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-yellow-400 rounded flex items-center justify-center shrink-0">

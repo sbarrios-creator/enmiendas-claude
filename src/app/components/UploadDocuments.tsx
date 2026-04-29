@@ -125,13 +125,13 @@ export function UploadDocuments({
 
       {/* Filtros */}
       <div className="flex gap-2 mb-3">
-        <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'all' ? 'bg-[#C41E3A] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+        <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'all' ? 'bg-[#C41E3A] text-white' : 'border border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
           Todos ({documents.length})
         </button>
-        <button onClick={() => setStatusFilter('completed')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'completed' ? 'bg-[#C41E3A] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+        <button onClick={() => setStatusFilter('completed')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'completed' ? 'bg-[#C41E3A] text-white' : 'border border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
           Completos ({completedCount})
         </button>
-        <button onClick={() => setStatusFilter('pending')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'pending' ? 'bg-[#C41E3A] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+        <button onClick={() => setStatusFilter('pending')} className={`px-3 py-1.5 rounded text-sm transition-colors ${statusFilter === 'pending' ? 'bg-[#C41E3A] text-white' : 'border border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
           Pendientes ({documents.length - completedCount})
         </button>
       </div>
@@ -183,7 +183,7 @@ export function UploadDocuments({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="ml-2 px-2 py-0.5 text-xs border border-gray-300 rounded text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#C41E3A] font-normal normal-case tracking-normal"
+                            className="ml-2 px-2 py-0.5 text-xs border border-gray-300 rounded text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C41E3A]/40 focus:border-[#C41E3A] font-normal normal-case tracking-normal"
                           />
                         )}
                       </div>
@@ -299,10 +299,10 @@ export function UploadDocuments({
       {/* Action Buttons */}
       <div className="flex justify-between gap-4 mt-4">
         <button onClick={onBack} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium">
-          Volver
+          ← Volver
         </button>
         <button onClick={onNext} disabled={!canContinue} className="px-4 py-2 bg-[#C41E3A] text-white rounded hover:bg-[#A01828] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium">
-          Continuar
+          Siguiente →
         </button>
       </div>
 
