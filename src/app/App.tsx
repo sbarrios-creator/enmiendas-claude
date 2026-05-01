@@ -52,7 +52,7 @@ export default function App() {
       <Header />
 
       <div className="flex-1 flex flex-col">
-        <div className="max-w-screen-2xl mx-auto px-20 py-6 w-full flex flex-col gap-6">
+        <div className="max-w-screen-2xl mx-auto px-40 py-6 w-full flex flex-col gap-6">
 
           {/* Breadcrumb + título + wizard */}
           <div>
